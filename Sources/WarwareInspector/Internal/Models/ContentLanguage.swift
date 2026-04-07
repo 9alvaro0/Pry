@@ -49,13 +49,6 @@ enum ContentLanguage: String, CaseIterable {
         return .text
     }
 
-    static func detectLanguage(from content: String, hint: String? = nil) -> ContentLanguage {
-        if let hint, let language = ContentLanguage(rawValue: hint.lowercased()) {
-            return language
-        }
-        return detect(from: content)
-    }
-
     private static func isValidJSON(_ string: String) -> Bool {
         guard !string.isEmpty else { return false }
 
@@ -73,14 +66,4 @@ enum ContentLanguage: String, CaseIterable {
         }
     }
 
-    var supportsExpansion: Bool {
-        switch self {
-        case .json, .text, .html, .xml, .javascript, .plain: return true
-        case .http: return false
-        }
-    }
-
-    var showsLanguageLabel: Bool {
-        return self != .text && self != .plain
-    }
 }

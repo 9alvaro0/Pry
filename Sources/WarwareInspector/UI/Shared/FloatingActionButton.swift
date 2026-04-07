@@ -20,3 +20,26 @@ struct FloatingActionButtonView: View {
         .buttonStyle(.plain)
     }
 }
+
+#if DEBUG
+#Preview("FAB") {
+    ZStack {
+        Color(InspectorTheme.Colors.background)
+            .ignoresSafeArea()
+
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                FloatingActionButtonView(
+                    icon: "ladybug.fill",
+                    backgroundColor: InspectorTheme.Colors.fab,
+                    foregroundColor: InspectorTheme.Colors.fabForeground,
+                    size: InspectorTheme.Size.fab
+                ) {}
+                .padding()
+            }
+        }
+    }
+}
+#endif

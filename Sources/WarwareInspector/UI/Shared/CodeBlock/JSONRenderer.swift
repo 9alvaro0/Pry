@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Renders JSON with syntax highlighting, collapsible nodes, search, and expand/collapse all.
+/// Renders JSON with syntax highlighting, collapsible nodes, search, line numbers, and expand/collapse all.
 struct JSONRenderer: View {
     let jsonText: String
     var searchQuery: String = ""
@@ -21,30 +21,316 @@ struct JSONRenderer: View {
         self.allCollapsiblePaths = Self.collectCollapsiblePaths(result.value, path: "root")
     }
 
+    /// All lines with absolute numbers (as if fully expanded).
+    private var allLines: [JSONLine] {
+        guard let value = parsed.value else { return [] }
+        var lines: [JSONLine] = []
+        var lineNum = 1
+        flattenAll(value, path: "root", key: nil, level: 0, isLast: true, lineNum: &lineNum, into: &lines)
+        return lines
+    }
+
+    /// Only the visible lines (respecting collapsed state), keeping original line numbers.
+    private var visibleLines: [JSONLine] {
+        let all = allLines
+        var visible: [JSONLine] = []
+        var skipPaths: Set<String> = []
+
+        for line in all {
+            // Skip children and closing brace of collapsed nodes
+            if !skipPaths.isEmpty {
+                // Is this a closing brace for a collapsed path?
+                let isClosingOfCollapsed: Bool = {
+                    if case .closeBrace = line.content {
+                        return skipPaths.contains(line.path)
+                    }
+                    return false
+                }()
+
+                if isClosingOfCollapsed {
+                    skipPaths.remove(line.path)
+                    continue
+                }
+
+                // Is this a child of any collapsed path?
+                let isChild = skipPaths.contains { line.path.hasPrefix($0 + ".") || line.path.hasPrefix($0 + "[") }
+                if isChild { continue }
+            }
+
+            // Check if this line starts a collapsed section
+            if line.isCollapsible, collapsedPaths.contains(line.path),
+               case .openBrace = line.content {
+                var collapsed = line
+                if case .openBrace("{") = line.content {
+                    collapsed.content = .collapsedObject(line.childCount)
+                    collapsed.hasComma = line.closingHasComma
+                } else if case .openBrace("[") = line.content {
+                    collapsed.content = .collapsedArray(line.childCount)
+                    collapsed.hasComma = line.closingHasComma
+                }
+                visible.append(collapsed)
+                skipPaths.insert(line.path)
+            } else {
+                visible.append(line)
+            }
+        }
+
+        return visible
+    }
+
+    private var gutterWidth: CGFloat {
+        let maxNum = allLines.last?.lineNumber ?? 1
+        let digits = String(maxNum).count
+        return CGFloat(max(digits, 2)) * 8 + 4
+    }
+
     var body: some View {
-        if let json = parsed.value {
+        if parsed.value != nil {
+            let lines = visibleLines
+
             ScrollView(.horizontal, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    JSONNode(
-                        value: json,
-                        level: 0,
-                        path: "root",
-                        searchQuery: searchQuery,
-                        collapsedPaths: $collapsedPaths
-                    )
+                    ForEach(lines, id: \.lineNumber) { line in
+                        HStack(alignment: .top, spacing: 0) {
+                            Text("\(line.lineNumber)")
+                                .font(InspectorTheme.Typography.codeSmall)
+                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                                .frame(width: gutterWidth, alignment: .trailing)
+                                .padding(.trailing, InspectorTheme.Spacing.sm)
+
+                            lineView(line)
+                        }
+                    }
                 }
             }
             .onChange(of: collapseAll) {
                 withAnimation(.easeOut(duration: 0.2)) {
-                    if collapseAll {
-                        collapsedPaths = allCollapsiblePaths
-                    } else {
-                        collapsedPaths.removeAll()
-                    }
+                    collapsedPaths = collapseAll ? allCollapsiblePaths : []
                 }
             }
         } else {
             invalidJSONView
+        }
+    }
+
+    // MARK: - Line Rendering
+
+    @ViewBuilder
+    private func lineView(_ line: JSONLine) -> some View {
+        HStack(spacing: 0) {
+            // Indent
+            if line.level > 0 {
+                Color.clear
+                    .frame(width: CGFloat(line.level) * 16)
+            }
+
+            // Collapse toggle
+            if line.isCollapsible {
+                collapseButton(for: line.path)
+            }
+
+            // Key
+            if let key = line.key {
+                highlightable("\"\(key)\": ", color: InspectorTheme.Colors.syntaxKey)
+            }
+
+            // Content
+            switch line.content {
+            case .openBrace(let brace):
+                Text(brace)
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+            case .closeBrace(let brace):
+                Text(brace)
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+            case .collapsedObject(let count):
+                Text("{\(count) keys}")
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+            case .collapsedArray(let count):
+                Text("[\(count) items]")
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+            case .string(let value):
+                highlightable("\"\(value)\"", color: InspectorTheme.Colors.syntaxString)
+
+            case .number(let value):
+                highlightable(value, color: InspectorTheme.Colors.syntaxNumber)
+
+            case .bool(let value):
+                highlightable(value ? "true" : "false", color: InspectorTheme.Colors.syntaxBool)
+
+            case .null:
+                highlightable("null", color: InspectorTheme.Colors.syntaxNull)
+
+            case .truncated:
+                Text("...")
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                    .italic()
+
+            case .overflow(let remaining):
+                Text("... \(remaining) more items")
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                    .italic()
+            }
+
+            // Comma
+            if line.hasComma {
+                Text(",")
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .textSelection(.enabled)
+    }
+
+    @ViewBuilder
+    private func highlightable(_ text: String, color: Color) -> some View {
+        if !searchQuery.isEmpty {
+            HighlightedText(text: text, query: searchQuery, baseColor: color)
+                .font(InspectorTheme.Typography.code)
+        } else {
+            Text(text)
+                .font(InspectorTheme.Typography.code)
+                .foregroundStyle(color)
+        }
+    }
+
+    private func collapseButton(for path: String) -> some View {
+        let collapsed = collapsedPaths.contains(path)
+        return Button {
+            withAnimation(.easeOut(duration: 0.15)) {
+                if collapsed { collapsedPaths.remove(path) }
+                else { collapsedPaths.insert(path) }
+            }
+        } label: {
+            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                .font(.system(size: 9, weight: .bold))
+                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                .frame(width: 16, height: 16)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Flatten JSON to Lines (always fully expanded, with absolute line numbers)
+
+    private func flattenAll(
+        _ value: Any,
+        path: String,
+        key: String?,
+        level: Int,
+        isLast: Bool,
+        lineNum: inout Int,
+        into lines: inout [JSONLine]
+    ) {
+        guard level <= 8 else {
+            lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .truncated, hasComma: !isLast, path: path))
+            lineNum += 1
+            return
+        }
+
+        if let dict = value as? [String: Any] {
+            let canCollapse = dict.count > 1
+            let openLine = lineNum
+            lineNum += 1
+
+            lines.append(JSONLine(
+                lineNumber: openLine, level: level, key: key,
+                content: .openBrace("{"),
+                hasComma: false, path: path, isCollapsible: canCollapse,
+                childCount: dict.count
+            ))
+
+            let sortedKeys = dict.keys.sorted()
+            for (index, dictKey) in sortedKeys.enumerated() {
+                flattenAll(
+                    dict[dictKey] ?? NSNull(),
+                    path: "\(path).\(dictKey)",
+                    key: dictKey, level: level + 1,
+                    isLast: index == sortedKeys.count - 1,
+                    lineNum: &lineNum, into: &lines
+                )
+            }
+
+            let closingComma = !isLast
+            lines.append(JSONLine(
+                lineNumber: lineNum, level: level, key: nil,
+                content: .closeBrace("}"),
+                hasComma: closingComma, path: path
+            ))
+            // Store closing comma info on the open brace for collapsed rendering
+            if let openIndex = lines.firstIndex(where: { $0.lineNumber == openLine && $0.path == path }) {
+                lines[openIndex].closingHasComma = closingComma
+            }
+            lineNum += 1
+
+        } else if let array = value as? [Any] {
+            let canCollapse = array.count > 1
+            let maxItems = 100
+            let openLine = lineNum
+            lineNum += 1
+
+            lines.append(JSONLine(
+                lineNumber: openLine, level: level, key: key,
+                content: .openBrace("["),
+                hasComma: false, path: path, isCollapsible: canCollapse,
+                childCount: array.count
+            ))
+
+            let itemCount = min(array.count, maxItems)
+            for index in 0..<itemCount {
+                flattenAll(
+                    array[index],
+                    path: "\(path)[\(index)]",
+                    key: nil, level: level + 1,
+                    isLast: index == itemCount - 1 && array.count <= maxItems,
+                    lineNum: &lineNum, into: &lines
+                )
+            }
+
+            if array.count > maxItems {
+                lines.append(JSONLine(
+                    lineNumber: lineNum, level: level + 1, key: nil,
+                    content: .overflow(array.count - maxItems),
+                    hasComma: false, path: path
+                ))
+                lineNum += 1
+            }
+
+            let closingComma = !isLast
+            lines.append(JSONLine(
+                lineNumber: lineNum, level: level, key: nil,
+                content: .closeBrace("]"),
+                hasComma: closingComma, path: path
+            ))
+            if let openIndex = lines.firstIndex(where: { $0.lineNumber == openLine && $0.path == path }) {
+                lines[openIndex].closingHasComma = closingComma
+            }
+            lineNum += 1
+
+        } else if let str = value as? String {
+            lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .string(str), hasComma: !isLast, path: path))
+            lineNum += 1
+        } else if let num = value as? NSNumber {
+            if num.isBool {
+                lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .bool(num.boolValue), hasComma: !isLast, path: path))
+            } else {
+                lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .number("\(num)"), hasComma: !isLast, path: path))
+            }
+            lineNum += 1
+        } else if value is NSNull {
+            lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .null, hasComma: !isLast, path: path))
+            lineNum += 1
         }
     }
 
@@ -74,21 +360,16 @@ struct JSONRenderer: View {
         return ParsedJSON(value: nil)
     }
 
-    /// Recursively collects paths of all objects/arrays that can be collapsed.
     private static func collectCollapsiblePaths(_ value: Any?, path: String) -> Set<String> {
         guard let value else { return [] }
         var paths = Set<String>()
 
         if let dict = value as? [String: Any], dict.count > 1 {
             paths.insert(path)
-            for (key, val) in dict {
-                paths.formUnion(collectCollapsiblePaths(val, path: "\(path).\(key)"))
-            }
+            for (key, val) in dict { paths.formUnion(collectCollapsiblePaths(val, path: "\(path).\(key)")) }
         } else if let array = value as? [Any], array.count > 1 {
             paths.insert(path)
-            for (index, item) in array.enumerated() {
-                paths.formUnion(collectCollapsiblePaths(item, path: "\(path)[\(index)]"))
-            }
+            for (i, item) in array.enumerated() { paths.formUnion(collectCollapsiblePaths(item, path: "\(path)[\(i)]")) }
         }
 
         return paths
@@ -112,231 +393,30 @@ struct JSONRenderer: View {
     }
 }
 
-// MARK: - JSON Node (recursive)
+// MARK: - JSON Line Model
 
-private struct JSONNode: View {
-    let value: Any
+private struct JSONLine {
+    let lineNumber: Int
     let level: Int
+    let key: String?
+    var content: Content
+    var hasComma: Bool
     let path: String
-    var key: String?
-    var isLast: Bool = true
-    var searchQuery: String = ""
-    @Binding var collapsedPaths: Set<String>
+    var isCollapsible: Bool = false
+    var childCount: Int = 0
+    var closingHasComma: Bool = false
 
-    private var isCollapsed: Bool { collapsedPaths.contains(path) }
-    private let indent: CGFloat = 16
-
-    private var isSearching: Bool { !searchQuery.isEmpty }
-    private var query: String { searchQuery.lowercased() }
-
-    var body: some View {
-        if level > 8 {
-            truncatedView
-        } else if let dict = value as? [String: Any] {
-            objectView(dict)
-        } else if let array = value as? [Any] {
-            arrayView(array)
-        } else {
-            primitiveView
-        }
-    }
-
-    // MARK: - Object
-
-    @ViewBuilder
-    private func objectView(_ dict: [String: Any]) -> some View {
-        let sortedKeys = dict.keys.sorted()
-        let canCollapse = dict.count > 1
-
-        HStack(spacing: 0) {
-            keyLabel
-            if canCollapse { collapseToggle }
-            Text(isCollapsed ? "{\(dict.count) keys}" : "{")
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(isCollapsed ? InspectorTheme.Colors.textTertiary : InspectorTheme.Colors.textPrimary)
-            if !isCollapsed { Spacer(minLength: 0) }
-            if isCollapsed {
-                comma
-                Spacer(minLength: 0)
-            }
-        }
-        .padding(.leading, CGFloat(level) * indent)
-
-        if !isCollapsed {
-            ForEach(Array(sortedKeys.enumerated()), id: \.element) { index, dictKey in
-                JSONNode(
-                    value: dict[dictKey] ?? NSNull(),
-                    level: level + 1,
-                    path: "\(path).\(dictKey)",
-                    key: dictKey,
-                    isLast: index == sortedKeys.count - 1,
-                    searchQuery: searchQuery,
-                    collapsedPaths: $collapsedPaths
-                )
-            }
-
-            HStack(spacing: 0) {
-                Text("}")
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                comma
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, CGFloat(level) * indent)
-        }
-    }
-
-    // MARK: - Array
-
-    @ViewBuilder
-    private func arrayView(_ array: [Any]) -> some View {
-        let canCollapse = array.count > 1
-        let maxItems = 100
-
-        HStack(spacing: 0) {
-            keyLabel
-            if canCollapse { collapseToggle }
-            Text(isCollapsed ? "[\(array.count) items]" : "[")
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(isCollapsed ? InspectorTheme.Colors.textTertiary : InspectorTheme.Colors.textPrimary)
-            if !isCollapsed { Spacer(minLength: 0) }
-            if isCollapsed {
-                comma
-                Spacer(minLength: 0)
-            }
-        }
-        .padding(.leading, CGFloat(level) * indent)
-
-        if !isCollapsed {
-            let itemsToShow = min(array.count, maxItems)
-            ForEach(0..<itemsToShow, id: \.self) { index in
-                JSONNode(
-                    value: array[index],
-                    level: level + 1,
-                    path: "\(path)[\(index)]",
-                    isLast: index == itemsToShow - 1 && array.count <= maxItems,
-                    searchQuery: searchQuery,
-                    collapsedPaths: $collapsedPaths
-                )
-            }
-
-            if array.count > maxItems {
-                Text("... \(array.count - maxItems) more items")
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                    .italic()
-                    .padding(.leading, CGFloat(level + 1) * indent)
-            }
-
-            HStack(spacing: 0) {
-                Text("]")
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                comma
-                Spacer(minLength: 0)
-            }
-            .padding(.leading, CGFloat(level) * indent)
-        }
-    }
-
-    // MARK: - Primitive
-
-    private var primitiveView: some View {
-        HStack(spacing: 0) {
-            keyLabel
-
-            if let str = value as? String {
-                highlightedText("\"\(str)\"", color: InspectorTheme.Colors.syntaxString)
-            } else if let num = value as? NSNumber {
-                if num.isBool {
-                    highlightedText(
-                        num.boolValue ? "true" : "false",
-                        color: InspectorTheme.Colors.syntaxBool
-                    )
-                } else {
-                    highlightedText("\(num)", color: InspectorTheme.Colors.syntaxNumber)
-                }
-            } else if value is NSNull {
-                highlightedText("null", color: InspectorTheme.Colors.syntaxNull)
-            }
-            comma
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, CGFloat(level) * indent)
-        .textSelection(.enabled)
-    }
-
-    // MARK: - Truncated
-
-    private var truncatedView: some View {
-        HStack(spacing: 0) {
-            keyLabel
-            Text("...")
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                .italic()
-            Spacer(minLength: 0)
-        }
-        .padding(.leading, CGFloat(level) * indent)
-    }
-
-    // MARK: - Shared Components
-
-    @ViewBuilder
-    private var keyLabel: some View {
-        if let key {
-            if isSearching && key.lowercased().contains(query) {
-                highlightedText("\"\(key)\": ", color: InspectorTheme.Colors.syntaxKey, bold: true)
-            } else {
-                Text("\"\(key)\": ")
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.syntaxKey)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var comma: some View {
-        if !isLast {
-            Text(",")
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-        }
-    }
-
-    private var collapseToggle: some View {
-        Button {
-            withAnimation(.easeOut(duration: 0.15)) {
-                if isCollapsed {
-                    collapsedPaths.remove(path)
-                } else {
-                    collapsedPaths.insert(path)
-                }
-            }
-        } label: {
-            Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                .font(.system(size: 9, weight: .bold))
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                .frame(width: 16, height: 16)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - Search Highlight
-
-    @ViewBuilder
-    private func highlightedText(_ text: String, color: Color, bold: Bool = false) -> some View {
-        if isSearching && text.lowercased().contains(query) {
-            HighlightedText(text: text, query: searchQuery, baseColor: color)
-                .font(InspectorTheme.Typography.code)
-                .fontWeight(bold ? .medium : .regular)
-        } else {
-            Text(text)
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(color)
-                .fontWeight(bold ? .medium : .regular)
-        }
+    enum Content {
+        case openBrace(String)
+        case closeBrace(String)
+        case collapsedObject(Int)
+        case collapsedArray(Int)
+        case string(String)
+        case number(String)
+        case bool(Bool)
+        case null
+        case truncated
+        case overflow(Int)
     }
 }
 

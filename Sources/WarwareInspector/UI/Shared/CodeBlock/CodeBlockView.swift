@@ -55,12 +55,28 @@ struct CodeBlockView: View {
 
     // MARK: - Header (single line: label + icon buttons)
 
+    private var sizeLabel: String? {
+        let bytes = text.utf8.count
+        guard bytes > 0 else { return nil }
+        let formatter = ByteCountFormatter()
+        formatter.countStyle = .binary
+        return formatter.string(fromByteCount: Int64(bytes))
+    }
+
     private var header: some View {
         HStack {
-            Text(effectiveLanguage.displayName.uppercased())
-                .font(InspectorTheme.Typography.detail)
-                .fontWeight(.semibold)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            HStack(spacing: InspectorTheme.Spacing.sm) {
+                Text(effectiveLanguage.displayName.uppercased())
+                    .font(InspectorTheme.Typography.detail)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+                if let size = sizeLabel {
+                    Text(size)
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                }
+            }
 
             Spacer()
 

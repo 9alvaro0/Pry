@@ -91,3 +91,15 @@ struct FilterChipView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Filter Chips") {
+    FilterChipBarView(chips: [
+        ChipItem(title: "All", count: 8, isSelected: true) {},
+        ChipItem(title: "Success", count: 5, color: InspectorTheme.Colors.success, isSelected: false) {},
+        ChipItem(title: "Errors", count: 2, color: InspectorTheme.Colors.error, isSelected: false) {},
+        ChipItem(title: "Pending", count: 1, color: InspectorTheme.Colors.pending, isSelected: false) {},
+    ])
+    .inspectorBackground()
+}
+#endif

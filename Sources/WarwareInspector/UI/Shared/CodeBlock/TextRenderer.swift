@@ -36,58 +36,81 @@ struct TextRenderer: View {
 
     // MARK: - Plain Text
 
-    @ViewBuilder
     private var plainTextContent: some View {
-        let displayText = isExpanded ? text : truncatedText
+        let lines = text.components(separatedBy: .newlines)
+        let visibleLines = isExpanded ? lines : Array(lines.prefix(collapsedLineLimit))
+        let gutterWidth = gutterWidth(for: lines.count)
 
-        if isSearching {
-            HighlightedText(
-                text: displayText,
-                query: searchQuery,
-                baseColor: InspectorTheme.Colors.textPrimary
-            )
-            .font(InspectorTheme.Typography.code)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-        } else {
-            Text(displayText)
-                .font(InspectorTheme.Typography.code)
-                .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                .textSelection(.enabled)
-                .lineLimit(isExpanded ? nil : collapsedLineLimit)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+        return VStack(alignment: .leading, spacing: 0) {
+            ForEach(Array(visibleLines.enumerated()), id: \.offset) { index, line in
+                HStack(alignment: .top, spacing: 0) {
+                    Text("\(index + 1)")
+                        .font(InspectorTheme.Typography.codeSmall)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                        .frame(width: gutterWidth, alignment: .trailing)
+                        .padding(.trailing, InspectorTheme.Spacing.sm)
+
+                    if isSearching {
+                        HighlightedText(
+                            text: line.isEmpty ? " " : line,
+                            query: searchQuery,
+                            baseColor: InspectorTheme.Colors.textPrimary
+                        )
+                        .font(InspectorTheme.Typography.code)
+                    } else {
+                        Text(line.isEmpty ? " " : line)
+                            .font(InspectorTheme.Typography.code)
+                            .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                            .textSelection(.enabled)
+                    }
+                }
+            }
         }
     }
 
-    private var truncatedText: String {
-        let lines = text.components(separatedBy: .newlines)
-        guard lines.count > collapsedLineLimit else { return text }
-        return lines.prefix(collapsedLineLimit).joined(separator: "\n")
+    private func gutterWidth(for totalLines: Int) -> CGFloat {
+        let digits = String(totalLines).count
+        return CGFloat(digits) * 8 + 4
     }
 
     // MARK: - HTTP
 
     private var httpContent: some View {
         let parsed = parseHTTP()
+        let totalLines = 1 + parsed.headers.count
+        let gutter = gutterWidth(for: totalLines)
 
-        return VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
-            HStack(spacing: InspectorTheme.Spacing.sm) {
-                highlightableText(parsed.method, color: InspectorTheme.Colors.methodColor(parsed.method), bold: true)
-                highlightableText(parsed.path, color: InspectorTheme.Colors.textPrimary)
-                Spacer()
-                Text(parsed.httpVersion)
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+        return VStack(alignment: .leading, spacing: 0) {
+            // Line 1: request line
+            HStack(alignment: .top, spacing: 0) {
+                lineNumber(1, gutterWidth: gutter)
+                HStack(spacing: InspectorTheme.Spacing.sm) {
+                    highlightableText(parsed.method, color: InspectorTheme.Colors.methodColor(parsed.method), bold: true)
+                    highlightableText(parsed.path, color: InspectorTheme.Colors.textPrimary)
+                    Spacer()
+                    Text(parsed.httpVersion)
+                        .font(InspectorTheme.Typography.code)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                }
             }
 
-            if !parsed.headers.isEmpty {
-                ForEach(Array(parsed.headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                    HStack(alignment: .top, spacing: 0) {
-                        highlightableText("\(key): ", color: InspectorTheme.Colors.syntaxKey)
-                        highlightableText(value, color: InspectorTheme.Colors.textPrimary)
-                    }
+            // Headers
+            ForEach(Array(parsed.headers.sorted(by: { $0.key < $1.key }).enumerated()), id: \.element.key) { index, header in
+                HStack(alignment: .top, spacing: 0) {
+                    lineNumber(index + 2, gutterWidth: gutter)
+                    highlightableText("\(header.key): ", color: InspectorTheme.Colors.syntaxKey)
+                    highlightableText(header.value, color: InspectorTheme.Colors.textPrimary)
                 }
             }
         }
+    }
+
+    private func lineNumber(_ number: Int, gutterWidth: CGFloat) -> some View {
+        Text("\(number)")
+            .font(InspectorTheme.Typography.codeSmall)
+            .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            .frame(width: gutterWidth, alignment: .trailing)
+            .padding(.trailing, InspectorTheme.Spacing.sm)
     }
 
     @ViewBuilder

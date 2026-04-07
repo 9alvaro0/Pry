@@ -50,3 +50,35 @@ struct DetailSectionView<Content: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Static Section") {
+    DetailSectionView(title: "Request Details") {
+        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+            DetailRowView(label: "Host", value: "api.example.com")
+            DetailRowView(label: "Path", value: "/v1/users")
+        }
+    }
+    .padding()
+    .inspectorBackground()
+}
+
+#Preview("Collapsible - Expanded") {
+    DetailSectionView(title: "Headers", collapsible: true) {
+        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+            DetailRowView(label: "Content-Type", value: "application/json")
+            DetailRowView(label: "Authorization", value: "Bearer ***")
+        }
+    }
+    .padding()
+    .inspectorBackground()
+}
+
+#Preview("Collapsible - Collapsed") {
+    DetailSectionView(title: "Response Headers", collapsible: true, startCollapsed: true) {
+        DetailRowView(label: "Content-Type", value: "application/json")
+    }
+    .padding()
+    .inspectorBackground()
+}
+#endif
