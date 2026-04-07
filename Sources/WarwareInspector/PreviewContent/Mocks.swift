@@ -388,4 +388,129 @@ extension DeeplinkEntry {
     }
 }
 
+// MARK: - CodeBlock / JSON Mocks
+
+enum MockJSON {
+
+    static let simple = """
+    {
+      "status": "ok",
+      "version": "1.2.3"
+    }
+    """
+
+    static let nested = """
+    {
+      "data": [
+        {
+          "id": 123,
+          "title": "Sample Item",
+          "status": "active",
+          "metadata": {
+            "created": "2026-04-07",
+            "tags": ["swift", "ios", "network"]
+          }
+        },
+        {
+          "id": 456,
+          "title": "Another Item",
+          "status": "archived",
+          "metadata": null
+        }
+      ],
+      "pagination": {
+        "page": 1,
+        "total": 42,
+        "hasNext": true
+      }
+    }
+    """
+
+    static let allTypes = """
+    {
+      "string": "hello world",
+      "number": 42,
+      "decimal": 3.14,
+      "boolTrue": true,
+      "boolFalse": false,
+      "nullValue": null,
+      "array": [1, 2, 3],
+      "nested": {
+        "key": "value"
+      }
+    }
+    """
+
+    static let deepNesting = """
+    {
+      "level1": {
+        "level2": {
+          "level3": {
+            "level4": {
+              "level5": {
+                "deep": "value"
+              }
+            }
+          }
+        }
+      }
+    }
+    """
+
+    static let largeArray = """
+    {
+      "items": [
+        {"id": 1, "name": "Item 1"},
+        {"id": 2, "name": "Item 2"},
+        {"id": 3, "name": "Item 3"},
+        {"id": 4, "name": "Item 4"},
+        {"id": 5, "name": "Item 5"}
+      ]
+    }
+    """
+
+    static let emptyStructures = """
+    {
+      "emptyObject": {},
+      "emptyArray": [],
+      "emptyString": ""
+    }
+    """
+
+    static let trailingCommas = """
+    {
+      "name": "test",
+      "value": 42,
+    }
+    """
+
+    static let invalid = "{ broken json: not valid ["
+}
+
+enum MockHTTP {
+
+    static let postRequest = """
+    POST /v1/bookings/filter HTTP/1.1
+    Host: api.example.com
+    Authorization: Bearer eyJ0eXAiOiJKV1Qi...
+    Content-Type: application/json
+    Accept: */*
+    User-Agent: MyApp/2.1
+    """
+
+    static let getMinimal = """
+    GET /health HTTP/1.1
+    Host: api.example.com
+    """
+}
+
+enum MockText {
+
+    static let short = "Simple response: everything is working correctly."
+
+    static let long = (1...25).map {
+        "Log line \($0): Processing request with id=\($0 * 1000 + 42)"
+    }.joined(separator: "\n")
+}
+
 #endif

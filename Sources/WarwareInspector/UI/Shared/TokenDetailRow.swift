@@ -15,7 +15,10 @@ struct TokenDetailRowView: View {
                 Text(preview)
                     .font(InspectorTheme.Typography.body)
                     .multilineTextAlignment(.trailing)
-                CopyButtonView(title: "Copy Full Token", valueToCopy: fullToken)
+                CopyButtonView(
+                    valueToCopy: fullToken,
+                    style: .labeled("Copy Full Token", copiedLabel: "Copied!")
+                )
             }
         }
     }
