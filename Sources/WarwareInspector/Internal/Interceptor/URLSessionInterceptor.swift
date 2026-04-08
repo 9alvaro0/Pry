@@ -156,6 +156,36 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         breakpointRules.first { $0.matches(request) }
     }
 
+    /// Timeout for breakpoint user interaction (seconds).
+    private static let breakpointTimeout: TimeInterval = 120
+
+    /// Bridges async BreakpointManager call to sync URLProtocol thread via semaphore.
+    /// Handles timeout and cancellation. Calls `onResult` on a background queue.
+    private func awaitBreakpointAction(
+        pause: @escaping () async -> BreakpointManager.BreakpointAction,
+        onResult: @escaping (BreakpointManager.BreakpointAction) -> Void
+    ) {
+        nonisolated(unsafe) let protocolSelf = self
+        DispatchQueue.global(qos: .userInitiated).async {
+            let semaphore = DispatchSemaphore(value: 0)
+            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
+
+            Task {
+                result = await pause()
+                semaphore.signal()
+            }
+
+            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
+            if waitResult == .timedOut {
+                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
+                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
+                return
+            }
+
+            onResult(result)
+        }
+    }
+
     private func handleResponseBreakpoint(
         rule: BreakpointRule,
         statusCode: Int,
@@ -167,110 +197,64 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         let originalRequest = self.request
         let requestID = self.requestID
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let semaphore = DispatchSemaphore(value: 0)
-            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
-
-            Task {
-                result = await BreakpointManager.shared.pauseResponse(
-                    request: originalRequest,
-                    rule: rule,
-                    statusCode: statusCode,
-                    headers: headers,
-                    body: body
+        awaitBreakpointAction(
+            pause: {
+                await BreakpointManager.shared.pauseResponse(
+                    request: originalRequest, rule: rule,
+                    statusCode: statusCode, headers: headers, body: body
                 )
-                semaphore.signal()
-            }
+            },
+            onResult: { result in
+                switch result {
+                case .sendResponse(let modifiedStatus, let modifiedHeaders, let modifiedBody):
+                    let url = originalRequest.url ?? URL(string: "about:blank")!
+                    if let httpResponse = HTTPURLResponse(url: url, statusCode: modifiedStatus, httpVersion: "HTTP/1.1", headerFields: modifiedHeaders) {
+                        protocolSelf.client?.urlProtocol(protocolSelf, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
+                    }
+                    if let modifiedBody, let data = modifiedBody.data(using: .utf8) {
+                        protocolSelf.client?.urlProtocol(protocolSelf, didLoad: data)
+                    }
+                    protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
 
-            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
-            if waitResult == .timedOut {
-                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
-                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
-                return
-            }
-
-            switch result {
-            case .sendResponse(let modifiedStatus, let modifiedHeaders, let modifiedBody):
-                let url = originalRequest.url ?? URL(string: "about:blank")!
-                let httpResponse = HTTPURLResponse(
-                    url: url,
-                    statusCode: modifiedStatus,
-                    httpVersion: "HTTP/1.1",
-                    headerFields: modifiedHeaders
-                )
-
-                if let httpResponse {
-                    protocolSelf.client?.urlProtocol(protocolSelf, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
+                    if let requestID {
+                        Self.logger?.logResponse(
+                            requestID: requestID, statusCode: modifiedStatus, headers: modifiedHeaders,
+                            body: modifiedBody?.data(using: .utf8), error: nil,
+                            duration: duration, taskMetrics: nil, redirectCount: 0
+                        )
+                    }
+                case .send, .cancel:
+                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
                 }
-
-                if let modifiedBody, let data = modifiedBody.data(using: .utf8) {
-                    protocolSelf.client?.urlProtocol(protocolSelf, didLoad: data)
-                }
-
-                protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
-
-                if let requestID {
-                    Self.logger?.logResponse(
-                        requestID: requestID,
-                        statusCode: modifiedStatus,
-                        headers: modifiedHeaders,
-                        body: modifiedBody?.data(using: .utf8),
-                        error: nil,
-                        duration: duration,
-                        taskMetrics: nil,
-                        redirectCount: 0
-                    )
-                }
-
-            case .send:
-                // Shouldn't happen for response breakpoints, but handle gracefully
-                protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
-
-            case .cancel:
-                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
             }
-        }
+        )
     }
-
-    /// Timeout for breakpoint user interaction (seconds).
-    private static let breakpointTimeout: TimeInterval = 120
 
     private func handleBreakpoint(request: URLRequest, rule: BreakpointRule) {
         nonisolated(unsafe) let protocolSelf = self
-        DispatchQueue.global(qos: .userInitiated).async {
-            let semaphore = DispatchSemaphore(value: 0)
-            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
 
-            Task {
-                result = await BreakpointManager.shared.pauseRequest(request, rule: rule)
-                semaphore.signal()
-            }
-
-            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
-            if waitResult == .timedOut {
-                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
-                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
-                return
-            }
-
-            switch result {
-            case .send(let modified):
-                guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.badURL))
-                    return
+        awaitBreakpointAction(
+            pause: { await BreakpointManager.shared.pauseRequest(request, rule: rule) },
+            onResult: { result in
+                switch result {
+                case .send(let modified):
+                    guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+                        protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.badURL))
+                        return
+                    }
+                    URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
+                    if rule.pauseOn == .both {
+                        protocolSelf.hasResponseBreakpoint = true
+                        protocolSelf.matchedBreakpointRule = rule
+                    }
+                    protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
+                case .sendResponse:
+                    break
+                case .cancel:
+                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
                 }
-                URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
-                if rule.pauseOn == .both {
-                    protocolSelf.hasResponseBreakpoint = true
-                    protocolSelf.matchedBreakpointRule = rule
-                }
-                protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
-            case .sendResponse:
-                break
-            case .cancel:
-                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
             }
-        }
+        )
     }
 
     private func respondWithMock(_ rule: MockRule) {

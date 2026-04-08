@@ -176,23 +176,9 @@ struct NetworkRequestDetailView: View {
                         }
                     }
                 } else if entry.responseError != nil {
-                    Text("ERROR")
-                        .font(InspectorTheme.Typography.codeSmall)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, InspectorTheme.Spacing.pip)
-                        .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.badge))
-                        .foregroundStyle(InspectorTheme.Colors.error)
-                        .clipShape(.capsule)
+                    statusLabel("ERROR", color: InspectorTheme.Colors.error)
                 } else {
-                    Text("PENDING")
-                        .font(InspectorTheme.Typography.codeSmall)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, InspectorTheme.Spacing.pip)
-                        .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.pending.opacity(InspectorTheme.Opacity.badge))
-                        .foregroundStyle(InspectorTheme.Colors.pending)
-                        .clipShape(.capsule)
+                    statusLabel("PENDING", color: InspectorTheme.Colors.pending)
                 }
 
                 Spacer()
@@ -744,6 +730,17 @@ struct NetworkRequestDetailView: View {
         components.append("'\(escapeCurl(entry.requestURL))'")
 
         return components.joined(separator: " \\\n  ")
+    }
+
+    private func statusLabel(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(InspectorTheme.Typography.codeSmall)
+            .fontWeight(.medium)
+            .padding(.horizontal, InspectorTheme.Spacing.pip)
+            .padding(.vertical, InspectorTheme.Spacing.xxs)
+            .background(color.opacity(InspectorTheme.Opacity.badge))
+            .foregroundStyle(color)
+            .clipShape(.capsule)
     }
 
     private func showToast(_ flag: Binding<Bool>, duration: Duration = InspectorTheme.Animation.toastLong) {

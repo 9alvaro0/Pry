@@ -13,13 +13,17 @@ struct FileItem: Identifiable {
     let createdDate: Date?
     let itemCount: Int?
 
+    /// File extension, computed once and reused.
+    var fileExtension: String {
+        (name as NSString).pathExtension.lowercased()
+    }
+
     var icon: String {
         if isDirectory { return "folder.fill" }
         if isImage { return "photo" }
         if isSQLite { return "cylinder" }
         if isPlist { return "list.bullet" }
-        let ext = (name as NSString).pathExtension.lowercased()
-        switch ext {
+        switch fileExtension {
         case "json": return "curlybraces"
         case "txt", "log", "csv": return "doc.text"
         case "db-shm", "db-wal", "db-journal": return "cylinder"
@@ -34,8 +38,7 @@ struct FileItem: Identifiable {
         if isImage { return .green }
         if isSQLite { return .purple }
         if isPlist { return .orange }
-        let ext = (name as NSString).pathExtension.lowercased()
-        switch ext {
+        switch fileExtension {
         case "json": return .yellow
         case "db-shm", "db-wal", "db-journal": return .purple
         case "txt", "log", "csv": return .gray
@@ -44,9 +47,7 @@ struct FileItem: Identifiable {
     }
 
     var isImage: Bool {
-        let ext = (name as NSString).pathExtension.lowercased()
-        if ["jpg", "jpeg", "png", "gif", "webp", "heic"].contains(ext) { return true }
-        // Check magic bytes for files without extension (e.g. Kingfisher cache)
+        if ["jpg", "jpeg", "png", "gif", "webp", "heic"].contains(fileExtension) { return true }
         return Self.isImageByMagicBytes(path: path)
     }
 
@@ -63,21 +64,18 @@ struct FileItem: Identifiable {
     }
 
     var isTextReadable: Bool {
-        let ext = (name as NSString).pathExtension.lowercased()
-        if ["json", "plist", "txt", "log", "csv", "xml", "html", "css", "js", "swift", "m", "h", "strings", "yaml", "yml", "md"].contains(ext) { return true }
+        if ["json", "plist", "txt", "log", "csv", "xml", "html", "css", "js", "swift", "m", "h", "strings", "yaml", "yml", "md"].contains(fileExtension) { return true }
         // Check content for files without extension
         return Self.isTextByContent(path: path)
     }
 
     var isSQLite: Bool {
-        let ext = (name as NSString).pathExtension.lowercased()
-        if ["sqlite", "db", "sqlite3"].contains(ext) { return true }
+        if ["sqlite", "db", "sqlite3"].contains(fileExtension) { return true }
         return Self.isSQLiteByMagicBytes(path: path)
     }
 
     var isPlist: Bool {
-        let ext = (name as NSString).pathExtension.lowercased()
-        if ext == "plist" { return true }
+        if fileExtension == "plist" { return true }
         return Self.isPlistByContent(path: path)
     }
 
@@ -569,8 +567,7 @@ struct FilePreviewView: View {
     }
 
     private var contentLanguage: ContentLanguage {
-        let ext = (item.name as NSString).pathExtension.lowercased()
-        switch ext {
+        switch item.fileExtension {
         case "json": return .json
         case "plist", "xml", "html": return .xml
         default: return .text
@@ -601,13 +598,12 @@ struct FilePreviewView: View {
         }
 
         // SQLite → show table viewer; auxiliary files → metadata only
-        let ext = (item.name as NSString).pathExtension.lowercased()
         if item.isSQLite {
             showSQLiteViewer = true
             isLoading = false
             return
         }
-        if ["db-shm", "db-wal", "db-journal"].contains(ext) {
+        if ["db-shm", "db-wal", "db-journal"].contains(item.fileExtension) {
             isLoading = false
             return
         }
@@ -634,9 +630,7 @@ struct FilePreviewView: View {
     }
 
     private var isPlistFile: Bool {
-        let ext = (item.name as NSString).pathExtension.lowercased()
-        if ext == "plist" { return true }
-        return item.isPlist
+        item.isPlist
     }
 
     private func loadPlistAsText() -> String? {
