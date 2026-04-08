@@ -636,16 +636,34 @@ struct FilePreviewView: View {
     private func loadPlistAsText() -> String? {
         guard let data = FileManager.default.contents(atPath: item.path) else { return nil }
 
-        // Try reading as property list and converting to JSON for display
         if let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) {
-            if let jsonData = try? JSONSerialization.data(withJSONObject: plist, options: [.prettyPrinted, .sortedKeys]),
+            let sanitized = sanitizeForJSON(plist)
+            if JSONSerialization.isValidJSONObject(sanitized),
+               let jsonData = try? JSONSerialization.data(withJSONObject: sanitized, options: [.prettyPrinted, .sortedKeys]),
                let jsonString = String(data: jsonData, encoding: .utf8) {
                 return jsonString
             }
+            // Fallback: describe the plist
+            return String(describing: plist)
         }
 
-        // Fallback to raw string
         return String(data: data, encoding: .utf8)
+    }
+
+    /// Converts plist types (Date, Data) to JSON-safe types (String).
+    private func sanitizeForJSON(_ value: Any) -> Any {
+        switch value {
+        case let dict as [String: Any]:
+            return dict.mapValues { sanitizeForJSON($0) }
+        case let array as [Any]:
+            return array.map { sanitizeForJSON($0) }
+        case let date as Date:
+            return date.formatted(.iso8601)
+        case let data as Data:
+            return "[Data: \(data.count) bytes]"
+        default:
+            return value
+        }
     }
 
     private func generateHexDump(at path: String, maxBytes: Int) -> String? {

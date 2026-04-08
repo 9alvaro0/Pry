@@ -323,6 +323,15 @@ struct NetworkRequestDetailView: View {
         }
     }
 
+    private var hasMockActive: Bool {
+        entry.isMocked || showMockSaved ||
+        store.mockRules.contains {
+            $0.urlPattern == entry.requestURL.extractPath() &&
+            $0.method == entry.requestMethod &&
+            $0.isEnabled
+        }
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -336,9 +345,9 @@ struct NetworkRequestDetailView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
             Button { showMockEditor = true } label: {
-                Image(systemName: entry.isMocked ? "theatermasks.fill" : "theatermasks")
+                Image(systemName: hasMockActive ? "theatermasks.fill" : "theatermasks")
                     .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(entry.isMocked ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
+                    .foregroundStyle(hasMockActive ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
@@ -375,10 +384,10 @@ struct NetworkRequestDetailView: View {
         Text("Copied!")
             .font(InspectorTheme.Typography.detail)
             .fontWeight(.semibold)
-            .foregroundStyle(InspectorTheme.Colors.success)
+            .foregroundStyle(.white)
             .padding(.horizontal, InspectorTheme.Spacing.md)
             .padding(.vertical, InspectorTheme.Spacing.xs)
-            .background(InspectorTheme.Colors.success.opacity(0.15))
+            .background(InspectorTheme.Colors.success)
             .clipShape(.capsule)
             .transition(.move(edge: .top).combined(with: .opacity))
             .padding(.top, InspectorTheme.Spacing.sm)
@@ -392,10 +401,10 @@ struct NetworkRequestDetailView: View {
                 .font(InspectorTheme.Typography.detail)
                 .fontWeight(.semibold)
         }
-        .foregroundStyle(InspectorTheme.Colors.syntaxBool)
+        .foregroundStyle(.white)
         .padding(.horizontal, InspectorTheme.Spacing.md)
         .padding(.vertical, InspectorTheme.Spacing.sm)
-        .background(InspectorTheme.Colors.syntaxBool.opacity(0.15))
+        .background(InspectorTheme.Colors.syntaxBool)
         .clipShape(.capsule)
         .transition(.move(edge: .top).combined(with: .opacity))
         .padding(.top, InspectorTheme.Spacing.sm)
