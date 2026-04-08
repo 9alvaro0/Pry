@@ -22,6 +22,7 @@ struct FileItem: Identifiable {
         switch ext {
         case "json": return "curlybraces"
         case "txt", "log", "csv": return "doc.text"
+        case "db-shm", "db-wal", "db-journal": return "cylinder"
         default:
             if isTextReadable { return "doc.text" }
             return "doc"
@@ -36,6 +37,7 @@ struct FileItem: Identifiable {
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
         case "json": return .yellow
+        case "db-shm", "db-wal", "db-journal": return .purple
         case "txt", "log", "csv": return .gray
         default: return .gray
         }
@@ -575,35 +577,60 @@ struct FilePreviewView: View {
     // MARK: - Loading
 
     private func loadContent() {
+        // Images (by extension or magic bytes)
         if item.isImage {
             uiImage = UIImage(contentsOfFile: item.path)
             if uiImage == nil {
                 hexDump = generateHexDump(at: item.path, maxBytes: 512)
             }
-        } else if item.isTextReadable || isPlist {
-            if isPlist {
-                fileContent = loadPlistAsText()
-            } else {
-                fileContent = try? String(contentsOfFile: item.path, encoding: .utf8)
-            }
+            isLoading = false
+            return
+        }
+
+        // Binary plist (by extension or magic bytes) → convert to JSON
+        if isPlistFile {
+            fileContent = loadPlistAsText()
             if fileContent == nil {
                 hexDump = generateHexDump(at: item.path, maxBytes: 512)
             }
-        } else {
-            // Try reading as text first
-            if let text = try? String(contentsOfFile: item.path, encoding: .utf8),
-               !text.isEmpty,
-               text.utf8.count < 512_000 {
-                fileContent = text
-            } else {
+            isLoading = false
+            return
+        }
+
+        // SQLite auxiliary files (.db-shm, .db-wal, .db-journal) → just show metadata
+        let ext = (item.name as NSString).pathExtension.lowercased()
+        if ["db-shm", "db-wal", "db-journal"].contains(ext) {
+            fileContent = nil
+            hexDump = nil // Don't show hex for these - just metadata
+            isLoading = false
+            return
+        }
+
+        // Text-readable files
+        if item.isTextReadable {
+            fileContent = try? String(contentsOfFile: item.path, encoding: .utf8)
+            if fileContent == nil {
                 hexDump = generateHexDump(at: item.path, maxBytes: 512)
             }
+            isLoading = false
+            return
+        }
+
+        // Try reading as text
+        if let text = try? String(contentsOfFile: item.path, encoding: .utf8),
+           !text.isEmpty,
+           text.utf8.count < 512_000 {
+            fileContent = text
+        } else {
+            hexDump = generateHexDump(at: item.path, maxBytes: 512)
         }
         isLoading = false
     }
 
-    private var isPlist: Bool {
-        (item.name as NSString).pathExtension.lowercased() == "plist"
+    private var isPlistFile: Bool {
+        let ext = (item.name as NSString).pathExtension.lowercased()
+        if ext == "plist" { return true }
+        return item.isPlist
     }
 
     private func loadPlistAsText() -> String? {
