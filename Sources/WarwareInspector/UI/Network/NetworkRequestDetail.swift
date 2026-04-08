@@ -505,8 +505,9 @@ struct NetworkRequestDetailView: View {
         // Tag as replay so the logger can mark the new entry
         request.setValue("true", forHTTPHeaderField: "X-WarwareInspector-Replay")
 
-        // Restore body
-        if let body = entry.requestBody, !body.isEmpty {
+        // Restore body (skip special encoded bodies like [IMAGE:...] or [Binary data:...])
+        if let body = entry.requestBody, !body.isEmpty,
+           !body.hasPrefix("[IMAGE:"), !body.hasPrefix("[Binary data:") {
             request.httpBody = body.data(using: .utf8)
         }
 

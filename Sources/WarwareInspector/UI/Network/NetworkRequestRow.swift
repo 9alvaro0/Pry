@@ -113,6 +113,7 @@ struct NetworkRequestRowView: View {
         NetworkRequestRowView(entry: .mockPatch)
         NetworkRequestRowView(entry: .mockNoAuth)
         NetworkRequestRowView(entry: .mockMocked)
+        NetworkRequestRowView(entry: .mockReplay)
     }
     .listStyle(.insetGrouped)
     .inspectorBackground()
