@@ -114,7 +114,18 @@ struct AppHubView: View {
 
             rowDivider
 
-            comingSoonRow(icon: "key", title: "Keychain", color: InspectorTheme.Colors.accent)
+            NavigationLink {
+                KeychainView()
+                    .navigationTitle("Keychain")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                storageRow(
+                    icon: "key",
+                    title: "Keychain",
+                    color: InspectorTheme.Colors.accent,
+                    detail: ""
+                )
+            }
 
             rowDivider
 
