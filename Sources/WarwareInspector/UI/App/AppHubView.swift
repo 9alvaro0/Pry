@@ -118,7 +118,18 @@ struct AppHubView: View {
 
             rowDivider
 
-            comingSoonRow(icon: "folder", title: "File Browser", color: InspectorTheme.Colors.syntaxNumber)
+            NavigationLink {
+                FileBrowserView()
+                    .navigationTitle("Sandbox")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                storageRow(
+                    icon: "folder",
+                    title: "File Browser",
+                    color: InspectorTheme.Colors.syntaxNumber,
+                    detail: ""
+                )
+            }
         }
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
