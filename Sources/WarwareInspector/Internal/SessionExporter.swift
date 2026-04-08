@@ -132,6 +132,7 @@ enum SessionExporter {
             request["queryString"] = URLComponents(string: entry.requestURL)?.queryItems?.map {
                 ["name": $0.name, "value": $0.value ?? ""]
             } ?? []
+            request["cookies"] = [] as [Any]
             request["headersSize"] = -1
             request["bodySize"] = entry.requestSize ?? -1
 
@@ -150,6 +151,8 @@ enum SessionExporter {
             response["statusText"] = entry.responseStatusCode.map { HTTPStatus.description(for: $0) } ?? ""
             response["httpVersion"] = "HTTP/1.1"
             response["headers"] = (entry.responseHeaders ?? [:]).map { ["name": $0.key, "value": $0.value] }
+            response["cookies"] = [] as [Any]
+            response["redirectURL"] = ""
             response["headersSize"] = -1
             response["bodySize"] = entry.responseSize ?? -1
 
@@ -172,6 +175,7 @@ enum SessionExporter {
             timings["wait"] = (entry.metrics?.waitingForResponse ?? 0) * 1000
             timings["receive"] = (entry.metrics?.responseReceived ?? 0) * 1000
             harEntry["timings"] = timings
+            harEntry["cache"] = [String: Any]()
 
             return harEntry
         }
