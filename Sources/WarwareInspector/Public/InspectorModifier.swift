@@ -131,6 +131,10 @@ enum InspectorLifecycle {
         InspectorURLProtocol.logger = logger
         InspectorURLProtocol.blacklistedHosts = store.blacklistedHosts
         URLProtocol.registerClass(InspectorURLProtocol.self)
+
+        // Push notification interception
+        PushNotificationInterceptor.store = store
+        PushNotificationInterceptor.install()
     }
 
     static func stop() {

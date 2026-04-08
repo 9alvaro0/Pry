@@ -11,7 +11,9 @@ public struct PushNotificationEntry: Identifiable, Codable, Sendable {
     public let sound: String?
     public let categoryIdentifier: String?
     public let threadIdentifier: String?
-    public let userInfo: [String: String]  // Flattened for Codable
+    public let userInfo: [String: String]
+    /// The raw APNs payload as pretty-printed JSON.
+    public let rawPayload: String?
 
     public var displayTitle: String {
         title ?? "No Title"

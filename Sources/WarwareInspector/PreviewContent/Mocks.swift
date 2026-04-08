@@ -623,7 +623,24 @@ extension PushNotificationEntry {
             sound: "default",
             categoryIdentifier: "PROMO",
             threadIdentifier: "marketing",
-            userInfo: ["deeplink": "myapp://sale/flash", "campaign_id": "summer2026"]
+            userInfo: ["deeplink": "myapp://sale/flash", "campaign_id": "summer2026"],
+            rawPayload: """
+            {
+              "aps": {
+                "alert": {
+                  "title": "Flash Sale!",
+                  "body": "50% off all items for the next 2 hours.",
+                  "subtitle": "Limited Time Offer"
+                },
+                "badge": 3,
+                "sound": "default",
+                "category": "PROMO",
+                "thread-id": "marketing"
+              },
+              "deeplink": "myapp://sale/flash",
+              "campaign_id": "summer2026"
+            }
+            """
         )
     }
 
@@ -637,7 +654,21 @@ extension PushNotificationEntry {
             sound: "message.caf",
             categoryIdentifier: "CHAT",
             threadIdentifier: "chat-room-42",
-            userInfo: ["sender_id": "user456", "room_id": "42"]
+            userInfo: ["sender_id": "user456", "room_id": "42"],
+            rawPayload: """
+            {
+              "aps": {
+                "alert": {
+                  "title": "New Message",
+                  "body": "Hey, are you coming to the meeting?"
+                },
+                "badge": 1,
+                "sound": "message.caf"
+              },
+              "sender_id": "user456",
+              "room_id": "42"
+            }
+            """
         )
     }
 
@@ -651,7 +682,15 @@ extension PushNotificationEntry {
             sound: nil,
             categoryIdentifier: "BACKGROUND_SYNC",
             threadIdentifier: nil,
-            userInfo: ["content-available": "1", "sync_type": "incremental"]
+            userInfo: ["content-available": "1", "sync_type": "incremental"],
+            rawPayload: """
+            {
+              "aps": {
+                "content-available": 1
+              },
+              "sync_type": "incremental"
+            }
+            """
         )
     }
 }

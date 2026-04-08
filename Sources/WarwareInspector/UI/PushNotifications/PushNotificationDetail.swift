@@ -11,6 +11,7 @@ struct PushNotificationDetailView: View {
 
                 notificationSection
                 userInfoSection
+                rawPayloadSection
             }
             .padding(.horizontal, InspectorTheme.Spacing.lg)
         }
@@ -87,6 +88,17 @@ struct PushNotificationDetailView: View {
         }
     }
 
+    // MARK: - Raw APNs Payload
+
+    @ViewBuilder
+    private var rawPayloadSection: some View {
+        if let payload = entry.rawPayload, !payload.isEmpty {
+            DetailSectionView(title: "APNs Payload", collapsible: true) {
+                CodeBlockView(text: payload, language: .json)
+            }
+        }
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -97,9 +109,6 @@ struct PushNotificationDetailView: View {
                 .foregroundStyle(InspectorTheme.Colors.textPrimary)
                 .lineLimit(1)
                 .truncationMode(.middle)
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            CopyButtonView(valueToCopy: [entry.title, entry.body].compactMap { $0 }.joined(separator: "\n"))
         }
     }
 }

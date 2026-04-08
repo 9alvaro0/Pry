@@ -240,7 +240,7 @@ struct JSONRenderer: View {
         }
 
         if let dict = value as? [String: Any] {
-            let canCollapse = dict.count > 1
+            let canCollapse = !dict.isEmpty
             let openLine = lineNum
             lineNum += 1
 
@@ -275,7 +275,7 @@ struct JSONRenderer: View {
             lineNum += 1
 
         } else if let array = value as? [Any] {
-            let canCollapse = array.count > 1
+            let canCollapse = !array.isEmpty
             let maxItems = 100
             let openLine = lineNum
             lineNum += 1
@@ -364,10 +364,10 @@ struct JSONRenderer: View {
         guard let value else { return [] }
         var paths = Set<String>()
 
-        if let dict = value as? [String: Any], dict.count > 1 {
+        if let dict = value as? [String: Any], !dict.isEmpty {
             paths.insert(path)
             for (key, val) in dict { paths.formUnion(collectCollapsiblePaths(val, path: "\(path).\(key)")) }
-        } else if let array = value as? [Any], array.count > 1 {
+        } else if let array = value as? [Any], !array.isEmpty {
             paths.insert(path)
             for (i, item) in array.enumerated() { paths.formUnion(collectCollapsiblePaths(item, path: "\(path)[\(i)]")) }
         }

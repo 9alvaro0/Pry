@@ -154,6 +154,9 @@ import Foundation
     // MARK: - Push Notifications
 
     /// Logs a received push notification.
+    /// Logs a push notification manually.
+    /// Note: push notifications are captured automatically when the inspector is started.
+    /// Use this only for manual logging if needed.
     public func logPushNotification(
         title: String?,
         body: String?,
@@ -162,11 +165,20 @@ import Foundation
         sound: String?,
         categoryIdentifier: String?,
         threadIdentifier: String?,
-        userInfo: [String: Any]
+        userInfo: [String: Any] = [:]
     ) {
         let flatUserInfo = userInfo.reduce(into: [String: String]()) { result, pair in
-            result[pair.key] = String(describing: pair.value)
+            if let key = pair.key as? String {
+                result[key] = String(describing: pair.value)
+            }
         }
+
+        let rawPayload: String? = {
+            guard !userInfo.isEmpty,
+                  let data = try? JSONSerialization.data(withJSONObject: userInfo, options: .prettyPrinted),
+                  let str = String(data: data, encoding: .utf8) else { return nil }
+            return str
+        }()
 
         let entry = PushNotificationEntry(
             timestamp: Date(),
@@ -177,7 +189,8 @@ import Foundation
             sound: sound,
             categoryIdentifier: categoryIdentifier,
             threadIdentifier: threadIdentifier,
-            userInfo: flatUserInfo
+            userInfo: flatUserInfo,
+            rawPayload: rawPayload
         )
 
         Task { @MainActor in

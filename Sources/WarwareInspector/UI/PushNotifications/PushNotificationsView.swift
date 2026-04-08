@@ -52,10 +52,7 @@ struct PushNotificationsView: View {
                             }
                             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                                 Button {
-                                    let text = [entry.title, entry.body]
-                                        .compactMap { $0 }
-                                        .joined(separator: "\n")
-                                    UIPasteboard.general.string = text
+                                    UIPasteboard.general.string = entry.rawPayload ?? entry.displayTitle
                                 } label: {
                                     Image(systemName: "doc.on.doc")
                                 }
