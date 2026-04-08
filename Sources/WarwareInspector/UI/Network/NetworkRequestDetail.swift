@@ -306,6 +306,12 @@ struct NetworkRequestDetailView: View {
                         Label("Copy Response", systemImage: "doc.on.doc")
                     }
                 }
+
+                Divider()
+
+                Button { createMockFromEntry() } label: {
+                    Label("Mock this request", systemImage: "theatermasks")
+                }
             } label: {
                 Image(systemName: "square.on.square")
                     .font(InspectorTheme.Typography.body)
@@ -330,6 +336,22 @@ struct NetworkRequestDetailView: View {
     }
 
     // MARK: - Actions
+
+    private func createMockFromEntry() {
+        let rule = MockRule(
+            name: "\(entry.requestMethod) \(entry.requestURL.extractPath())",
+            urlPattern: entry.requestURL.extractPath(),
+            method: entry.requestMethod,
+            statusCode: entry.responseStatusCode ?? 200,
+            responseBody: entry.responseBody,
+            responseHeaders: entry.responseHeaders ?? ["Content-Type": "application/json"],
+            delay: 0
+        )
+        store.addMockRule(rule)
+        store.isMockingEnabled = true
+        InspectorURLProtocol.mockRules = store.mockRules
+        InspectorURLProtocol.isMockingEnabled = true
+    }
 
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value

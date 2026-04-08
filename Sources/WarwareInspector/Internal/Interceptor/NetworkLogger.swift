@@ -144,6 +144,48 @@ final class NetworkLogger: @unchecked Sendable {
         }
     }
 
+    // MARK: - Mock Response Logging
+
+    func logMockResponse(
+        requestID: UUID,
+        statusCode: Int,
+        headers: [String: String],
+        body: String?,
+        duration: TimeInterval
+    ) {
+        queue.async { [weak self] in
+            guard let self else { return }
+
+            let pending = self.pendingRequests.removeValue(forKey: requestID)
+
+            var entry = NetworkEntry(
+                id: pending?.id ?? UUID(),
+                timestamp: pending?.timestamp ?? Date(),
+                type: .network,
+                requestURL: pending?.requestURL ?? "Unknown",
+                requestMethod: pending?.requestMethod ?? "GET",
+                requestHeaders: pending?.requestHeaders ?? [:],
+                requestBody: pending?.requestBody,
+                responseStatusCode: statusCode,
+                responseHeaders: headers.isEmpty ? nil : headers,
+                responseBody: body,
+                responseError: nil,
+                authToken: pending?.authToken,
+                authTokenType: pending?.authTokenType,
+                authTokenLength: pending?.authTokenLength,
+                duration: duration,
+                requestSize: pending?.requestSize,
+                responseSize: body?.data(using: .utf8)?.count,
+                metrics: nil
+            )
+            entry.isMocked = true
+
+            Task { @MainActor in
+                self.store?.updateOrAddNetworkEntry(entry)
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     private func bodyToString(_ data: Data?) -> String? {

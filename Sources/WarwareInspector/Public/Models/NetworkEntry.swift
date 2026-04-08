@@ -43,6 +43,9 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
     // Redirects
     public var redirectCount: Int = 0
 
+    // Mock
+    public var isMocked: Bool = false
+
     public var isSuccess: Bool {
         guard let statusCode = responseStatusCode else { return false }
         return statusCode >= 200 && statusCode < 300

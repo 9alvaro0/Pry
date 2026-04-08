@@ -26,6 +26,13 @@ struct NetworkRequestRowView: View {
 
                 Spacer()
 
+                if entry.isMocked {
+                    Text("MOCK")
+                        .font(InspectorTheme.Typography.codeSmall)
+                        .fontWeight(.bold)
+                        .foregroundStyle(InspectorTheme.Colors.syntaxBool)
+                }
+
                 if isPinned {
                     Image(systemName: "pin.fill")
                         .font(.system(size: 10))
@@ -98,6 +105,7 @@ struct NetworkRequestRowView: View {
         NetworkRequestRowView(entry: .mockDelete, isPinned: true)
         NetworkRequestRowView(entry: .mockPatch)
         NetworkRequestRowView(entry: .mockNoAuth)
+        NetworkRequestRowView(entry: .mockMocked)
     }
     .listStyle(.insetGrouped)
     .inspectorBackground()

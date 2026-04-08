@@ -130,6 +130,8 @@ enum InspectorLifecycle {
         let logger = NetworkLogger(store: store)
         InspectorURLProtocol.logger = logger
         InspectorURLProtocol.blacklistedHosts = store.blacklistedHosts
+        InspectorURLProtocol.mockRules = store.mockRules
+        InspectorURLProtocol.isMockingEnabled = store.isMockingEnabled
         URLProtocol.registerClass(InspectorURLProtocol.self)
 
         // Push notification interception

@@ -695,4 +695,65 @@ extension PushNotificationEntry {
     }
 }
 
+// MARK: - MockRule Mocks
+
+extension MockRule {
+
+    static var mockUsersSuccess: MockRule {
+        MockRule(
+            name: "Users - Success",
+            urlPattern: "/api/users",
+            method: "GET",
+            statusCode: 200,
+            responseBody: "{\"users\": [{\"id\": 1, \"name\": \"John\"}]}",
+            responseHeaders: ["Content-Type": "application/json"],
+            delay: 0
+        )
+    }
+
+    static var mockCartError: MockRule {
+        MockRule(
+            name: "Cart - Server Error",
+            urlPattern: "/api/cart",
+            method: "POST",
+            statusCode: 500,
+            responseBody: "{\"error\": \"Internal server error\"}",
+            responseHeaders: ["Content-Type": "application/json"],
+            delay: 0.5
+        )
+    }
+}
+
+// MARK: - Mocked NetworkEntry
+
+extension NetworkEntry {
+
+    static var mockMocked: NetworkEntry {
+        var entry = NetworkEntry(
+            timestamp: Date().addingTimeInterval(-5),
+            type: .network,
+            requestURL: "https://api.example.com/api/users",
+            requestMethod: "GET",
+            requestHeaders: [
+                "Accept": "application/json",
+                "User-Agent": "iOS App/1.0"
+            ],
+            requestBody: nil,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: "{\"users\": [{\"id\": 1, \"name\": \"John\"}]}",
+            responseError: nil,
+            authToken: nil,
+            authTokenType: nil,
+            authTokenLength: nil,
+            duration: 0.01,
+            requestSize: nil,
+            responseSize: 48,
+            metrics: nil
+        )
+        entry.isMocked = true
+        return entry
+    }
+}
+
 #endif

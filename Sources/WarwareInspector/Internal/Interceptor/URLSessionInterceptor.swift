@@ -5,6 +5,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
     nonisolated(unsafe) static var logger: NetworkLogger?
     nonisolated(unsafe) static var blacklistedHosts: Set<String> = []
+    nonisolated(unsafe) static var mockRules: [MockRule] = []
+    nonisolated(unsafe) static var isMockingEnabled: Bool = false
 
     private static let handledKey = "WarwareInspector.handled"
 
@@ -16,15 +18,10 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     private var taskMetrics: URLSessionTaskMetrics?
     private var redirectCount = 0
 
-    // Shared session to preserve connection pooling
-    nonisolated(unsafe) private static var forwardingSession: URLSession?
-
     private static func sharedSession(delegate: URLSessionDataDelegate) -> URLSession {
-        // Each protocol instance needs its own session for delegate callbacks
         URLSession(
             configuration: {
                 let config = URLSessionConfiguration.default
-                // Don't register our protocol on the forwarding session (prevents recursion)
                 config.protocolClasses = config.protocolClasses?.filter { $0 != InspectorURLProtocol.self }
                 return config
             }(),
@@ -56,7 +53,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         }
         URLProtocol.setProperty(true, forKey: Self.handledKey, in: mutableRequest)
 
-        // Log request start and get correlation ID
+        // Log request start
         if let url = request.url {
             requestID = Self.logger?.logRequest(
                 url: url.absoluteString,
@@ -66,6 +63,13 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             )
         }
 
+        // Check for mock response BEFORE making real request
+        if Self.isMockingEnabled, let rule = Self.findMatchingMock(for: request) {
+            respondWithMock(rule)
+            return
+        }
+
+        // No mock match - proceed with real network request
         let session = Self.sharedSession(delegate: self)
         dataTask = session.dataTask(with: mutableRequest as URLRequest)
         dataTask?.resume()
@@ -74,6 +78,61 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     override public func stopLoading() {
         dataTask?.cancel()
         dataTask = nil
+    }
+
+    // MARK: - Mock Response
+
+    private static func findMatchingMock(for request: URLRequest) -> MockRule? {
+        mockRules.first { $0.matches(request) }
+    }
+
+    private func respondWithMock(_ rule: MockRule) {
+        let url = request.url ?? URL(string: "about:blank")!
+
+        // Simulate delay if configured
+        let deliver = { [weak self] in
+            guard let self else { return }
+
+            // Build HTTP response
+            let httpResponse = HTTPURLResponse(
+                url: url,
+                statusCode: rule.statusCode,
+                httpVersion: "HTTP/1.1",
+                headerFields: rule.responseHeaders
+            )
+
+            if let httpResponse {
+                self.client?.urlProtocol(self, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
+            }
+
+            // Send body data
+            if let body = rule.responseBody, let data = body.data(using: .utf8) {
+                self.client?.urlProtocol(self, didLoad: data)
+            }
+
+            // Finish
+            self.client?.urlProtocolDidFinishLoading(self)
+
+            // Log mock response
+            let duration = Date().timeIntervalSince(self.startTime)
+            if let requestID = self.requestID {
+                Self.logger?.logMockResponse(
+                    requestID: requestID,
+                    statusCode: rule.statusCode,
+                    headers: rule.responseHeaders,
+                    body: rule.responseBody,
+                    duration: duration
+                )
+            }
+        }
+
+        if rule.delay > 0 {
+            DispatchQueue.global().asyncAfter(deadline: .now() + rule.delay) {
+                deliver()
+            }
+        } else {
+            deliver()
+        }
     }
 }
 

@@ -5,8 +5,6 @@ struct InspectorRootView: View {
 
     @SwiftUI.Environment(\.dismiss) private var dismiss
     @State private var selectedTab: Int = 0
-    @State private var showClearConfirmation = false
-    @State private var pendingClearAction: (() -> Void)?
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -26,17 +24,6 @@ struct InspectorRootView: View {
                 .tag(2)
         }
         .inspectorBackground()
-        .alert("Clear entries?", isPresented: $showClearConfirmation) {
-            Button("Clear", role: .destructive) {
-                pendingClearAction?()
-                pendingClearAction = nil
-            }
-            Button("Cancel", role: .cancel) {
-                pendingClearAction = nil
-            }
-        } message: {
-            Text("This action cannot be undone.")
-        }
     }
 
     // MARK: - Tabs
@@ -46,7 +33,7 @@ struct InspectorRootView: View {
             NetworkMonitorView(store: store)
                 .navigationTitle("Network")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarItems { store.clearNetwork() } }
+                .toolbar { dismissButton }
         }
     }
 
@@ -55,7 +42,7 @@ struct InspectorRootView: View {
             ConsoleMonitorView(store: store)
                 .navigationTitle("Console")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarItems { store.clearLogs() } }
+                .toolbar { dismissButton }
         }
     }
 
@@ -64,25 +51,14 @@ struct InspectorRootView: View {
             AppHubView(store: store)
                 .navigationTitle("App")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(InspectorTheme.Typography.body)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(InspectorTheme.Colors.textSecondary)
-                        }
-                    }
-                }
+                .toolbar { dismissButton }
         }
     }
 
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
-    private func toolbarItems(clearAction: @escaping () -> Void) -> some ToolbarContent {
+    private var dismissButton: some ToolbarContent {
         ToolbarItem(placement: .topBarLeading) {
             Button {
                 dismiss()
@@ -90,16 +66,6 @@ struct InspectorRootView: View {
                 Image(systemName: "xmark")
                     .font(InspectorTheme.Typography.body)
                     .fontWeight(.semibold)
-                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
-            }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                pendingClearAction = clearAction
-                showClearConfirmation = true
-            } label: {
-                Image(systemName: "trash")
-                    .font(InspectorTheme.Typography.body)
                     .foregroundStyle(InspectorTheme.Colors.textSecondary)
             }
         }

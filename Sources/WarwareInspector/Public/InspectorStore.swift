@@ -38,6 +38,25 @@ import Foundation
 
     public var blacklistedHosts: Set<String> = []
 
+    // MARK: - Mock Rules
+
+    public var mockRules: [MockRule] = []
+    public var isMockingEnabled: Bool = false
+
+    public func addMockRule(_ rule: MockRule) {
+        mockRules.append(rule)
+    }
+
+    public func removeMockRule(_ id: UUID) {
+        mockRules.removeAll { $0.id == id }
+    }
+
+    /// Finds the first enabled mock rule matching the given request.
+    func findMatchingMock(for request: URLRequest) -> MockRule? {
+        guard isMockingEnabled else { return nil }
+        return mockRules.first { $0.matches(request) }
+    }
+
     // MARK: - Configuration
 
     private let maxNetworkEntries: Int
