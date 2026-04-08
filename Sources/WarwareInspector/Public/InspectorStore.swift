@@ -158,6 +158,10 @@ import Foundation
         logEntries.removeAll { $0.id == id }
     }
 
+    public func removeDeeplinkEntry(_ id: UUID) {
+        deeplinkEntries.removeAll { $0.id == id }
+    }
+
     // MARK: - Clear
 
     public func clearNetwork() { networkEntries.removeAll() }

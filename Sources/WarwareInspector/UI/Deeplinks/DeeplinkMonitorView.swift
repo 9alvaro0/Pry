@@ -4,15 +4,19 @@ struct DeeplinkMonitorView: View {
     @Bindable var store: InspectorStore
 
     @State private var searchText: String = ""
+    @State private var showSimulator = false
 
     private var filteredEntries: [DeeplinkEntry] {
         guard !searchText.isEmpty else { return store.deeplinkEntries }
+        let query = searchText.lowercased()
 
         return store.deeplinkEntries.filter { entry in
-            entry.url.localizedCaseInsensitiveContains(searchText) ||
+            entry.url.lowercased().contains(query) ||
+            (entry.scheme?.lowercased().contains(query) ?? false) ||
+            (entry.host?.lowercased().contains(query) ?? false) ||
             entry.queryParameters.contains { param in
-                param.name.localizedCaseInsensitiveContains(searchText) ||
-                (param.value?.localizedCaseInsensitiveContains(searchText) ?? false)
+                param.name.lowercased().contains(query) ||
+                (param.value?.lowercased().contains(query) ?? false)
             }
         }
     }
@@ -27,17 +31,54 @@ struct DeeplinkMonitorView: View {
                 )
             } else {
                 List {
-                    ForEach(filteredEntries) { entry in
-                        NavigationLink(destination: DeeplinkDetailView(entry: entry)) {
-                            DeeplinkRowView(entry: entry)
+                    Section {
+                        ForEach(filteredEntries) { entry in
+                            NavigationLink(destination: DeeplinkDetailView(entry: entry)) {
+                                DeeplinkRowView(entry: entry)
+                            }
+                            .listRowBackground(InspectorTheme.Colors.surface)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    store.removeDeeplinkEntry(entry.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                Button {
+                                    UIPasteboard.general.string = entry.url
+                                } label: {
+                                    Image(systemName: "doc.on.doc")
+                                }
+                                .tint(InspectorTheme.Colors.deeplinks)
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
                 }
                 .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
+                .contentMargins(.vertical, InspectorTheme.Spacing.sm)
             }
         }
-        .searchable(text: $searchText, prompt: "Search deeplinks...")
+        .inspectorBackground()
+        .searchable(text: $searchText, prompt: "URL, scheme, host...")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showSimulator = true
+                } label: {
+                    Image(systemName: "play.circle")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.deeplinks)
+                }
+            }
+        }
+        .sheet(isPresented: $showSimulator) {
+            DeeplinkSimulatorView(store: store)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(InspectorTheme.Colors.background)
+        }
     }
 }
 
@@ -54,6 +95,13 @@ struct DeeplinkMonitorView: View {
 #Preview("Deeplinks - Empty") {
     NavigationStack {
         DeeplinkMonitorView(store: InspectorStore())
+            .navigationTitle("Deeplinks")
+    }
+}
+
+#Preview("Deeplinks - Full") {
+    NavigationStack {
+        DeeplinkMonitorView(store: .preview)
             .navigationTitle("Deeplinks")
     }
 }
