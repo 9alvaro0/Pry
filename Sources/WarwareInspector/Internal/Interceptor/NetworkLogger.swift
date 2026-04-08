@@ -222,6 +222,11 @@ final class NetworkLogger: @unchecked Sendable {
                 : rawString
         }
 
+        // Try raw protobuf decode
+        if let decoded = ProtobufDecoder.decodeRaw(data) {
+            return decoded
+        }
+
         return "[Binary data: \(data.count) bytes]"
     }
 
