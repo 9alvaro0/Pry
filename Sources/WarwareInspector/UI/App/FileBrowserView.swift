@@ -519,7 +519,9 @@ struct FilePreviewView: View {
     @ViewBuilder
     private var contentSection: some View {
         if showSQLiteViewer {
-            SQLiteViewerView(path: item.path)
+            ProGateView(feature: .sqliteViewer) {
+                SQLiteViewerView(path: item.path)
+            }
         } else if let uiImage {
             imagePreview(uiImage)
         } else if let fileContent {

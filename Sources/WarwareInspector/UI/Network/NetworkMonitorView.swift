@@ -235,15 +235,17 @@ struct NetworkMonitorView: View {
                     }
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showExportSheet = true
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(InspectorTheme.Typography.body)
-                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
+            if FeatureGate.isAvailable(.sessionExport) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showExportSheet = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                            .font(InspectorTheme.Typography.body)
+                            .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                    }
+                    .disabled(filteredEntries.isEmpty)
                 }
-                .disabled(filteredEntries.isEmpty)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {

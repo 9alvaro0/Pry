@@ -183,17 +183,19 @@ struct AppHubView: View {
 
             rowDivider
 
-            NavigationLink {
-                PerformanceView()
-                    .navigationTitle("Performance")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                storageRow(
-                    icon: "gauge.high",
-                    title: "Performance",
-                    color: InspectorTheme.Colors.error,
-                    detail: ""
-                )
+            if FeatureGate.isAvailable(.performanceMetrics) {
+                NavigationLink {
+                    PerformanceView()
+                        .navigationTitle("Performance")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    storageRow(
+                        icon: "gauge.high",
+                        title: "Performance",
+                        color: InspectorTheme.Colors.error,
+                        detail: ""
+                    )
+                }
             }
         }
         .background(InspectorTheme.Colors.surface)
@@ -236,58 +238,59 @@ struct AppHubView: View {
 
     private var toolsSection: some View {
         VStack(spacing: 0) {
-            NavigationLink {
-                NetworkThrottleView(store: store)
-                    .navigationTitle("Network Conditions")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                toolRow(
-                    icon: store.networkThrottle.icon,
-                    title: "Network Conditions",
-                    color: store.networkThrottle.iconColor,
-                    detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
-                    showChevron: true
-                )
-            }
-
-            rowDivider
-
-            // Breakpoints
-            NavigationLink {
-                BreakpointsView(store: store)
-                    .navigationTitle("Breakpoints")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                toolRow(
-                    icon: "pause.circle",
-                    title: "Breakpoints",
-                    color: InspectorTheme.Colors.warning,
-                    detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
-                    showChevron: true
-                )
-            }
-
-            rowDivider
-
-            // Export session
-            if let url = SessionFileManager.export(store: store) {
-                ShareLink(item: url) {
+            if FeatureGate.isAvailable(.networkThrottle) {
+                NavigationLink {
+                    NetworkThrottleView(store: store)
+                        .navigationTitle("Network Conditions")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
                     toolRow(
-                        icon: "square.and.arrow.up",
-                        title: "Share Session",
-                        color: InspectorTheme.Colors.accent,
-                        detail: "\(store.networkEntries.count + store.logEntries.count) entries",
-                        showChevron: false
+                        icon: store.networkThrottle.icon,
+                        title: "Network Conditions",
+                        color: store.networkThrottle.iconColor,
+                        detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
+                        showChevron: true
                     )
                 }
+                rowDivider
             }
 
-            rowDivider
+            if FeatureGate.isAvailable(.breakpoints) {
+                NavigationLink {
+                    BreakpointsView(store: store)
+                        .navigationTitle("Breakpoints")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    toolRow(
+                        icon: "pause.circle",
+                        title: "Breakpoints",
+                        color: InspectorTheme.Colors.warning,
+                        detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
+                        showChevron: true
+                    )
+                }
+                rowDivider
+            }
 
-            // Import session
-            Button {
-                showFileImporter = true
-            } label: {
+            if FeatureGate.isAvailable(.shareSession) {
+                // Export session
+                if let url = SessionFileManager.export(store: store) {
+                    ShareLink(item: url) {
+                        toolRow(
+                            icon: "square.and.arrow.up",
+                            title: "Share Session",
+                            color: InspectorTheme.Colors.accent,
+                            detail: "\(store.networkEntries.count + store.logEntries.count) entries",
+                            showChevron: false
+                        )
+                    }
+                }
+                rowDivider
+
+                // Import session
+                Button {
+                    showFileImporter = true
+                } label: {
                 toolRow(
                     icon: "square.and.arrow.down",
                     title: "Open Session",
@@ -295,6 +298,7 @@ struct AppHubView: View {
                     detail: nil,
                     showChevron: false
                 )
+            }
             }
         }
         .background(InspectorTheme.Colors.surface)

@@ -488,6 +488,7 @@ struct NetworkRequestDetailView: View {
                                 systemImage: hasMockActive ? "theatermasks.fill" : "theatermasks"
                             )
                         }
+                        .proGated(.mockResponses)
 
                         Button {
                             showBreakpointCreator = true
@@ -497,6 +498,7 @@ struct NetworkRequestDetailView: View {
                                 systemImage: hasBreakpointActive ? "pause.circle.fill" : "pause.circle"
                             )
                         }
+                        .proGated(.breakpoints)
                     }
                 }
 
@@ -509,6 +511,7 @@ struct NetworkRequestDetailView: View {
                             Label("Replay", systemImage: "arrow.clockwise")
                         }
                         .disabled(isReplaying)
+                        .proGated(.requestReplay)
 
                         Button {
                             store.togglePin(entry.id)
@@ -528,6 +531,7 @@ struct NetworkRequestDetailView: View {
                     } label: {
                         Label("Compare", systemImage: "arrow.left.arrow.right")
                     }
+                    .proGated(.requestDiff)
 
                     ShareLink(item: generateShareText()) {
                         Label("Share", systemImage: "square.and.arrow.up")
