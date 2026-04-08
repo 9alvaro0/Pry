@@ -49,6 +49,12 @@ import Foundation
     /// FAB position: false = bottom-right (default), true = bottom-left.
     public var fabOnLeft: Bool = false
 
+    /// Allow dragging the FAB to any position on screen.
+    public var fabDraggable: Bool = false
+
+    /// Current FAB position when dragged. Nil = use default corner position.
+    var fabDragOffset: CGSize = .zero
+
     /// Trigger mode override. Nil = use the value from `.inspector(trigger:)`.
     var triggerOverride: InspectorTrigger?
 

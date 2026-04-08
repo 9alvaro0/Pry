@@ -78,6 +78,14 @@ struct InspectorSettingsView: View {
                     }
                 }
 
+                // Draggable
+                Toggle(isOn: $store.fabDraggable) {
+                    Text("Draggable button")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                }
+                .tint(InspectorTheme.Colors.accent)
+
                 // Error badge
                 Toggle(isOn: $store.showErrorBadge) {
                     Text("Error badge on button")
