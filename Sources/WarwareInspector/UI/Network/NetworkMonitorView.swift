@@ -294,41 +294,15 @@ struct NetworkMonitorView: View {
 
     private var filterSheet: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                if hasActiveFilters {
-                    Button {
-                        sortOrder = .newest
-                        selectedHost = nil
-                        showStats = false
-                    } label: {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(InspectorTheme.Typography.body)
-                            .foregroundStyle(InspectorTheme.Colors.error)
-                    }
-                }
-
-                Spacer()
-
-                Text("Filters")
-                    .font(InspectorTheme.Typography.subheading)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-
-                Spacer()
-
-                Button {
-                    showFilterSheet = false
-                } label: {
-                    Image(systemName: "checkmark")
-                        .font(InspectorTheme.Typography.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(InspectorTheme.Colors.accent)
-                }
-            }
-            .padding(.horizontal, InspectorTheme.Spacing.lg)
-            .padding(.vertical, InspectorTheme.Spacing.md)
-
-            Divider().overlay(InspectorTheme.Colors.border)
+            SheetHeader(
+                title: "Filters",
+                leadingAction: hasActiveFilters ? .reset {
+                    sortOrder = .newest
+                    selectedHost = nil
+                    showStats = false
+                } : nil,
+                trailingAction: .done { showFilterSheet = false }
+            )
 
             ScrollView {
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xl) {
@@ -435,28 +409,10 @@ struct NetworkMonitorView: View {
 
     private var exportSheet: some View {
         VStack(spacing: 0) {
-            HStack {
-                Spacer()
-
-                Text("Export")
-                    .font(InspectorTheme.Typography.subheading)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-
-                Spacer()
-
-                Button {
-                    showExportSheet = false
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(InspectorTheme.Typography.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
-                }
-            }
-            .padding(.horizontal, InspectorTheme.Spacing.lg)
-            .padding(.vertical, InspectorTheme.Spacing.md)
-
-            Divider().overlay(InspectorTheme.Colors.border)
+            SheetHeader(
+                title: "Export",
+                trailingAction: .close { showExportSheet = false }
+            )
 
             ScrollView {
                 VStack(spacing: InspectorTheme.Spacing.md) {
