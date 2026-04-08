@@ -16,6 +16,7 @@ extension InspectorStore {
         store.addNetworkEntry(.mockPending)
         store.addNetworkEntry(.mockDelete)
         store.addNetworkEntry(.mockPatch)
+        store.addNetworkEntry(.mockFormPost)
 
         // Console: one of each type
         store.addLogEntry(.mockInfo)
@@ -41,6 +42,7 @@ extension InspectorStore {
         store.addNetworkEntry(.mockServerError)
         store.addNetworkEntry(.mockPending)
         store.addNetworkEntry(.mockPatch)
+        store.addNetworkEntry(.mockFormPost)
         return store
     }
 

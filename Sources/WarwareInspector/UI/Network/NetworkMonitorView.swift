@@ -6,6 +6,7 @@ struct NetworkMonitorView: View {
     @State private var searchText: String = ""
     @State private var selectedFilter: NetworkFilter = .all
     @State private var sortOrder: SortOrder = .newest
+    @State private var selectedHost: String?
 
     private enum SortOrder: String, CaseIterable {
         case newest = "Newest"
@@ -48,8 +49,21 @@ struct NetworkMonitorView: View {
         }
     }
 
+    private var uniqueHosts: [(host: String, count: Int)] {
+        var hostCounts: [String: Int] = [:]
+        for entry in store.networkEntries {
+            let host = entry.requestURL.extractHost()
+            hostCounts[host, default: 0] += 1
+        }
+        return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
+    }
+
     private var filteredEntries: [NetworkEntry] {
         var entries = store.networkEntries
+
+        if let host = selectedHost {
+            entries = entries.filter { $0.requestURL.extractHost() == host }
+        }
 
         if selectedFilter != .all {
             entries = entries.filter { selectedFilter.matches($0) }
@@ -155,6 +169,12 @@ struct NetworkMonitorView: View {
 
             sortButton
                 .padding(.horizontal, InspectorTheme.Spacing.md)
+
+            Divider()
+                .frame(height: 20)
+
+            hostFilterButton
+                .padding(.horizontal, InspectorTheme.Spacing.md)
         }
         .background(InspectorTheme.Colors.background)
         .overlay(alignment: .bottom) {
@@ -177,6 +197,36 @@ struct NetworkMonitorView: View {
                 .fontWeight(.medium)
                 .foregroundStyle(
                     sortOrder != .newest
+                        ? InspectorTheme.Colors.accent
+                        : InspectorTheme.Colors.textSecondary
+                )
+        }
+    }
+
+    private var hostFilterButton: some View {
+        Menu {
+            Button {
+                withAnimation { selectedHost = nil }
+            } label: {
+                Label("All Hosts", systemImage: selectedHost == nil ? "checkmark" : "globe")
+            }
+
+            ForEach(uniqueHosts, id: \.host) { item in
+                Button {
+                    withAnimation { selectedHost = item.host }
+                } label: {
+                    Label(
+                        "\(item.host) (\(item.count))",
+                        systemImage: selectedHost == item.host ? "checkmark" : "server.rack"
+                    )
+                }
+            }
+        } label: {
+            Image(systemName: "server.rack")
+                .font(InspectorTheme.Typography.body)
+                .fontWeight(.medium)
+                .foregroundStyle(
+                    selectedHost != nil
                         ? InspectorTheme.Colors.accent
                         : InspectorTheme.Colors.textSecondary
                 )

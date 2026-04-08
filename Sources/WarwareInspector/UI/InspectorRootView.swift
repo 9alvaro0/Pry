@@ -164,10 +164,21 @@ struct InspectorRootView: View {
     InspectorRootView(store: InspectorStore())
 }
 
-#Preview("Floating Button") {
+#Preview("FAB + Error Badge") {
     Text("My App Content")
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .inspector(store: .preview, trigger: .floatingButton)
+}
+
+#Preview("FAB - No Errors") {
+    Text("My App Content")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .inspector(store: {
+            let s = InspectorStore()
+            s.addNetworkEntry(.mockSuccess)
+            s.addNetworkEntry(.mockNoAuth)
+            return s
+        }(), trigger: .floatingButton)
 }
 
 #Preview("Shake Trigger") {

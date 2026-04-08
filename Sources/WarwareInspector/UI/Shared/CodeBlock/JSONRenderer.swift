@@ -459,8 +459,4 @@ private struct JSONLine {
     .inspectorBackground()
 }
 
-#Preview("JSON - Invalid") {
-    ScrollView { JSONRenderer(jsonText: MockJSON.invalid).padding() }
-        .inspectorBackground()
-}
 #endif

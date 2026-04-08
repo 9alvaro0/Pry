@@ -17,6 +17,10 @@ import Foundation
     public private(set) var logEntries: [LogEntry] = []
     public private(set) var deeplinkEntries: [DeeplinkEntry] = []
 
+    // MARK: - Blacklist
+
+    public var blacklistedHosts: Set<String> = []
+
     // MARK: - Configuration
 
     private let maxNetworkEntries: Int

@@ -222,6 +222,13 @@ struct NetworkRequestDetailView: View {
                 .truncationMode(.middle)
         }
         ToolbarItem(placement: .topBarTrailing) {
+            ShareLink(item: generateShareText()) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(InspectorTheme.Typography.body)
+                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
+            }
+        }
+        ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Button { copyToClipboard(generateCurlCommand()) } label: {
                     Label("Copy as cURL", systemImage: "terminal.fill")
@@ -266,6 +273,71 @@ struct NetworkRequestDetailView: View {
             try? await Task.sleep(for: .seconds(1.5))
             showCopied = false
         }
+    }
+
+    private func generateShareText() -> String {
+        var lines: [String] = []
+
+        // Summary line: METHOD /path -> STATUS (duration)
+        let path = entry.requestURL.extractPath()
+        var summary = "\(entry.requestMethod) \(path)"
+        if let statusCode = entry.responseStatusCode {
+            let desc = HTTPStatus.description(for: statusCode)
+            summary += " \u{2192} \(statusCode)"
+            if !desc.isEmpty { summary += " \(desc)" }
+        } else if entry.responseError != nil {
+            summary += " \u{2192} ERROR"
+        }
+        if let duration = entry.duration {
+            summary += " (\(Optional(duration).formattedDuration))"
+        }
+        lines.append(summary)
+        lines.append(entry.requestURL)
+
+        // Request headers
+        let reqHeaders = entry.requestHeaders.filter { key, _ in
+            !key.hasPrefix("X-Debug-") &&
+            !["Content-Length", "Accept-Encoding"].contains(key)
+        }
+        if !reqHeaders.isEmpty {
+            lines.append("")
+            lines.append("\u{2500}\u{2500} Request Headers \u{2500}\u{2500}")
+            for (key, value) in reqHeaders.sorted(by: { $0.key < $1.key }) {
+                lines.append("\(key): \(value)")
+            }
+        }
+
+        // Request body
+        if let body = entry.requestBody, !body.isEmpty {
+            lines.append("")
+            lines.append("\u{2500}\u{2500} Request Body \u{2500}\u{2500}")
+            lines.append(body)
+        }
+
+        // Response headers
+        if let resHeaders = entry.responseHeaders, !resHeaders.isEmpty {
+            lines.append("")
+            lines.append("\u{2500}\u{2500} Response Headers \u{2500}\u{2500}")
+            for (key, value) in resHeaders.sorted(by: { $0.key < $1.key }) {
+                lines.append("\(key): \(value)")
+            }
+        }
+
+        // Response body
+        if let body = entry.responseBody, !body.isEmpty {
+            lines.append("")
+            lines.append("\u{2500}\u{2500} Response Body \u{2500}\u{2500}")
+            lines.append(body)
+        }
+
+        // Error
+        if let error = entry.responseError, !error.isEmpty {
+            lines.append("")
+            lines.append("\u{2500}\u{2500} Error \u{2500}\u{2500}")
+            lines.append(error)
+        }
+
+        return lines.joined(separator: "\n")
     }
 
     private func generateCurlCommand() -> String {
@@ -339,6 +411,12 @@ struct NetworkRequestDetailView: View {
 #Preview("Detail - PATCH") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockPatch)
+    }
+}
+
+#Preview("Detail - Form POST") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockFormPost)
     }
 }
 #endif

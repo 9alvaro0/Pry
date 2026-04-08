@@ -513,4 +513,46 @@ enum MockText {
     }.joined(separator: "\n")
 }
 
+enum MockForm {
+
+    static let simple = "name=John+Doe&email=john%40example.com&age=30"
+
+    static let oauth = "grant_type=authorization_code&code=abc123&redirect_uri=https%3A%2F%2Fapp.example.com%2Fcallback&client_id=my-app"
+}
+
+// MARK: - Network Mocks with Form/Image bodies
+
+extension NetworkEntry {
+
+    static var mockFormPost: NetworkEntry {
+        NetworkEntry(
+            timestamp: Date().addingTimeInterval(-10),
+            type: .network,
+            requestURL: "https://auth.example.com/oauth/token",
+            requestMethod: "POST",
+            requestHeaders: [
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "application/json"
+            ],
+            requestBody: MockForm.oauth,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: """
+            {
+              "access_token": "eyJ0eXAiOiJKV1Qi...",
+              "token_type": "Bearer",
+              "expires_in": 3600
+            }
+            """,
+            responseError: nil,
+            authToken: nil,
+            authTokenType: nil,
+            authTokenLength: nil,
+            duration: 0.55,
+            requestSize: 120,
+            responseSize: 95
+        )
+    }
+}
+
 #endif

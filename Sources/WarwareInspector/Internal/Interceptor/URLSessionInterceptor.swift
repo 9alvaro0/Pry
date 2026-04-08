@@ -4,6 +4,7 @@ import Foundation
 final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
     nonisolated(unsafe) static var logger: NetworkLogger?
+    nonisolated(unsafe) static var blacklistedHosts: Set<String> = []
 
     private static let handledKey = "WarwareInspector.handled"
 
@@ -33,6 +34,9 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     // MARK: - URLProtocol
 
     override public class func canInit(with request: URLRequest) -> Bool {
+        if let host = request.url?.host, blacklistedHosts.contains(host) {
+            return false
+        }
         guard logger != nil else { return false }
         return URLProtocol.property(forKey: handledKey, in: request) == nil
     }

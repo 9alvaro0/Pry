@@ -110,6 +110,19 @@ final class NetworkLogger: @unchecked Sendable {
     private func bodyToString(_ data: Data?) -> String? {
         guard let data else { return nil }
 
+        // Check for image data (PNG, JPEG, GIF, WebP magic bytes)
+        if data.count >= 4 {
+            let bytes = [UInt8](data.prefix(4))
+            let isImage = bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) || // PNG
+                          bytes.starts(with: [0xFF, 0xD8, 0xFF]) ||        // JPEG
+                          bytes.starts(with: [0x47, 0x49, 0x46]) ||        // GIF
+                          bytes.starts(with: [0x52, 0x49, 0x46, 0x46])     // WebP (RIFF)
+            if isImage {
+                let base64 = data.prefix(500_000).base64EncodedString() // Max 500KB for images
+                return "[IMAGE:\(data.count):\(base64)]"
+            }
+        }
+
         let maxSize = 1_000_000
         let limitedData = data.count > maxSize ? data.prefix(maxSize) : data
 

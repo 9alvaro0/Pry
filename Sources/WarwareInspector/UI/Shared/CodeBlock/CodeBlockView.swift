@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Unified code block component with language detection, syntax highlighting, and copy support.
 struct CodeBlockView: View {
@@ -29,28 +30,52 @@ struct CodeBlockView: View {
         return lang
     }
 
-    private var isJSON: Bool { effectiveLanguage == .json }
+    private var isJSON: Bool { effectiveLanguage == .json && !isImage && !isFormEncoded(text) }
+    private var isImage: Bool { text.hasPrefix("[IMAGE:") }
+
+    private var displayLabel: String {
+        if isImage { return "IMAGE" }
+        if isFormEncoded(text) { return "FORM" }
+        return effectiveLanguage.displayName.uppercased()
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
 
-            if isSearching {
+            if isSearching && !isImage {
                 searchBar
             }
 
-            switch effectiveLanguage {
-            case .json:
-                JSONRenderer(
-                    jsonText: text,
-                    searchQuery: searchQuery,
-                    collapseAll: isAllCollapsed
-                )
-            default:
-                TextRenderer(text: text, language: effectiveLanguage, searchQuery: searchQuery)
+            if isFormEncoded(text) {
+                FormDataRenderer(text: text, searchQuery: searchQuery)
+            } else if isImage {
+                ImagePreviewView(encodedText: text)
+            } else {
+                switch effectiveLanguage {
+                case .json:
+                    JSONRenderer(
+                        jsonText: text,
+                        searchQuery: searchQuery,
+                        collapseAll: isAllCollapsed
+                    )
+                default:
+                    TextRenderer(text: text, language: effectiveLanguage, searchQuery: searchQuery)
+                }
             }
         }
         .inspectorCodeBlock()
+    }
+
+    private func isFormEncoded(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty,
+              !trimmed.hasPrefix("{"),
+              !trimmed.hasPrefix("["),
+              !trimmed.hasPrefix("<"),
+              trimmed.contains("=") else { return false }
+        // Basic check: has key=value pattern
+        return trimmed.contains("&") || trimmed.range(of: "^[^=]+=", options: .regularExpression) != nil
     }
 
     // MARK: - Header (single line: label + icon buttons)
@@ -66,7 +91,7 @@ struct CodeBlockView: View {
     private var header: some View {
         HStack {
             HStack(spacing: InspectorTheme.Spacing.sm) {
-                Text(effectiveLanguage.displayName.uppercased())
+                Text(displayLabel)
                     .font(InspectorTheme.Typography.detail)
                     .fontWeight(.semibold)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
@@ -81,14 +106,16 @@ struct CodeBlockView: View {
             Spacer()
 
             HStack(spacing: 0) {
-                // Search toggle
-                headerButton(
-                    icon: "magnifyingglass",
-                    active: isSearching
-                ) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        isSearching.toggle()
-                        if !isSearching { searchQuery = "" }
+                if !isImage {
+                    // Search toggle
+                    headerButton(
+                        icon: "magnifyingglass",
+                        active: isSearching
+                    ) {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isSearching.toggle()
+                            if !isSearching { searchQuery = "" }
+                        }
                     }
                 }
 

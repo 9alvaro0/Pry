@@ -67,6 +67,12 @@ struct InspectorOverlayModifier: ViewModifier {
 
     @State private var isPresented = false
 
+    private var errorCount: Int {
+        store.networkEntries.filter {
+            ($0.responseStatusCode ?? 0) >= 400 || $0.responseError != nil
+        }.count
+    }
+
     func body(content: Content) -> some View {
         content
             .environment(\.inspectorStore, store)
@@ -85,6 +91,19 @@ struct InspectorOverlayModifier: ViewModifier {
                         size: InspectorTheme.Size.fab
                     ) {
                         isPresented = true
+                    }
+                    .overlay(alignment: .topTrailing) {
+                        if errorCount > 0 {
+                            Text("\(errorCount)")
+                                .font(InspectorTheme.Typography.detail)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .frame(minWidth: 20, minHeight: 20)
+                                .background(InspectorTheme.Colors.error)
+                                .clipShape(.capsule)
+                                .offset(x: 4, y: -4)
+                        }
                     }
                     .padding(.trailing, InspectorTheme.Spacing.xl)
                 }
@@ -110,6 +129,7 @@ enum InspectorLifecycle {
 
         let logger = NetworkLogger(store: store)
         InspectorURLProtocol.logger = logger
+        InspectorURLProtocol.blacklistedHosts = store.blacklistedHosts
         URLProtocol.registerClass(InspectorURLProtocol.self)
     }
 
