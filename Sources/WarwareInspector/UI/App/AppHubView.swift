@@ -6,7 +6,7 @@ struct AppHubView: View {
     @Bindable var store: InspectorStore
 
     @State private var showFileImporter = false
-    @State private var importedSession: (store: InspectorStore, metadata: SessionFile.DeviceInfo)?
+    @State private var importedSession: ImportedSessionWrapper?
 
     var body: some View {
         ScrollView {
@@ -285,13 +285,10 @@ struct AppHubView: View {
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json, .data]) { result in
             if case .success(let url) = result,
                let session = SessionFileManager.importSession(from: url) {
-                importedSession = session
+                importedSession = ImportedSessionWrapper(store: session.store, metadata: session.metadata)
             }
         }
-        .sheet(item: Binding(
-            get: { importedSession.map { ImportedSessionWrapper(store: $0.store, metadata: $0.metadata) } },
-            set: { if $0 == nil { importedSession = nil } }
-        )) { wrapper in
+        .sheet(item: $importedSession) { wrapper in
             SessionViewerView(store: wrapper.store, deviceInfo: wrapper.metadata)
         }
     }
