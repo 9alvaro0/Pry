@@ -20,7 +20,7 @@ struct DeeplinkSimulatorView: View {
                         .font(InspectorTheme.Typography.detail)
                         .fontWeight(.semibold)
                         .textCase(.uppercase)
-                        .tracking(0.5)
+                        .tracking(InspectorTheme.Text.tracking)
                         .foregroundStyle(InspectorTheme.Colors.textSecondary)
 
                     TextField("myapp://rooms/open?roomId=42", text: $urlInput)
@@ -35,7 +35,7 @@ struct DeeplinkSimulatorView: View {
                             RoundedRectangle(cornerRadius: InspectorTheme.Radius.md)
                                 .stroke(
                                     validationError != nil
-                                        ? InspectorTheme.Colors.error.opacity(0.5)
+                                        ? InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.overlay)
                                         : InspectorTheme.Colors.border,
                                     lineWidth: 1
                                 )
@@ -66,7 +66,7 @@ struct DeeplinkSimulatorView: View {
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
                     }
                     .disabled(urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .opacity(urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1)
+                    .opacity(urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? InspectorTheme.Opacity.overlay : 1)
                 }
                 .padding(InspectorTheme.Spacing.lg)
 
@@ -77,7 +77,7 @@ struct DeeplinkSimulatorView: View {
                             .font(InspectorTheme.Typography.detail)
                             .fontWeight(.semibold)
                             .textCase(.uppercase)
-                            .tracking(0.5)
+                            .tracking(InspectorTheme.Text.tracking)
                             .foregroundStyle(InspectorTheme.Colors.textSecondary)
                             .padding(.horizontal, InspectorTheme.Spacing.lg)
 

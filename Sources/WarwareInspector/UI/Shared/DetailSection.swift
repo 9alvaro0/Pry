@@ -13,7 +13,7 @@ struct DetailSectionView<Content: View>: View {
             // Header
             if collapsible {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
+                    withAnimation(.easeInOut(duration: InspectorTheme.Animation.standard)) {
                         isExpanded.toggle()
                     }
                 } label: {
@@ -41,7 +41,7 @@ struct DetailSectionView<Content: View>: View {
                 .font(InspectorTheme.Typography.detail)
                 .fontWeight(.semibold)
                 .textCase(.uppercase)
-                .tracking(0.5)
+                .tracking(InspectorTheme.Text.tracking)
                 .foregroundStyle(InspectorTheme.Colors.textSecondary)
 
             Spacer()

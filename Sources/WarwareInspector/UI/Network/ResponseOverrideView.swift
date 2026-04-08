@@ -65,7 +65,7 @@ struct ResponseOverrideView: View {
                             .font(InspectorTheme.Typography.code)
                             .foregroundStyle(InspectorTheme.Colors.textPrimary)
                             .scrollContentBackground(.hidden)
-                            .frame(minHeight: 250)
+                            .frame(minHeight: InspectorTheme.Size.editorMinHeight)
                             .padding(InspectorTheme.Spacing.sm)
                             .background(InspectorTheme.Colors.surface)
                             .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
@@ -102,7 +102,7 @@ struct ResponseOverrideView: View {
                             .foregroundStyle(InspectorTheme.Colors.error)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, InspectorTheme.Spacing.md)
-                            .background(InspectorTheme.Colors.error.opacity(0.1))
+                            .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.border))
                             .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
                         }
                     }
@@ -161,7 +161,7 @@ struct ResponseOverrideView: View {
             .font(InspectorTheme.Typography.detail)
             .fontWeight(.semibold)
             .textCase(.uppercase)
-            .tracking(0.5)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textSecondary)
     }
 
@@ -212,7 +212,7 @@ struct ResponseOverrideView: View {
 
         withAnimation { saved = true }
         Task {
-            try? await Task.sleep(for: .seconds(1))
+            try? await Task.sleep(for: InspectorTheme.Animation.feedbackDelay)
             dismiss()
         }
     }

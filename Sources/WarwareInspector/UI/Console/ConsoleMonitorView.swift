@@ -139,7 +139,7 @@ struct ConsoleMonitorView: View {
         UIPasteboard.general.string = text
         showCopiedAll = true
         Task {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
             showCopiedAll = false
         }
     }

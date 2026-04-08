@@ -101,7 +101,7 @@ struct NetworkStatsView: View {
                         }
                         .padding(.horizontal, InspectorTheme.Spacing.sm)
                         .padding(.vertical, InspectorTheme.Spacing.xs)
-                        .background(InspectorTheme.Colors.error.opacity(0.08))
+                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.faint))
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
                     }
                 }

@@ -25,9 +25,9 @@ struct DeeplinkRowView: View {
                     let count = entry.queryParameters.count
                     Text("\(count) param\(count == 1 ? "" : "s")")
                         .font(InspectorTheme.Typography.detail)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.deeplinks.opacity(0.15))
+                        .background(InspectorTheme.Colors.deeplinks.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.deeplinks)
                         .clipShape(.capsule)
                 }

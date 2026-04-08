@@ -77,13 +77,13 @@ struct FilterChipView: View {
                         .font(InspectorTheme.Typography.detail)
                         .padding(.horizontal, InspectorTheme.Spacing.xs)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(isSelected ? color.opacity(0.3) : InspectorTheme.Colors.textSecondary.opacity(0.2))
+                        .background(isSelected ? color.opacity(InspectorTheme.Opacity.moderate) : InspectorTheme.Colors.textSecondary.opacity(InspectorTheme.Opacity.medium))
                         .clipShape(.capsule)
                 }
             }
             .padding(.horizontal, InspectorTheme.Spacing.md)
             .padding(.vertical, InspectorTheme.Spacing.sm)
-            .background(isSelected ? color.opacity(0.2) : InspectorTheme.Colors.textSecondary.opacity(0.1))
+            .background(isSelected ? color.opacity(InspectorTheme.Opacity.medium) : InspectorTheme.Colors.textSecondary.opacity(InspectorTheme.Opacity.border))
             .foregroundStyle(isSelected ? color : InspectorTheme.Colors.textSecondary)
             .clipShape(.capsule)
             .overlay(

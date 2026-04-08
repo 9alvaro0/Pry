@@ -75,6 +75,6 @@ struct SessionViewerView: View {
         }
         .padding(.horizontal, InspectorTheme.Spacing.lg)
         .padding(.vertical, InspectorTheme.Spacing.xs)
-        .background(InspectorTheme.Colors.warning.opacity(0.1))
+        .background(InspectorTheme.Colors.warning.opacity(InspectorTheme.Opacity.border))
     }
 }

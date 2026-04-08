@@ -281,7 +281,7 @@ struct FileBrowserView: View {
     private func sandboxCard(folder: SandboxFolder) -> some View {
         VStack(spacing: InspectorTheme.Spacing.sm) {
             Image(systemName: folder.icon)
-                .font(.system(size: 22))
+                .font(.system(size: InspectorTheme.Size.diffLabel))
                 .foregroundStyle(InspectorTheme.Colors.accent)
 
             Text(folder.name)
@@ -333,7 +333,7 @@ struct FileBrowserView: View {
                     if index < items.count - 1 {
                         Divider()
                             .overlay(InspectorTheme.Colors.border)
-                            .padding(.leading, 52)
+                            .padding(.leading, InspectorTheme.Size.methodColumn)
                     }
                 }
             }
@@ -347,8 +347,8 @@ struct FileBrowserView: View {
             Image(systemName: item.icon)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(item.iconColor)
-                .frame(width: 28, height: 28)
-                .background(item.iconColor.opacity(0.12))
+                .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
+                .background(item.iconColor.opacity(InspectorTheme.Opacity.tint))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
@@ -408,7 +408,7 @@ struct FileBrowserView: View {
     private var emptyState: some View {
         VStack(spacing: InspectorTheme.Spacing.sm) {
             Image(systemName: "folder")
-                .font(.system(size: 28))
+                .font(.system(size: InspectorTheme.FontSize.emptyState))
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
             Text("Empty Directory")
@@ -423,8 +423,8 @@ struct FileBrowserView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(0.5)
+            .font(InspectorTheme.Typography.sectionLabel)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textTertiary)
             .padding(.bottom, InspectorTheme.Spacing.sm)
     }
@@ -496,7 +496,7 @@ struct FilePreviewView: View {
             Text(label)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(InspectorTheme.Colors.textSecondary)
-                .frame(width: 70, alignment: .leading)
+                .frame(width: InspectorTheme.Size.metadataLabel, alignment: .leading)
 
             Spacer(minLength: InspectorTheme.Spacing.sm)
 
@@ -553,8 +553,8 @@ struct FilePreviewView: View {
 
     private func sectionLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(0.5)
+            .font(InspectorTheme.Typography.sectionLabel)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textTertiary)
     }
 

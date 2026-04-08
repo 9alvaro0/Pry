@@ -32,7 +32,7 @@ struct NetworkRequestDetailView: View {
                     .foregroundStyle(InspectorTheme.Colors.accent)
                     .padding(.horizontal, InspectorTheme.Spacing.lg)
                     .padding(.vertical, InspectorTheme.Spacing.sm)
-                    .background(InspectorTheme.Colors.accent.opacity(0.12))
+                    .background(InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.tint))
                 }
 
                 // Mocked banner (tappable → opens editor)
@@ -53,7 +53,7 @@ struct NetworkRequestDetailView: View {
                         .foregroundStyle(InspectorTheme.Colors.syntaxBool)
                         .padding(.horizontal, InspectorTheme.Spacing.lg)
                         .padding(.vertical, InspectorTheme.Spacing.sm)
-                        .background(InspectorTheme.Colors.syntaxBool.opacity(0.12))
+                        .background(InspectorTheme.Colors.syntaxBool.opacity(InspectorTheme.Opacity.tint))
                     }
                 }
 
@@ -105,14 +105,14 @@ struct NetworkRequestDetailView: View {
                 // Mock was created
                 showMockSaved = true
                 Task {
-                    try? await Task.sleep(for: .seconds(3))
+                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
                     showMockSaved = false
                 }
             } else if !hasMockNow && hadMockBeforeEdit {
                 // Mock was removed
                 showMockRemoved = true
                 Task {
-                    try? await Task.sleep(for: .seconds(3))
+                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
                     showMockRemoved = false
                 }
             }
@@ -145,10 +145,10 @@ struct NetworkRequestDetailView: View {
                 replayedToast
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showCopied)
-        .animation(.easeInOut(duration: 0.2), value: showMockSaved)
-        .animation(.easeInOut(duration: 0.2), value: showMockRemoved)
-        .animation(.easeInOut(duration: 0.2), value: showReplayed)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showCopied)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showMockSaved)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showMockRemoved)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showReplayed)
     }
 
     // MARK: - Summary Header
@@ -173,18 +173,18 @@ struct NetworkRequestDetailView: View {
                     Text("ERROR")
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.medium)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.error.opacity(0.15))
+                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.error)
                         .clipShape(.capsule)
                 } else {
                     Text("PENDING")
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.medium)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.pending.opacity(0.15))
+                        .background(InspectorTheme.Colors.pending.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.pending)
                         .clipShape(.capsule)
                 }
@@ -248,7 +248,7 @@ struct NetworkRequestDetailView: View {
                                 (gql.operationType == .mutation
                                     ? InspectorTheme.Colors.warning
                                     : InspectorTheme.Colors.syntaxString
-                                ).opacity(0.15)
+                                ).opacity(InspectorTheme.Opacity.badge)
                             )
                             .clipShape(.capsule)
 
@@ -271,7 +271,7 @@ struct NetworkRequestDetailView: View {
                             ForEach(Array(gql.errors.enumerated()), id: \.offset) { _, error in
                                 HStack(alignment: .top, spacing: InspectorTheme.Spacing.xs) {
                                     Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(.system(size: 11))
+                                        .font(InspectorTheme.Typography.sectionLabel)
                                         .foregroundStyle(InspectorTheme.Colors.error)
 
                                     VStack(alignment: .leading, spacing: 2) {
@@ -289,7 +289,7 @@ struct NetworkRequestDetailView: View {
                         }
                         .padding(InspectorTheme.Spacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(InspectorTheme.Colors.error.opacity(0.08))
+                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.faint))
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
                     }
 
@@ -300,8 +300,8 @@ struct NetworkRequestDetailView: View {
                     if let variables = gql.variables {
                         VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
                             Text("VARIABLES")
-                                .font(.system(size: 11, weight: .semibold))
-                                .tracking(0.5)
+                                .font(InspectorTheme.Typography.sectionLabel)
+                                .tracking(InspectorTheme.Text.tracking)
                                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
                             CodeBlockView(text: variables, language: .json)
@@ -452,7 +452,7 @@ struct NetworkRequestDetailView: View {
                         .foregroundStyle(InspectorTheme.Colors.error)
                         .padding(InspectorTheme.Spacing.sm)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(InspectorTheme.Colors.error.opacity(0.1))
+                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.border))
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
                     if entry.hasErrorResponseBody, let responseBody = entry.responseBody {
@@ -634,7 +634,7 @@ struct NetworkRequestDetailView: View {
                 isReplaying = false
                 showReplayed = true
             }
-            try? await Task.sleep(for: .seconds(2))
+            try? await Task.sleep(for: InspectorTheme.Animation.replayDismiss)
             await MainActor.run {
                 showReplayed = false
                 dismiss()
@@ -646,7 +646,7 @@ struct NetworkRequestDetailView: View {
         UIPasteboard.general.string = value
         showCopied = true
         Task {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
             showCopied = false
         }
     }

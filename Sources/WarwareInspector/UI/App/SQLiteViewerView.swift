@@ -161,8 +161,8 @@ struct SQLiteViewerView: View {
     private var tableList: some View {
         VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
             Text("TABLES")
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.5)
+                .font(InspectorTheme.Typography.sectionLabel)
+                .tracking(InspectorTheme.Text.tracking)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -189,7 +189,7 @@ struct SQLiteViewerView: View {
                             .padding(.vertical, InspectorTheme.Spacing.sm)
                             .background(
                                 selectedTable?.name == table.name
-                                    ? InspectorTheme.Colors.accent.opacity(0.15)
+                                    ? InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.badge)
                                     : InspectorTheme.Colors.surface
                             )
                             .clipShape(.capsule)
@@ -206,8 +206,8 @@ struct SQLiteViewerView: View {
         VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
             HStack {
                 Text(table.name.uppercased())
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(0.5)
+                    .font(InspectorTheme.Typography.sectionLabel)
+                    .tracking(InspectorTheme.Text.tracking)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
                 Spacer()
@@ -255,10 +255,10 @@ struct SQLiteViewerView: View {
                                         .padding(.vertical, InspectorTheme.Spacing.xs)
                                 }
                             }
-                            .background(index % 2 == 0 ? Color.clear : InspectorTheme.Colors.surface.opacity(0.5))
+                            .background(index % 2 == 0 ? Color.clear : InspectorTheme.Colors.surface.opacity(InspectorTheme.Opacity.overlay))
 
                             if index < rows.count - 1 {
-                                Divider().overlay(InspectorTheme.Colors.border.opacity(0.5))
+                                Divider().overlay(InspectorTheme.Colors.border.opacity(InspectorTheme.Opacity.overlay))
                             }
                         }
                     }
@@ -278,7 +278,7 @@ struct SQLiteViewerView: View {
     private var emptyState: some View {
         VStack(spacing: InspectorTheme.Spacing.sm) {
             Image(systemName: "cylinder")
-                .font(.system(size: 28))
+                .font(.system(size: InspectorTheme.FontSize.emptyState))
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
             Text("No tables found")
                 .font(InspectorTheme.Typography.body)

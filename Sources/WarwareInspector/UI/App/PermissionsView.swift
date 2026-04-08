@@ -104,8 +104,8 @@ struct PermissionsView: View {
             Image(systemName: icon)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(InspectorTheme.Colors.accent)
-                .frame(width: 28, height: 28)
-                .background(InspectorTheme.Colors.accent.opacity(0.12))
+                .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
+                .background(InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.tint))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             Text(name)
@@ -116,11 +116,11 @@ struct PermissionsView: View {
             Spacer()
 
             Text(status.label)
-                .font(.system(size: 10, weight: .bold))
+                .font(.system(size: InspectorTheme.FontSize.smallIcon, weight: .bold))
                 .foregroundStyle(status.color)
                 .padding(.horizontal, InspectorTheme.Spacing.sm)
                 .padding(.vertical, InspectorTheme.Spacing.xxs)
-                .background(status.color.opacity(0.15))
+                .background(status.color.opacity(InspectorTheme.Opacity.badge))
                 .clipShape(.capsule)
         }
     }

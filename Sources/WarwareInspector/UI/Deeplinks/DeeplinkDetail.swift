@@ -25,7 +25,7 @@ struct DeeplinkDetailView: View {
                 copiedToast
             }
         }
-        .animation(.easeInOut(duration: 0.2), value: showCopied)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showCopied)
     }
 
     // MARK: - Summary Header
@@ -121,7 +121,7 @@ struct DeeplinkDetailView: View {
             .foregroundStyle(InspectorTheme.Colors.success)
             .padding(.horizontal, InspectorTheme.Spacing.md)
             .padding(.vertical, InspectorTheme.Spacing.xs)
-            .background(InspectorTheme.Colors.success.opacity(0.15))
+            .background(InspectorTheme.Colors.success.opacity(InspectorTheme.Opacity.badge))
             .clipShape(.capsule)
             .transition(.move(edge: .top).combined(with: .opacity))
             .padding(.top, InspectorTheme.Spacing.sm)

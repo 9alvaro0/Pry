@@ -27,7 +27,7 @@ struct CopyButtonView: View {
                 Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(isCopied ? InspectorTheme.Colors.success : InspectorTheme.Colors.textSecondary)
-                    .frame(width: 36, height: 36)
+                    .frame(width: InspectorTheme.Size.iconLarge, height: InspectorTheme.Size.iconLarge)
                     .contentShape(.rect)
 
             case .labeled(let title, let copiedLabel):
@@ -47,7 +47,7 @@ struct CopyButtonView: View {
     private func copy() async {
         UIPasteboard.general.string = valueToCopy
         withAnimation { isCopied = true }
-        try? await Task.sleep(for: .seconds(1.5))
+        try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
         withAnimation { isCopied = false }
     }
 }

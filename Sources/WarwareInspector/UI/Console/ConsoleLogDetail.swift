@@ -99,7 +99,7 @@ struct ConsoleLogDetailView: View {
         UIPasteboard.general.string = text
         showCopied = true
         Task {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
             showCopied = false
         }
     }

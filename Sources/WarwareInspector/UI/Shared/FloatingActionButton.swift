@@ -15,7 +15,7 @@ struct FloatingActionButtonView: View {
                 .frame(width: size, height: size)
                 .background(backgroundColor)
                 .clipShape(.circle)
-                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+                .shadow(color: .black.opacity(InspectorTheme.Shadow.opacity), radius: InspectorTheme.Shadow.radius, x: InspectorTheme.Shadow.offsetX, y: InspectorTheme.Shadow.offsetY)
         }
         .buttonStyle(.plain)
     }

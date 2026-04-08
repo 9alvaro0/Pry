@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find '/Users/aguerfr/Mercadona/FRAMEWORK/ios-framework/Sources/ya tiene/DebugConsole/Presentation' -type f -name *.swift -o -name *.md -o -name *.txt)",
+      "Bash(find '/Users/aguerfr/Mercadona/FRAMEWORK/ios-framework/Sources/ya tiene/DebugConsole/Core' -type f -name *.swift -o -name *.md -o -name *.txt)",
+      "Bash(cd:*)",
+      "Bash(swift build:*)",
+      "Bash(xcodebuild -scheme WarwareInspector -destination 'generic/platform=iOS Simulator' build)",
+      "Bash(find /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector/Sources/WarwareInspector/Presentation -name \"*.swift\" -exec wc -l {} +)",
+      "Skill(commit-commands:commit)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "WebSearch",
+      "Bash(grep -L \"#if DEBUG\\\\|#Preview\" /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector/Sources/WarwareInspector/UI/**/*.swift)",
+      "Bash(grep -E \"^struct|^class|^enum\" /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector/Sources/WarwareInspector/UI/**/*.swift)",
+      "Bash(grep -n \"@Environment.*inspectorStore\\\\|@Bindable.*store\\\\|let store:\" /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector/Sources/WarwareInspector/UI/**/*.swift)",
+      "Bash(wc -l /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector/Sources/WarwareInspector/UI/App/*.swift)",
+      "Bash(grep:*)",
+      "Bash(xargs ls:*)",
+      "Bash(gh api:*)",
+      "WebFetch(domain:proxyman.com)",
+      "WebFetch(domain:kean.blog)",
+      "WebFetch(domain:sherlock.inspiredcode.io)",
+      "WebFetch(domain:www.charlesproxy.com)",
+      "WebFetch(domain:pulselogger.com)",
+      "WebFetch(domain:www.shakebugs.com)",
+      "WebFetch(domain:apps.apple.com)"
+    ]
+  }
+}

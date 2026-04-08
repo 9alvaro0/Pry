@@ -18,13 +18,13 @@ struct NetworkRequestRowView: View {
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.bold)
                         .foregroundStyle(gql.operationType == .mutation ? InspectorTheme.Colors.warning : InspectorTheme.Colors.syntaxString)
-                        .frame(width: 52, alignment: .leading)
+                        .frame(width: InspectorTheme.Size.methodColumn, alignment: .leading)
                 } else {
                     Text(entry.requestMethod)
                         .font(InspectorTheme.Typography.code)
                         .fontWeight(.semibold)
                         .foregroundStyle(InspectorTheme.Colors.textSecondary)
-                        .frame(width: 52, alignment: .leading)
+                        .frame(width: InspectorTheme.Size.methodColumn, alignment: .leading)
                 }
 
                 // Path — for GraphQL show operation name
@@ -53,13 +53,13 @@ struct NetworkRequestRowView: View {
                 // GraphQL errors indicator
                 if let gql = entry.graphQLInfo, gql.hasErrors {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 10))
+                        .font(InspectorTheme.Typography.smallIcon)
                         .foregroundStyle(InspectorTheme.Colors.error)
                 }
 
                 if isPinned {
                     Image(systemName: "pin.fill")
-                        .font(.system(size: 10))
+                        .font(InspectorTheme.Typography.smallIcon)
                         .foregroundStyle(InspectorTheme.Colors.warning)
                 }
 
@@ -79,18 +79,18 @@ struct NetworkRequestRowView: View {
                     Text("PENDING")
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.medium)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.pending.opacity(0.15))
+                        .background(InspectorTheme.Colors.pending.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.pending)
                         .clipShape(.capsule)
                 } else if entry.responseError != nil {
                     Text("ERR")
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.medium)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.error.opacity(0.15))
+                        .background(InspectorTheme.Colors.error.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.error)
                         .clipShape(.capsule)
                 }

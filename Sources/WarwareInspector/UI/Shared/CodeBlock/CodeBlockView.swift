@@ -112,7 +112,7 @@ struct CodeBlockView: View {
                         icon: "magnifyingglass",
                         active: isSearching
                     ) {
-                        withAnimation(.easeInOut(duration: 0.2)) {
+                        withAnimation(.easeInOut(duration: InspectorTheme.Animation.standard)) {
                             isSearching.toggle()
                             if !isSearching { searchQuery = "" }
                         }
@@ -127,7 +127,7 @@ struct CodeBlockView: View {
                             : "arrow.up.left.and.arrow.down.right",
                         active: false
                     ) {
-                        withAnimation(.easeOut(duration: 0.2)) {
+                        withAnimation(.easeOut(duration: InspectorTheme.Animation.standard)) {
                             isAllCollapsed.toggle()
                         }
                     }
@@ -135,7 +135,7 @@ struct CodeBlockView: View {
 
                 // Copy
                 CopyButtonView(valueToCopy: text)
-                    .frame(height: 36)
+                    .frame(height: InspectorTheme.Size.iconLarge)
             }
         }
         .padding(.bottom, InspectorTheme.Spacing.xs)
@@ -146,7 +146,7 @@ struct CodeBlockView: View {
             Image(systemName: icon)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(active ? InspectorTheme.Colors.accent : InspectorTheme.Colors.textSecondary)
-                .frame(width: 36, height: 36)
+                .frame(width: InspectorTheme.Size.iconLarge, height: InspectorTheme.Size.iconLarge)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

@@ -41,7 +41,7 @@ struct InspectorSettingsView: View {
                                 .font(InspectorTheme.Typography.code)
                                 .foregroundStyle(InspectorTheme.Colors.accent)
                             Image(systemName: "chevron.up.chevron.down")
-                                .font(.system(size: 10))
+                                .font(InspectorTheme.Typography.smallIcon)
                                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
                         }
                     }
@@ -72,7 +72,7 @@ struct InspectorSettingsView: View {
                                 .font(InspectorTheme.Typography.code)
                                 .foregroundStyle(InspectorTheme.Colors.accent)
                             Image(systemName: "chevron.up.chevron.down")
-                                .font(.system(size: 10))
+                                .font(InspectorTheme.Typography.smallIcon)
                                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
                         }
                     }

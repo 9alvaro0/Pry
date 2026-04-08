@@ -56,7 +56,7 @@ struct JWTDetailView: View {
         .padding(.horizontal, InspectorTheme.Spacing.sm)
         .padding(.vertical, InspectorTheme.Spacing.xs)
         .background(
-            (jwt.isExpired ? InspectorTheme.Colors.error : InspectorTheme.Colors.success).opacity(0.12)
+            (jwt.isExpired ? InspectorTheme.Colors.error : InspectorTheme.Colors.success).opacity(InspectorTheme.Opacity.tint)
         )
         .clipShape(.capsule)
     }

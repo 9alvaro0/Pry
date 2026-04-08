@@ -69,7 +69,7 @@ struct PushNotificationSimulatorView: View {
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
                     }
                     .disabled(isSendDisabled)
-                    .opacity(isSendDisabled ? 0.5 : 1)
+                    .opacity(isSendDisabled ? InspectorTheme.Opacity.overlay : 1)
 
                     if !permissionGranted {
                         Text("Notification permissions needed for real delivery. It will still be logged.")
@@ -146,7 +146,7 @@ struct PushNotificationSimulatorView: View {
                 .font(InspectorTheme.Typography.code)
                 .foregroundStyle(InspectorTheme.Colors.textPrimary)
                 .scrollContentBackground(.hidden)
-                .frame(minHeight: 200)
+                .frame(minHeight: InspectorTheme.Size.editorMinHeight)
                 .padding(InspectorTheme.Spacing.sm)
                 .background(InspectorTheme.Colors.surface)
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
@@ -215,7 +215,7 @@ struct PushNotificationSimulatorView: View {
             .font(InspectorTheme.Typography.detail)
             .fontWeight(.semibold)
             .textCase(.uppercase)
-            .tracking(0.5)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textSecondary)
     }
 
@@ -256,7 +256,7 @@ struct PushNotificationSimulatorView: View {
 
         withAnimation { sent = true }
         Task {
-            try? await Task.sleep(for: .seconds(1.5))
+            try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
             withAnimation { sent = false }
         }
     }

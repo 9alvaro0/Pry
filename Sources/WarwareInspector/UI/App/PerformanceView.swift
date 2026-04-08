@@ -110,8 +110,8 @@ struct PerformanceView: View {
             // Header
             HStack(alignment: .lastTextBaseline) {
                 Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(0.5)
+                    .font(InspectorTheme.Typography.sectionLabel)
+                    .tracking(InspectorTheme.Text.tracking)
                     .textCase(.uppercase)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
@@ -124,7 +124,7 @@ struct PerformanceView: View {
 
             // Value
             Text(value)
-                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                .font(.system(size: InspectorTheme.FontSize.emptyState, weight: .bold, design: .monospaced))
                 .foregroundStyle(color)
 
             // Chart
@@ -143,7 +143,7 @@ struct PerformanceView: View {
                     )
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [color.opacity(0.3), color.opacity(0.05)],
+                            colors: [color.opacity(InspectorTheme.Opacity.moderate), color.opacity(InspectorTheme.Opacity.subtle)],
                             startPoint: .top,
                             endPoint: .bottom
                         )
@@ -154,18 +154,18 @@ struct PerformanceView: View {
                     AxisMarks(position: .trailing) { value in
                         AxisValueLabel {
                             Text("\(value.as(Int.self) ?? 0)")
-                                .font(.system(size: 8))
+                                .font(InspectorTheme.Typography.chartLabel)
                                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
                         }
                         AxisGridLine()
                             .foregroundStyle(InspectorTheme.Colors.border)
                     }
                 }
-                .frame(height: 100)
+                .frame(height: InspectorTheme.Size.chartHeight)
             } else {
                 RoundedRectangle(cornerRadius: InspectorTheme.Radius.sm)
                     .fill(InspectorTheme.Colors.surface)
-                    .frame(height: 100)
+                    .frame(height: InspectorTheme.Size.chartHeight)
                     .overlay {
                         Text("Collecting data...")
                             .font(InspectorTheme.Typography.detail)
@@ -183,13 +183,13 @@ struct PerformanceView: View {
     private func smallCard(title: String, value: String, color: Color) -> some View {
         VStack(spacing: InspectorTheme.Spacing.xs) {
             Text(title.uppercased())
-                .font(.system(size: 9, weight: .semibold))
-                .tracking(0.5)
+                .font(.system(size: InspectorTheme.FontSize.badge, weight: .semibold))
+                .tracking(InspectorTheme.Text.tracking)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(value)
-                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                .font(.system(size: InspectorTheme.FontSize.largeMetric, weight: .bold, design: .monospaced))
                 .foregroundStyle(color)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
@@ -205,8 +205,8 @@ struct PerformanceView: View {
     private func sectionCard(title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.5)
+                .font(InspectorTheme.Typography.sectionLabel)
+                .tracking(InspectorTheme.Text.tracking)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
                 .padding(.bottom, InspectorTheme.Spacing.sm)
 

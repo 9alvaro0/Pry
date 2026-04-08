@@ -21,7 +21,7 @@ struct ImagePreviewView: View {
             Image(uiImage: uiImage)
                 .resizable()
                 .aspectRatio(contentMode: .fit)
-                .frame(maxHeight: 300)
+                .frame(maxHeight: InspectorTheme.Size.imageMaxHeight)
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
         } else {
             Text("[Image data - unable to preview]")

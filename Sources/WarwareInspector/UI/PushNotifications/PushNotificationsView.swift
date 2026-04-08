@@ -116,9 +116,9 @@ private struct PushNotificationRowView: View {
                 if let badge = entry.badge {
                     Text("badge: \(badge)")
                         .font(InspectorTheme.Typography.detail)
-                        .padding(.horizontal, 6)
+                        .padding(.horizontal, InspectorTheme.Spacing.pip)
                         .padding(.vertical, InspectorTheme.Spacing.xxs)
-                        .background(InspectorTheme.Colors.warning.opacity(0.15))
+                        .background(InspectorTheme.Colors.warning.opacity(InspectorTheme.Opacity.badge))
                         .foregroundStyle(InspectorTheme.Colors.warning)
                         .clipShape(.capsule)
                 }

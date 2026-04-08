@@ -120,7 +120,7 @@ struct RequestDiffView: View {
                 .font(InspectorTheme.Typography.codeSmall)
                 .fontWeight(.bold)
                 .foregroundStyle(.white)
-                .frame(width: 22, height: 22)
+                .frame(width: InspectorTheme.Size.diffLabel, height: InspectorTheme.Size.diffLabel)
                 .background(label == "A" ? InspectorTheme.Colors.accent : InspectorTheme.Colors.warning)
                 .clipShape(.circle)
 
@@ -173,7 +173,7 @@ struct RequestDiffView: View {
         }
         .padding(InspectorTheme.Spacing.md)
         .background(
-            (totalDifferences > 0 ? InspectorTheme.Colors.warning : InspectorTheme.Colors.success).opacity(0.1)
+            (totalDifferences > 0 ? InspectorTheme.Colors.warning : InspectorTheme.Colors.success).opacity(InspectorTheme.Opacity.border)
         )
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
     }
@@ -306,8 +306,8 @@ struct RequestDiffView: View {
     private func diffSection(title: String, @ViewBuilder content: () -> some View) -> some View {
         VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
             Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .tracking(0.5)
+                .font(InspectorTheme.Typography.sectionLabel)
+                .tracking(InspectorTheme.Text.tracking)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
 
             content()
@@ -320,9 +320,9 @@ struct RequestDiffView: View {
 
     private func diffLabel(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 10, weight: .bold))
+            .font(.system(size: InspectorTheme.FontSize.smallIcon, weight: .bold))
             .foregroundStyle(.white)
-            .frame(width: 18, height: 18)
+            .frame(width: InspectorTheme.Size.diffLabelSmall, height: InspectorTheme.Size.diffLabelSmall)
             .background(text == "A" ? InspectorTheme.Colors.accent : InspectorTheme.Colors.warning)
             .clipShape(.circle)
     }

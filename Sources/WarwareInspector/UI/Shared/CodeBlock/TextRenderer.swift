@@ -132,7 +132,7 @@ struct TextRenderer: View {
 
     private var expandButton: some View {
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) { isExpanded.toggle() }
+            withAnimation(.easeInOut(duration: InspectorTheme.Animation.standard)) { isExpanded.toggle() }
         } label: {
             HStack(spacing: InspectorTheme.Spacing.xs) {
                 Text(isExpanded ? "Collapse" : "Show all \(lineCount) lines")

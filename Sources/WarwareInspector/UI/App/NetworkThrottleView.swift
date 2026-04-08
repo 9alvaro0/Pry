@@ -15,8 +15,8 @@ struct NetworkThrottleView: View {
                             Image(systemName: preset.icon)
                                 .font(InspectorTheme.Typography.body)
                                 .foregroundStyle(preset.iconColor)
-                                .frame(width: 28, height: 28)
-                                .background(preset.iconColor.opacity(0.15))
+                                .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
+                                .background(preset.iconColor.opacity(InspectorTheme.Opacity.badge))
                                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
                             VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {

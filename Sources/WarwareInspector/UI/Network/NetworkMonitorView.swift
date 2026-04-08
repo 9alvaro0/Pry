@@ -242,7 +242,7 @@ struct NetworkMonitorView: View {
                         .overlay(alignment: .topTrailing) {
                             if activeFilterCount > 0 {
                                 Text("\(activeFilterCount)")
-                                    .font(.system(size: 9, weight: .bold))
+                                    .font(InspectorTheme.Typography.badgeText)
                                     .foregroundStyle(.white)
                                     .frame(minWidth: 14, minHeight: 14)
                                     .background(InspectorTheme.Colors.accent)
@@ -321,7 +321,7 @@ struct NetworkMonitorView: View {
                                         .foregroundStyle(sortOrder == order ? InspectorTheme.Colors.accent : InspectorTheme.Colors.textSecondary)
                                         .padding(.horizontal, InspectorTheme.Spacing.md)
                                         .padding(.vertical, InspectorTheme.Spacing.sm)
-                                        .background(sortOrder == order ? InspectorTheme.Colors.accent.opacity(0.15) : InspectorTheme.Colors.surface)
+                                        .background(sortOrder == order ? InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.badge) : InspectorTheme.Colors.surface)
                                         .clipShape(.capsule)
                                 }
                             }
@@ -400,8 +400,8 @@ struct NetworkMonitorView: View {
 
     private func sheetLabel(_ text: String) -> some View {
         Text(text.uppercased())
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(0.5)
+            .font(InspectorTheme.Typography.sectionLabel)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textTertiary)
     }
 
@@ -458,8 +458,8 @@ struct NetworkMonitorView: View {
                 Image(systemName: icon)
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(color)
-                    .frame(width: 36, height: 36)
-                    .background(color.opacity(0.15))
+                    .frame(width: InspectorTheme.Size.iconLarge, height: InspectorTheme.Size.iconLarge)
+                    .background(color.opacity(InspectorTheme.Opacity.badge))
                     .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {

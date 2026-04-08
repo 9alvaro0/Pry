@@ -25,7 +25,7 @@ struct FormDataRenderer: View {
                     Text("\(index + 1)")
                         .font(InspectorTheme.Typography.codeSmall)
                         .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                        .frame(width: 24, alignment: .trailing)
+                        .frame(width: InspectorTheme.Size.formKeyWidth, alignment: .trailing)
                         .padding(.trailing, InspectorTheme.Spacing.sm)
 
                     if isSearching {

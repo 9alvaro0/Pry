@@ -205,8 +205,8 @@ struct AppHubView: View {
             Image(systemName: "iphone")
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(InspectorTheme.Colors.accent)
-                .frame(width: 36, height: 36)
-                .background(InspectorTheme.Colors.accent.opacity(0.15))
+                .frame(width: InspectorTheme.Size.iconLarge, height: InspectorTheme.Size.iconLarge)
+                .background(InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.badge))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
@@ -298,8 +298,8 @@ struct AppHubView: View {
             Image(systemName: icon)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(color)
-                .frame(width: 28, height: 28)
-                .background(color.opacity(0.15))
+                .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
+                .background(color.opacity(InspectorTheme.Opacity.badge))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             Text(title)
@@ -338,7 +338,7 @@ struct AppHubView: View {
                 Image(systemName: "gearshape")
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
                     .background(InspectorTheme.Colors.surfaceElevated)
                     .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
@@ -360,8 +360,8 @@ struct AppHubView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title.uppercased())
-            .font(.system(size: 11, weight: .semibold))
-            .tracking(0.5)
+            .font(InspectorTheme.Typography.sectionLabel)
+            .tracking(InspectorTheme.Text.tracking)
             .foregroundStyle(InspectorTheme.Colors.textTertiary)
             .padding(.bottom, InspectorTheme.Spacing.sm)
     }
@@ -372,8 +372,8 @@ struct AppHubView: View {
                 .font(InspectorTheme.Typography.body)
                 .fontWeight(.semibold)
                 .foregroundStyle(color)
-                .frame(width: 36, height: 36)
-                .background(color.opacity(0.15))
+                .frame(width: InspectorTheme.Size.iconLarge, height: InspectorTheme.Size.iconLarge)
+                .background(color.opacity(InspectorTheme.Opacity.badge))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
@@ -396,7 +396,7 @@ struct AppHubView: View {
                     .fontWeight(.bold)
                     .padding(.horizontal, InspectorTheme.Spacing.sm)
                     .padding(.vertical, InspectorTheme.Spacing.xxs)
-                    .background(color.opacity(0.2))
+                    .background(color.opacity(InspectorTheme.Opacity.medium))
                     .foregroundStyle(color)
                     .clipShape(.capsule)
             }
@@ -407,7 +407,7 @@ struct AppHubView: View {
         }
         .padding(.horizontal, InspectorTheme.Spacing.lg)
         .padding(.vertical, InspectorTheme.Spacing.md)
-        .frame(minHeight: 72)
+        .frame(minHeight: InspectorTheme.Size.rowMinHeight)
         .background(InspectorTheme.Colors.surface)
     }
 
@@ -416,8 +416,8 @@ struct AppHubView: View {
             Image(systemName: icon)
                 .font(InspectorTheme.Typography.body)
                 .foregroundStyle(color)
-                .frame(width: 28, height: 28)
-                .background(color.opacity(0.12))
+                .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
+                .background(color.opacity(InspectorTheme.Opacity.tint))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             Text(title)
@@ -452,7 +452,7 @@ struct AppHubView: View {
     private var rowDivider: some View {
         Divider()
             .overlay(InspectorTheme.Colors.border)
-            .padding(.leading, 58)
+            .padding(.leading, InspectorTheme.Size.methodColumn + InspectorTheme.Spacing.pip)
     }
 }
 

@@ -24,7 +24,7 @@ struct InspectorStatusBadgeModifier: ViewModifier {
         content
             .font(InspectorTheme.Typography.codeSmall)
             .fontWeight(.semibold)
-            .padding(.horizontal, 6)
+            .padding(.horizontal, InspectorTheme.Spacing.pip)
             .padding(.vertical, InspectorTheme.Spacing.xxs)
             .background(InspectorTheme.Colors.statusBackground(statusCode))
             .foregroundStyle(InspectorTheme.Colors.statusForeground(statusCode))

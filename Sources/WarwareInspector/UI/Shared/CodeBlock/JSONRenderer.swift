@@ -104,7 +104,7 @@ struct JSONRenderer: View {
                 }
             }
             .onChange(of: collapseAll) {
-                withAnimation(.easeOut(duration: 0.2)) {
+                withAnimation(.easeOut(duration: InspectorTheme.Animation.standard)) {
                     collapsedPaths = collapseAll ? allCollapsiblePaths : []
                 }
             }
@@ -121,7 +121,7 @@ struct JSONRenderer: View {
             // Indent
             if line.level > 0 {
                 Color.clear
-                    .frame(width: CGFloat(line.level) * 16)
+                    .frame(width: CGFloat(line.level) * InspectorTheme.Size.toggleIcon)
             }
 
             // Collapse toggle
@@ -208,15 +208,15 @@ struct JSONRenderer: View {
     private func collapseButton(for path: String) -> some View {
         let collapsed = collapsedPaths.contains(path)
         return Button {
-            withAnimation(.easeOut(duration: 0.15)) {
+            withAnimation(.easeOut(duration: InspectorTheme.Animation.quick)) {
                 if collapsed { collapsedPaths.remove(path) }
                 else { collapsedPaths.insert(path) }
             }
         } label: {
             Image(systemName: collapsed ? "chevron.right" : "chevron.down")
-                .font(.system(size: 9, weight: .bold))
+                .font(InspectorTheme.Typography.badgeText)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                .frame(width: 16, height: 16)
+                .frame(width: InspectorTheme.Size.toggleIcon, height: InspectorTheme.Size.toggleIcon)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
