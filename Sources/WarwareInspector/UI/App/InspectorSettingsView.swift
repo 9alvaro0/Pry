@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings for the inspector: host blacklist, data limits, clear data.
+/// Settings for the inspector: presentation, behavior, blacklist, data.
 struct InspectorSettingsView: View {
     @Bindable var store: InspectorStore
 
@@ -8,6 +8,101 @@ struct InspectorSettingsView: View {
 
     var body: some View {
         List {
+            // Presentation
+            Section {
+                // Trigger mode
+                HStack {
+                    Text("Open with")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                    Spacer()
+                    Menu {
+                        Button {
+                            store.triggerOverride = .floatingButton
+                        } label: {
+                            Label("Floating Button", systemImage: "circle.fill")
+                            if triggerLabel == "Button" { Image(systemName: "checkmark") }
+                        }
+                        Button {
+                            store.triggerOverride = .shake
+                        } label: {
+                            Label("Shake", systemImage: "iphone.radiowaves.left.and.right")
+                            if triggerLabel == "Shake" { Image(systemName: "checkmark") }
+                        }
+                        Button {
+                            store.triggerOverride = [.floatingButton, .shake]
+                        } label: {
+                            Label("Both", systemImage: "square.stack")
+                            if triggerLabel == "Both" { Image(systemName: "checkmark") }
+                        }
+                    } label: {
+                        HStack(spacing: InspectorTheme.Spacing.xs) {
+                            Text(triggerLabel)
+                                .font(InspectorTheme.Typography.code)
+                                .foregroundStyle(InspectorTheme.Colors.accent)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 10))
+                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                        }
+                    }
+                }
+
+                // FAB position
+                HStack {
+                    Text("Button position")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                    Spacer()
+                    Menu {
+                        Button {
+                            store.fabOnLeft = false
+                        } label: {
+                            Label("Right", systemImage: "rectangle.righthalf.filled")
+                            if !store.fabOnLeft { Image(systemName: "checkmark") }
+                        }
+                        Button {
+                            store.fabOnLeft = true
+                        } label: {
+                            Label("Left", systemImage: "rectangle.lefthalf.filled")
+                            if store.fabOnLeft { Image(systemName: "checkmark") }
+                        }
+                    } label: {
+                        HStack(spacing: InspectorTheme.Spacing.xs) {
+                            Text(store.fabOnLeft ? "Left" : "Right")
+                                .font(InspectorTheme.Typography.code)
+                                .foregroundStyle(InspectorTheme.Colors.accent)
+                            Image(systemName: "chevron.up.chevron.down")
+                                .font(.system(size: 10))
+                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                        }
+                    }
+                }
+
+                // Error badge
+                Toggle(isOn: $store.showErrorBadge) {
+                    Text("Error badge on button")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                }
+                .tint(InspectorTheme.Colors.accent)
+            } header: {
+                Text("Presentation")
+            }
+            .listRowBackground(InspectorTheme.Colors.surface)
+
+            // Behavior
+            Section {
+                Toggle(isOn: $store.printToConsole) {
+                    Text("Print logs to Xcode console")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                }
+                .tint(InspectorTheme.Colors.accent)
+            } header: {
+                Text("Behavior")
+            }
+            .listRowBackground(InspectorTheme.Colors.surface)
+
             // Host Blacklist
             Section {
                 ForEach(Array(store.blacklistedHosts.sorted()), id: \.self) { host in
@@ -46,7 +141,7 @@ struct InspectorSettingsView: View {
             } header: {
                 Text("Host Blacklist")
             } footer: {
-                Text("Requests to these hosts won't be captured by the inspector.")
+                Text("Requests to these hosts won't be captured.")
                     .font(InspectorTheme.Typography.detail)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
             }
@@ -54,26 +149,6 @@ struct InspectorSettingsView: View {
 
             // Data
             Section {
-                HStack {
-                    Text("Max Network Entries")
-                        .font(InspectorTheme.Typography.body)
-                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                    Spacer()
-                    Text("200")
-                        .font(InspectorTheme.Typography.code)
-                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                }
-
-                HStack {
-                    Text("Max Console Entries")
-                        .font(InspectorTheme.Typography.body)
-                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                    Spacer()
-                    Text("500")
-                        .font(InspectorTheme.Typography.code)
-                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                }
-
                 Button(role: .destructive) {
                     store.clearAll()
                 } label: {
@@ -87,13 +162,20 @@ struct InspectorSettingsView: View {
                 Text("Data")
             }
             .listRowBackground(InspectorTheme.Colors.surface)
-
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .inspectorBackground()
     }
 
+    // MARK: - Helpers
+
+    private var triggerLabel: String {
+        guard let trigger = store.triggerOverride else { return "Default" }
+        if trigger.contains(.floatingButton) && trigger.contains(.shake) { return "Both" }
+        if trigger.contains(.shake) { return "Shake" }
+        return "Button"
+    }
 }
 
 // MARK: - Previews

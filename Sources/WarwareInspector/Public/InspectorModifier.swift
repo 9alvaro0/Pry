@@ -67,6 +67,10 @@ struct InspectorOverlayModifier: ViewModifier {
 
     @State private var isPresented = false
 
+    private var activeTrigger: InspectorTrigger {
+        store.triggerOverride ?? trigger
+    }
+
     private var errorCount: Int {
         store.networkEntries.filter {
             ($0.responseStatusCode ?? 0) >= 400 || $0.responseError != nil
@@ -82,8 +86,8 @@ struct InspectorOverlayModifier: ViewModifier {
             .onAppear {
                 InspectorLifecycle.start(store: store)
             }
-            .overlay(alignment: .bottomTrailing) {
-                if trigger.contains(.floatingButton) {
+            .overlay(alignment: store.fabOnLeft ? .bottomLeading : .bottomTrailing) {
+                if activeTrigger.contains(.floatingButton) {
                     FloatingActionButtonView(
                         icon: "ladybug.fill",
                         backgroundColor: InspectorTheme.Colors.fab,
@@ -93,7 +97,7 @@ struct InspectorOverlayModifier: ViewModifier {
                         isPresented = true
                     }
                     .overlay(alignment: .topTrailing) {
-                        if errorCount > 0 {
+                        if store.showErrorBadge && errorCount > 0 {
                             Text("\(errorCount)")
                                 .font(InspectorTheme.Typography.detail)
                                 .fontWeight(.bold)
@@ -105,10 +109,10 @@ struct InspectorOverlayModifier: ViewModifier {
                                 .offset(x: 4, y: -4)
                         }
                     }
-                    .padding(.trailing, InspectorTheme.Spacing.xl)
+                    .padding(store.fabOnLeft ? .leading : .trailing, InspectorTheme.Spacing.xl)
                 }
             }
-            .onShake(enabled: trigger.contains(.shake)) {
+            .onShake(enabled: activeTrigger.contains(.shake)) {
                 isPresented = true
             }
             .sheet(isPresented: $isPresented) {

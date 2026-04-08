@@ -38,6 +38,20 @@ import Foundation
 
     public var blacklistedHosts: Set<String> = []
 
+    // MARK: - Preferences
+
+    /// Show error count badge on the floating action button.
+    public var showErrorBadge: Bool = true
+
+    /// Also print log messages to Xcode console via `print()`.
+    public var printToConsole: Bool = true
+
+    /// FAB position: false = bottom-right (default), true = bottom-left.
+    public var fabOnLeft: Bool = false
+
+    /// Trigger mode override. Nil = use the value from `.inspector(trigger:)`.
+    var triggerOverride: InspectorTrigger?
+
     // MARK: - UI State (persists across sheet open/close)
 
     var networkSortOrder: Int = 0
@@ -127,7 +141,9 @@ import Foundation
         function: String = #function,
         line: Int = #line
     ) {
-        print(message)
+        if printToConsole {
+            print(message)
+        }
 
         let entry = LogEntry(
             timestamp: Date(),
