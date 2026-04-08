@@ -51,6 +51,30 @@ struct AppHubView: View {
                         color: InspectorTheme.Colors.accent
                     )
                 }
+
+                NavigationLink {
+                    CookiesView()
+                        .navigationTitle("Cookies")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    hubRow(
+                        icon: "birthday.cake",
+                        title: "Cookies",
+                        color: InspectorTheme.Colors.warning
+                    )
+                }
+
+                NavigationLink {
+                    UserDefaultsView()
+                        .navigationTitle("UserDefaults")
+                        .navigationBarTitleDisplayMode(.inline)
+                } label: {
+                    hubRow(
+                        icon: "tray.full",
+                        title: "UserDefaults",
+                        color: InspectorTheme.Colors.success
+                    )
+                }
             } header: {
                 Text("System")
                     .font(InspectorTheme.Typography.detail)
