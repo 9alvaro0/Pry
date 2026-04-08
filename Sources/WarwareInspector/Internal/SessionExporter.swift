@@ -17,8 +17,7 @@ enum SessionExporter {
             request["url"] = buildPostmanURL(entry.requestURL)
 
             // Headers
-            let headers: [[String: Any]] = entry.requestHeaders
-                .filter { !$0.key.hasPrefix("X-Debug-") && !["Content-Length", "Accept-Encoding", "Host"].contains($0.key) }
+            let headers: [[String: Any]] = exportHeaders(entry.requestHeaders)
                 .sorted { $0.key < $1.key }
                 .map { ["key": $0.key, "value": $0.value, "type": "text"] }
             request["header"] = headers
@@ -95,12 +94,7 @@ enum SessionExporter {
             components.append("--request \(entry.requestMethod)")
         }
 
-        let headers = entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") &&
-            !["Content-Length", "Host", "User-Agent", "Accept-Encoding"].contains(key)
-        }
-
-        for (key, value) in headers.sorted(by: { $0.key < $1.key }) {
+        for (key, value) in exportHeaders(entry.requestHeaders, skipExtra: curlExtraSkip).sorted(by: { $0.key < $1.key }) {
             components.append("--header '\(escapeCurl(key)): \(escapeCurl(value))'")
         }
 
@@ -197,6 +191,15 @@ enum SessionExporter {
     }
 
     // MARK: - Helpers
+
+    private static let skipHeaders: Set<String> = ["Content-Length", "Accept-Encoding", "Host", "X-WarwareInspector-Replay"]
+    private static let curlExtraSkip: Set<String> = ["User-Agent"]
+
+    private static func exportHeaders(_ headers: [String: String], skipExtra: Set<String> = []) -> [String: String] {
+        headers.filter { key, _ in
+            !key.hasPrefix("X-Debug-") && !skipHeaders.contains(key) && !skipExtra.contains(key)
+        }
+    }
 
     private static func escapeCurl(_ value: String) -> String {
         value.replacingOccurrences(of: "'", with: "'\"'\"'")

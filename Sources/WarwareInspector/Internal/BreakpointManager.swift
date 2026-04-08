@@ -80,6 +80,8 @@ final class BreakpointManager: @unchecked Sendable {
     nonisolated func pauseRequest(_ request: URLRequest, rule: BreakpointRule) async -> BreakpointAction {
         await withCheckedContinuation { continuation in
             Task { @MainActor in
+                // Cancel any pending breakpoint before taking a new one
+                self.cancelPendingContinuation()
                 self.continuation = continuation
                 self.state.pausedRequest = PausedRequest(request: request, rule: rule)
             }
@@ -96,6 +98,7 @@ final class BreakpointManager: @unchecked Sendable {
     ) async -> BreakpointAction {
         await withCheckedContinuation { continuation in
             Task { @MainActor in
+                self.cancelPendingContinuation()
                 self.continuation = continuation
                 let paused = PausedRequest(request: request, rule: rule)
                 paused.isResponseBreakpoint = true
@@ -105,6 +108,13 @@ final class BreakpointManager: @unchecked Sendable {
                 self.state.pausedRequest = paused
             }
         }
+    }
+
+    /// Cancels a pending continuation to prevent orphaned waits.
+    private func cancelPendingContinuation() {
+        continuation?.resume(returning: .cancel)
+        continuation = nil
+        state.pausedRequest = nil
     }
 
     // MARK: - Called from UI (resumes the network thread)

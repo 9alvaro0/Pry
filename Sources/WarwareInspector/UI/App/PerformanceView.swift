@@ -315,12 +315,12 @@ struct PerformanceView: View {
             for i in 0..<threadsCount {
                 var info = thread_basic_info()
                 var infoCount = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<integer_t>.size)
-                let r = withUnsafeMutablePointer(to: &info) {
+                let result = withUnsafeMutablePointer(to: &info) {
                     $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
                         thread_info(threadsList[Int(i)], thread_flavor_t(THREAD_BASIC_INFO), $0, &infoCount)
                     }
                 }
-                if r == KERN_SUCCESS { total += Double(info.cpu_usage) / Double(TH_USAGE_SCALE) * 100 }
+                if result == KERN_SUCCESS { total += Double(info.cpu_usage) / Double(TH_USAGE_SCALE) * 100 }
             }
             vm_deallocate(mach_task_self_, vm_address_t(bitPattern: threadsList), vm_size_t(Int(threadsCount) * MemoryLayout<thread_t>.stride))
         }
