@@ -24,11 +24,13 @@ struct HighlightedText: View {
         var searchStart = lower.startIndex
 
         while let range = lower.range(of: queryLower, range: searchStart..<lower.endIndex) {
-            let attrRange = AttributedString.Index(range.lowerBound, within: result)!
-                ..< AttributedString.Index(range.upperBound, within: result)!
+            guard let lowerBound = AttributedString.Index(range.lowerBound, within: result),
+                  let upperBound = AttributedString.Index(range.upperBound, within: result) else {
+                break
+            }
 
-            result[attrRange].foregroundColor = UIColor(InspectorTheme.Colors.background)
-            result[attrRange].backgroundColor = UIColor(InspectorTheme.Colors.warning)
+            result[lowerBound..<upperBound].foregroundColor = UIColor(InspectorTheme.Colors.background)
+            result[lowerBound..<upperBound].backgroundColor = UIColor(InspectorTheme.Colors.warning)
 
             searchStart = range.upperBound
         }

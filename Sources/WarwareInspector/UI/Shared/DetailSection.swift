@@ -6,7 +6,15 @@ struct DetailSectionView<Content: View>: View {
     var startCollapsed: Bool = false
     @ViewBuilder let content: () -> Content
 
-    @State private var isExpanded: Bool = true
+    @State private var isExpanded: Bool
+
+    init(title: String, collapsible: Bool = false, startCollapsed: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.collapsible = collapsible
+        self.startCollapsed = startCollapsed
+        self.content = content
+        self._isExpanded = State(initialValue: !startCollapsed)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -29,9 +37,6 @@ struct DetailSectionView<Content: View>: View {
                 content()
                     .padding(.bottom, InspectorTheme.Spacing.sm)
             }
-        }
-        .onAppear {
-            if startCollapsed { isExpanded = false }
         }
     }
 

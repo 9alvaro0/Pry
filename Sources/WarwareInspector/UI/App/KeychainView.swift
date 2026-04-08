@@ -2,6 +2,13 @@ import SwiftUI
 import Security
 import UIKit
 
+private let keychainClasses: [(cfString: CFString, name: String)] = [
+    (kSecClassGenericPassword, "Generic Password"),
+    (kSecClassInternetPassword, "Internet Password"),
+    (kSecClassCertificate, "Certificate"),
+    (kSecClassKey, "Key"),
+]
+
 // MARK: - Model
 
 private struct KeychainItem: Identifiable {
@@ -175,17 +182,10 @@ struct KeychainView: View {
     // MARK: - Data Loading
 
     private func loadItems() {
-        let classes: [(CFString, String)] = [
-            (kSecClassGenericPassword, "Generic Password"),
-            (kSecClassInternetPassword, "Internet Password"),
-            (kSecClassCertificate, "Certificate"),
-            (kSecClassKey, "Key"),
-        ]
-
         var allItems: [KeychainItem] = []
         errorMessage = nil
 
-        for (secClass, className) in classes {
+        for (secClass, className) in keychainClasses {
             let query: [String: Any] = [
                 kSecClass as String: secClass,
                 kSecReturnAttributes as String: true,
@@ -245,18 +245,8 @@ struct KeychainView: View {
     private func deleteItem(_ item: KeychainItem) {
         var query: [String: Any] = [:]
 
-        switch item.itemClass {
-        case "Generic Password":
-            query[kSecClass as String] = kSecClassGenericPassword
-        case "Internet Password":
-            query[kSecClass as String] = kSecClassInternetPassword
-        case "Certificate":
-            query[kSecClass as String] = kSecClassCertificate
-        case "Key":
-            query[kSecClass as String] = kSecClassKey
-        default:
-            return
-        }
+        guard let match = keychainClasses.first(where: { $0.name == item.itemClass }) else { return }
+        query[kSecClass as String] = match.cfString
 
         if let account = item.account {
             query[kSecAttrAccount as String] = account
