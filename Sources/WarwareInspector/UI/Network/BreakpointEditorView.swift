@@ -11,6 +11,11 @@ struct BreakpointEditorView: View {
     @State private var newHeaderKey = ""
     @State private var newHeaderValue = ""
 
+    // Local state for response editing (avoids cursor reset from @Observable re-render)
+    @State private var editStatusCode = ""
+    @State private var editResponseBody = ""
+    @State private var didInitResponseFields = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -40,7 +45,10 @@ struct BreakpointEditorView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button(action: onSend) {
+                    Button {
+                        syncResponseFieldsBack()
+                        onSend()
+                    } label: {
                         HStack(spacing: InspectorTheme.Spacing.xs) {
                             Image(systemName: "arrow.up.circle.fill")
                             Text("Send")
@@ -201,30 +209,27 @@ struct BreakpointEditorView: View {
             .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
 
             // Status code
-            if let status = paused.responseStatusCode {
-                editSection("Status Code") {
-                    TextField("200", text: Binding(
-                        get: { String(status) },
-                        set: { paused.responseStatusCode = Int($0) }
-                    ))
+            editSection("Status Code") {
+                TextField("200", text: $editStatusCode)
                     .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
                     .keyboardType(.numberPad)
-                }
             }
 
             // Response body
-            if let body = paused.responseBody {
-                editSection("Response Body") {
-                    TextEditor(text: Binding(
-                        get: { body },
-                        set: { paused.responseBody = $0 }
-                    ))
+            editSection("Response Body") {
+                TextEditor(text: $editResponseBody)
                     .font(InspectorTheme.Typography.code)
                     .foregroundStyle(InspectorTheme.Colors.textPrimary)
                     .scrollContentBackground(.hidden)
                     .frame(minHeight: InspectorTheme.Size.editorMinHeight)
-                }
             }
+        }
+        .onAppear {
+            guard !didInitResponseFields else { return }
+            didInitResponseFields = true
+            editStatusCode = paused.responseStatusCode.map(String.init) ?? "200"
+            editResponseBody = paused.responseBody ?? ""
         }
     }
 
@@ -245,6 +250,13 @@ struct BreakpointEditorView: View {
                     RoundedRectangle(cornerRadius: InspectorTheme.Radius.md)
                         .stroke(InspectorTheme.Colors.border, lineWidth: 1)
                 )
+        }
+    }
+
+    private func syncResponseFieldsBack() {
+        if paused.isResponseBreakpoint {
+            paused.responseStatusCode = Int(editStatusCode)
+            paused.responseBody = editResponseBody
         }
     }
 

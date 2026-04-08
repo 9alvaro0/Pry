@@ -244,6 +244,11 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             case .send(let modified):
                 guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
                 URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
+                // If rule pauses on both, set up response breakpoint too
+                if rule.pauseOn == .both {
+                    protocolSelf.hasResponseBreakpoint = true
+                    protocolSelf.matchedBreakpointRule = rule
+                }
                 protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
             case .sendResponse:
                 break // Not applicable for request breakpoints
