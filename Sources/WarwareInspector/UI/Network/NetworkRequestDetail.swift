@@ -6,6 +6,7 @@ struct NetworkRequestDetailView: View {
     @Environment(\.inspectorStore) private var store
     @State private var showCopied = false
     @State private var showMockEditor = false
+    @State private var showMockSaved = false
 
     var body: some View {
         ScrollView {
@@ -69,15 +70,32 @@ struct NetworkRequestDetailView: View {
         .inspectorBackground()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
-        .sheet(isPresented: $showMockEditor) {
+        .sheet(isPresented: $showMockEditor, onDismiss: {
+            // Check if a mock was created/updated for this request
+            let hasMockNow = store.mockRules.contains {
+                $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod && $0.isEnabled
+            }
+            if hasMockNow && !entry.isMocked {
+                showMockSaved = true
+                Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    showMockSaved = false
+                }
+            }
+        }) {
             ResponseOverrideView(entry: entry)
+                .environment(\.inspectorStore, store)
         }
         .overlay(alignment: .top) {
             if showCopied {
                 copiedToast
             }
+            if showMockSaved {
+                mockSavedToast
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: showCopied)
+        .animation(.easeInOut(duration: 0.2), value: showMockSaved)
     }
 
     // MARK: - Summary Header
@@ -364,6 +382,23 @@ struct NetworkRequestDetailView: View {
             .clipShape(.capsule)
             .transition(.move(edge: .top).combined(with: .opacity))
             .padding(.top, InspectorTheme.Spacing.sm)
+    }
+
+    private var mockSavedToast: some View {
+        HStack(spacing: InspectorTheme.Spacing.xs) {
+            Image(systemName: "theatermasks.fill")
+                .font(InspectorTheme.Typography.detail)
+            Text("Mock saved - applies on next request")
+                .font(InspectorTheme.Typography.detail)
+                .fontWeight(.semibold)
+        }
+        .foregroundStyle(InspectorTheme.Colors.syntaxBool)
+        .padding(.horizontal, InspectorTheme.Spacing.md)
+        .padding(.vertical, InspectorTheme.Spacing.sm)
+        .background(InspectorTheme.Colors.syntaxBool.opacity(0.15))
+        .clipShape(.capsule)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .padding(.top, InspectorTheme.Spacing.sm)
     }
 
     // MARK: - Actions
