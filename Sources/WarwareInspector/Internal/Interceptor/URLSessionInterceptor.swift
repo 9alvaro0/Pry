@@ -80,18 +80,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
            let rule = Self.findMatchingBreakpoint(for: request),
            rule.pauseOn == .request || rule.pauseOn == .both {
             let capturedRequest = mutableRequest as URLRequest
-            Task { [weak self] in
-                let action = await BreakpointManager.shared.pauseRequest(capturedRequest, rule: rule)
-                guard let self else { return }
-                switch action {
-                case .send(let modified):
-                    guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
-                    URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
-                    self.proceedWithRequest(modifiedMutable as URLRequest)
-                case .cancel:
-                    self.client?.urlProtocol(self, didFailWithError: URLError(.cancelled))
-                }
-            }
+            handleBreakpoint(request: capturedRequest, rule: rule)
             return
         }
 
@@ -154,6 +143,31 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
     private static func findMatchingBreakpoint(for request: URLRequest) -> BreakpointRule? {
         breakpointRules.first { $0.matches(request) }
+    }
+
+    private func handleBreakpoint(request: URLRequest, rule: BreakpointRule) {
+        // Use DispatchQueue to bridge from sync to async, avoiding Sendable capture issues
+        nonisolated(unsafe) let protocolSelf = self
+        DispatchQueue.global(qos: .userInitiated).async {
+            let semaphore = DispatchSemaphore(value: 0)
+            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
+
+            Task {
+                result = await BreakpointManager.shared.pauseRequest(request, rule: rule)
+                semaphore.signal()
+            }
+
+            semaphore.wait()
+
+            switch result {
+            case .send(let modified):
+                guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
+                URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
+                protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
+            case .cancel:
+                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
+            }
+        }
     }
 
     private func respondWithMock(_ rule: MockRule) {
