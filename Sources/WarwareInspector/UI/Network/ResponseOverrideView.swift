@@ -8,7 +8,6 @@ struct ResponseOverrideView: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var statusCode: String
-    @State private var removed = false
     @State private var responseBody: String
     @State private var delay: Double = 0
     @State private var saved = false
@@ -93,11 +92,7 @@ struct ResponseOverrideView: View {
                     if let rule = existingRule {
                         Button(role: .destructive) {
                             store.removeMockRule(rule.id)
-                            removed = true
-                            Task {
-                                try? await Task.sleep(for: .seconds(1))
-                                dismiss()
-                            }
+                            dismiss()
                         } label: {
                             HStack {
                                 Image(systemName: "xmark.circle")
@@ -115,21 +110,6 @@ struct ResponseOverrideView: View {
                 .padding(InspectorTheme.Spacing.lg)
             }
             .inspectorBackground()
-            .overlay(alignment: .top) {
-                if removed {
-                    Text("Mock removed")
-                        .font(InspectorTheme.Typography.detail)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, InspectorTheme.Spacing.md)
-                        .padding(.vertical, InspectorTheme.Spacing.xs)
-                        .background(InspectorTheme.Colors.error)
-                        .clipShape(.capsule)
-                        .transition(.move(edge: .top).combined(with: .opacity))
-                        .padding(.top, InspectorTheme.Spacing.sm)
-                }
-            }
-            .animation(.easeInOut(duration: 0.2), value: removed)
             .navigationTitle("Mock Response")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

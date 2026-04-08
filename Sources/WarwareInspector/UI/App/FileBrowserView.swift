@@ -600,7 +600,7 @@ struct FilePreviewView: View {
         // SQLite and auxiliary files → just show metadata, no hex
         let ext = (item.name as NSString).pathExtension.lowercased()
         if item.isSQLite || ["db-shm", "db-wal", "db-journal"].contains(ext) {
-            fileContent = "SQLite database - \(ByteCountFormatter.string(fromByteCount: item.size, countStyle: .file))"
+            fileContent = nil
             hexDump = nil
             isLoading = false
             return

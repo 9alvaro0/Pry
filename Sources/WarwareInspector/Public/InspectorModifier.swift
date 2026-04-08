@@ -141,9 +141,6 @@ enum InspectorLifecycle {
         PushNotificationInterceptor.store = store
         PushNotificationInterceptor.install()
 
-        // Lifecycle events logging
-        LifecycleInterceptor.store = store
-        LifecycleInterceptor.install()
     }
 
     static func stop() {

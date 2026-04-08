@@ -7,13 +7,15 @@ struct NetworkRequestDetailView: View {
     @State private var showCopied = false
     @State private var showMockEditor = false
     @State private var showMockSaved = false
+    @State private var showMockRemoved = false
+    @State private var hadMockBeforeEdit = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // Mocked banner (tappable → opens editor)
                 if entry.isMocked {
-                    Button { showMockEditor = true } label: {
+                    Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
                         HStack(spacing: InspectorTheme.Spacing.sm) {
                             Image(systemName: "theatermasks.fill")
                                 .font(InspectorTheme.Typography.body)
@@ -71,15 +73,22 @@ struct NetworkRequestDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
         .sheet(isPresented: $showMockEditor, onDismiss: {
-            // Check if a mock was created/updated for this request
             let hasMockNow = store.mockRules.contains {
                 $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod && $0.isEnabled
             }
-            if hasMockNow && !entry.isMocked {
+            if hasMockNow && !hadMockBeforeEdit {
+                // Mock was created
                 showMockSaved = true
                 Task {
                     try? await Task.sleep(for: .seconds(3))
                     showMockSaved = false
+                }
+            } else if !hasMockNow && hadMockBeforeEdit {
+                // Mock was removed
+                showMockRemoved = true
+                Task {
+                    try? await Task.sleep(for: .seconds(3))
+                    showMockRemoved = false
                 }
             }
         }) {
@@ -93,9 +102,13 @@ struct NetworkRequestDetailView: View {
             if showMockSaved {
                 mockSavedToast
             }
+            if showMockRemoved {
+                mockRemovedToast
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: showCopied)
         .animation(.easeInOut(duration: 0.2), value: showMockSaved)
+        .animation(.easeInOut(duration: 0.2), value: showMockRemoved)
     }
 
     // MARK: - Summary Header
@@ -344,7 +357,7 @@ struct NetworkRequestDetailView: View {
                 .truncationMode(.middle)
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Button { showMockEditor = true } label: {
+            Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
                 Image(systemName: hasMockActive ? "theatermasks.fill" : "theatermasks")
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(hasMockActive ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
@@ -405,6 +418,23 @@ struct NetworkRequestDetailView: View {
         .padding(.horizontal, InspectorTheme.Spacing.md)
         .padding(.vertical, InspectorTheme.Spacing.sm)
         .background(InspectorTheme.Colors.syntaxBool)
+        .clipShape(.capsule)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .padding(.top, InspectorTheme.Spacing.sm)
+    }
+
+    private var mockRemovedToast: some View {
+        HStack(spacing: InspectorTheme.Spacing.xs) {
+            Image(systemName: "theatermasks")
+                .font(InspectorTheme.Typography.detail)
+            Text("Mock removed")
+                .font(InspectorTheme.Typography.detail)
+                .fontWeight(.semibold)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, InspectorTheme.Spacing.md)
+        .padding(.vertical, InspectorTheme.Spacing.sm)
+        .background(InspectorTheme.Colors.error)
         .clipShape(.capsule)
         .transition(.move(edge: .top).combined(with: .opacity))
         .padding(.top, InspectorTheme.Spacing.sm)
