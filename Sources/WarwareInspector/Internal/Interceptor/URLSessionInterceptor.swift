@@ -13,6 +13,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     private var response: URLResponse?
     private var startTime = Date()
     private var requestID: UUID?
+    private var taskMetrics: URLSessionTaskMetrics?
+    private var redirectCount = 0
 
     // Shared session to preserve connection pooling
     nonisolated(unsafe) private static var forwardingSession: URLSession?
@@ -95,6 +97,21 @@ extension InspectorURLProtocol: URLSessionDataDelegate {
         client?.urlProtocol(self, didLoad: data)
     }
 
+    public func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest,
+        completionHandler: @escaping (URLRequest?) -> Void
+    ) {
+        redirectCount += 1
+        completionHandler(request)
+    }
+
+    public func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
+        self.taskMetrics = metrics
+    }
+
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let duration = Date().timeIntervalSince(startTime)
 
@@ -106,7 +123,9 @@ extension InspectorURLProtocol: URLSessionDataDelegate {
                 headers: (httpResponse?.allHeaderFields as? [String: String]) ?? [:],
                 body: receivedData,
                 error: error,
-                duration: duration
+                duration: duration,
+                taskMetrics: taskMetrics,
+                redirectCount: redirectCount
             )
         }
 

@@ -17,6 +17,7 @@ extension InspectorStore {
         store.addNetworkEntry(.mockDelete)
         store.addNetworkEntry(.mockPatch)
         store.addNetworkEntry(.mockFormPost)
+        store.addNetworkEntry(.mockRedirect)
 
         // Console: one of each type
         store.addLogEntry(.mockInfo)

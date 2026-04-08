@@ -2,6 +2,17 @@ import Foundation
 
 /// Represents a captured network request and its response.
 public struct NetworkEntry: Identifiable, Codable, Sendable {
+
+    public struct TimingMetrics: Codable, Sendable {
+        public let dnsLookup: TimeInterval?
+        public let tcpConnect: TimeInterval?
+        public let tlsHandshake: TimeInterval?
+        public let requestSent: TimeInterval?
+        public let waitingForResponse: TimeInterval? // TTFB
+        public let responseReceived: TimeInterval?
+        public let total: TimeInterval?
+    }
+
     public var id = UUID()
     public let timestamp: Date
     public let type: LogType
@@ -27,6 +38,10 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
     public let duration: TimeInterval?
     public let requestSize: Int?
     public let responseSize: Int?
+    public let metrics: TimingMetrics?
+
+    // Redirects
+    public var redirectCount: Int = 0
 
     public var isSuccess: Bool {
         guard let statusCode = responseStatusCode else { return false }
@@ -62,4 +77,3 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
         return responseBody != nil && !responseBody!.isEmpty
     }
 }
-

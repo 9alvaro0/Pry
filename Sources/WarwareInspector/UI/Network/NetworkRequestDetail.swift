@@ -3,6 +3,7 @@ import SwiftUI
 struct NetworkRequestDetailView: View {
     let entry: NetworkEntry
 
+    @Environment(\.inspectorStore) private var store
     @State private var showCopied = false
 
     var body: some View {
@@ -10,6 +11,8 @@ struct NetworkRequestDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 summaryHeader
                 Divider().overlay(InspectorTheme.Colors.border)
+
+                timingSection
 
                 // Request
                 requestHeadersSection
@@ -99,6 +102,12 @@ struct NetworkRequestDetailView: View {
                         .font(InspectorTheme.Typography.code)
                         .foregroundStyle(InspectorTheme.Colors.textSecondary)
                 }
+
+                if entry.redirectCount > 0 {
+                    Text("\(entry.redirectCount) redirect\(entry.redirectCount == 1 ? "" : "s")")
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.warning)
+                }
             }
 
             // Full URL (copyable)
@@ -114,6 +123,36 @@ struct NetworkRequestDetailView: View {
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
         }
         .padding(.vertical, InspectorTheme.Spacing.lg)
+    }
+
+    // MARK: - Timing Breakdown
+
+    @ViewBuilder
+    private var timingSection: some View {
+        if let metrics = entry.metrics {
+            DetailSectionView(title: "Timing Breakdown", collapsible: true) {
+                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+                    timingRow("DNS Lookup", value: metrics.dnsLookup)
+                    timingRow("TCP Connect", value: metrics.tcpConnect)
+                    timingRow("TLS Handshake", value: metrics.tlsHandshake)
+                    timingRow("Request Sent", value: metrics.requestSent)
+                    timingRow("Waiting (TTFB)", value: metrics.waitingForResponse)
+                    timingRow("Response Received", value: metrics.responseReceived)
+                }
+            }
+        }
+    }
+
+    private func timingRow(_ label: String, value: TimeInterval?) -> some View {
+        HStack {
+            Text(label)
+                .font(InspectorTheme.Typography.body)
+                .foregroundStyle(InspectorTheme.Colors.textSecondary)
+            Spacer()
+            Text(value.map { String(format: "%.1fms", $0 * 1000) } ?? "-")
+                .font(InspectorTheme.Typography.code)
+                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+        }
     }
 
     // MARK: - Request Headers
@@ -220,6 +259,15 @@ struct NetworkRequestDetailView: View {
                 .foregroundStyle(InspectorTheme.Colors.textPrimary)
                 .lineLimit(1)
                 .truncationMode(.middle)
+        }
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                store.togglePin(entry.id)
+            } label: {
+                Image(systemName: store.isPinned(entry.id) ? "pin.fill" : "pin")
+                    .font(InspectorTheme.Typography.body)
+                    .foregroundStyle(store.isPinned(entry.id) ? InspectorTheme.Colors.warning : InspectorTheme.Colors.textSecondary)
+            }
         }
         ToolbarItem(placement: .topBarTrailing) {
             ShareLink(item: generateShareText()) {
@@ -417,6 +465,18 @@ struct NetworkRequestDetailView: View {
 #Preview("Detail - Form POST") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockFormPost)
+    }
+}
+
+#Preview("Detail - Redirect + Timing") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockRedirect)
+    }
+}
+
+#Preview("Detail - Timing Breakdown") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockSuccess)
     }
 }
 #endif

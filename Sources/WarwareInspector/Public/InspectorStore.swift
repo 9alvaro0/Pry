@@ -17,6 +17,22 @@ import Foundation
     public private(set) var logEntries: [LogEntry] = []
     public private(set) var deeplinkEntries: [DeeplinkEntry] = []
 
+    // MARK: - Pins
+
+    public var pinnedRequestIDs: Set<UUID> = []
+
+    public func togglePin(_ id: UUID) {
+        if pinnedRequestIDs.contains(id) {
+            pinnedRequestIDs.remove(id)
+        } else {
+            pinnedRequestIDs.insert(id)
+        }
+    }
+
+    public func isPinned(_ id: UUID) -> Bool {
+        pinnedRequestIDs.contains(id)
+    }
+
     // MARK: - Blacklist
 
     public var blacklistedHosts: Set<String> = []
@@ -129,6 +145,13 @@ import Foundation
         if deeplinkEntries.count > maxDeeplinkEntries {
             deeplinkEntries.removeLast(deeplinkEntries.count - maxDeeplinkEntries)
         }
+    }
+
+    // MARK: - Remove
+
+    public func removeNetworkEntry(_ id: UUID) {
+        networkEntries.removeAll { $0.id == id }
+        pinnedRequestIDs.remove(id)
     }
 
     // MARK: - Clear

@@ -46,7 +46,16 @@ extension NetworkEntry {
             authTokenLength: 256,
             duration: 0.43,
             requestSize: 163,
-            responseSize: 247
+            responseSize: 247,
+            metrics: TimingMetrics(
+                dnsLookup: 0.012,
+                tcpConnect: 0.025,
+                tlsHandshake: 0.045,
+                requestSent: 0.002,
+                waitingForResponse: 0.280,
+                responseReceived: 0.066,
+                total: 0.430
+            )
         )
     }
 
@@ -77,7 +86,8 @@ extension NetworkEntry {
             authTokenLength: nil,
             duration: 1.2,
             requestSize: nil,
-            responseSize: 125
+            responseSize: 125,
+            metrics: nil
         )
     }
 
@@ -113,7 +123,8 @@ extension NetworkEntry {
             authTokenLength: 180,
             duration: 3.45,
             requestSize: 52,
-            responseSize: 98
+            responseSize: 98,
+            metrics: nil
         )
     }
 
@@ -143,7 +154,8 @@ extension NetworkEntry {
             authTokenLength: 256,
             duration: 0.18,
             requestSize: 202,
-            responseSize: 0
+            responseSize: 0,
+            metrics: nil
         )
     }
 
@@ -171,7 +183,8 @@ extension NetworkEntry {
             authTokenLength: nil,
             duration: 0.08,
             requestSize: nil,
-            responseSize: 87
+            responseSize: 87,
+            metrics: nil
         )
     }
 
@@ -195,7 +208,8 @@ extension NetworkEntry {
             authTokenLength: 140,
             duration: nil,
             requestSize: 2_400_000,
-            responseSize: nil
+            responseSize: nil,
+            metrics: nil
         )
     }
 
@@ -219,7 +233,8 @@ extension NetworkEntry {
             authTokenLength: 140,
             duration: 0.31,
             requestSize: nil,
-            responseSize: 0
+            responseSize: 0,
+            metrics: nil
         )
     }
 
@@ -254,7 +269,8 @@ extension NetworkEntry {
             authTokenLength: 140,
             duration: 0.22,
             requestSize: 42,
-            responseSize: 89
+            responseSize: 89,
+            metrics: nil
         )
     }
 }
@@ -524,6 +540,42 @@ enum MockForm {
 
 extension NetworkEntry {
 
+    static var mockRedirect: NetworkEntry {
+        var entry = NetworkEntry(
+            timestamp: Date().addingTimeInterval(-7),
+            type: .network,
+            requestURL: "https://api.example.com/v1/legacy/users",
+            requestMethod: "GET",
+            requestHeaders: ["Accept": "application/json"],
+            requestBody: nil,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: """
+            {
+              "users": []
+            }
+            """,
+            responseError: nil,
+            authToken: nil,
+            authTokenType: nil,
+            authTokenLength: nil,
+            duration: 0.95,
+            requestSize: nil,
+            responseSize: 42,
+            metrics: NetworkEntry.TimingMetrics(
+                dnsLookup: 0.008,
+                tcpConnect: 0.018,
+                tlsHandshake: 0.035,
+                requestSent: 0.001,
+                waitingForResponse: 0.850,
+                responseReceived: 0.038,
+                total: 0.950
+            )
+        )
+        entry.redirectCount = 2
+        return entry
+    }
+
     static var mockFormPost: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-10),
@@ -550,7 +602,8 @@ extension NetworkEntry {
             authTokenLength: nil,
             duration: 0.55,
             requestSize: 120,
-            responseSize: 95
+            responseSize: 95,
+            metrics: nil
         )
     }
 }

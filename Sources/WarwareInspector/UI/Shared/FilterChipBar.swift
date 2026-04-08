@@ -66,9 +66,11 @@ struct FilterChipView: View {
                         .font(InspectorTheme.Typography.detail)
                 }
 
-                Text(title)
-                    .font(InspectorTheme.Typography.body)
-                    .fontWeight(isSelected ? .semibold : .regular)
+                if !title.isEmpty {
+                    Text(title)
+                        .font(InspectorTheme.Typography.body)
+                        .fontWeight(isSelected ? .semibold : .regular)
+                }
 
                 if count > 0 {
                     Text("\(count)")

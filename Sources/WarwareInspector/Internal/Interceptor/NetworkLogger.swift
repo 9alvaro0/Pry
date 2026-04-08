@@ -41,7 +41,8 @@ final class NetworkLogger: @unchecked Sendable {
             authTokenLength: authTokenLength,
             duration: nil,
             requestSize: body?.count,
-            responseSize: nil
+            responseSize: nil,
+            metrics: nil
         )
 
         queue.async { [weak self] in
@@ -62,7 +63,9 @@ final class NetworkLogger: @unchecked Sendable {
         headers: [String: String],
         body: Data?,
         error: Error?,
-        duration: TimeInterval
+        duration: TimeInterval,
+        taskMetrics: URLSessionTaskMetrics?,
+        redirectCount: Int = 0
     ) {
         // Skip cancelled requests
         if let nsError = error as NSError?,
@@ -78,6 +81,40 @@ final class NetworkLogger: @unchecked Sendable {
             guard let self else { return }
 
             let pending = self.pendingRequests.removeValue(forKey: requestID)
+
+            let metrics: NetworkEntry.TimingMetrics? = {
+                guard let tm = taskMetrics,
+                      let transaction = tm.transactionMetrics.last else { return nil }
+
+                let dns = transaction.domainLookupEndDate.flatMap { end in
+                    transaction.domainLookupStartDate.map { start in end.timeIntervalSince(start) }
+                }
+                let tcp = transaction.connectEndDate.flatMap { end in
+                    transaction.connectStartDate.map { start in end.timeIntervalSince(start) }
+                }
+                let tls = transaction.secureConnectionEndDate.flatMap { end in
+                    transaction.secureConnectionStartDate.map { start in end.timeIntervalSince(start) }
+                }
+                let reqSent = transaction.requestEndDate.flatMap { end in
+                    transaction.requestStartDate.map { start in end.timeIntervalSince(start) }
+                }
+                let waiting = transaction.responseStartDate.flatMap { end in
+                    transaction.requestEndDate.map { start in end.timeIntervalSince(start) }
+                }
+                let respReceived = transaction.responseEndDate.flatMap { end in
+                    transaction.responseStartDate.map { start in end.timeIntervalSince(start) }
+                }
+
+                return NetworkEntry.TimingMetrics(
+                    dnsLookup: dns,
+                    tcpConnect: tcp,
+                    tlsHandshake: tls,
+                    requestSent: reqSent,
+                    waitingForResponse: waiting,
+                    responseReceived: respReceived,
+                    total: duration
+                )
+            }()
 
             let entry = NetworkEntry(
                 id: pending?.id ?? UUID(),
@@ -96,7 +133,9 @@ final class NetworkLogger: @unchecked Sendable {
                 authTokenLength: pending?.authTokenLength,
                 duration: duration,
                 requestSize: pending?.requestSize,
-                responseSize: body?.count
+                responseSize: body?.count,
+                metrics: metrics,
+                redirectCount: redirectCount
             )
 
             Task { @MainActor in

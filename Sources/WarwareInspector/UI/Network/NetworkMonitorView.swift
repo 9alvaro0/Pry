@@ -4,9 +4,11 @@ struct NetworkMonitorView: View {
     @Bindable var store: InspectorStore
 
     @State private var searchText: String = ""
-    @State private var selectedFilter: NetworkFilter = .all
+    @State private var selectedFilter: NetworkFilter?
     @State private var sortOrder: SortOrder = .newest
     @State private var selectedHost: String?
+    @State private var showStats = false
+    @State private var showFilterSheet = false
 
     private enum SortOrder: String, CaseIterable {
         case newest = "Newest"
@@ -25,14 +27,14 @@ struct NetworkMonitorView: View {
     }
 
     private enum NetworkFilter: String, CaseIterable {
-        case all = "All"
+        case pinned = "Pinned"
         case success = "Success"
         case error = "Errors"
         case pending = "Pending"
 
         var color: Color {
             switch self {
-            case .all: InspectorTheme.Colors.textSecondary
+            case .pinned: InspectorTheme.Colors.warning
             case .success: InspectorTheme.Colors.success
             case .error: InspectorTheme.Colors.error
             case .pending: InspectorTheme.Colors.pending
@@ -41,7 +43,7 @@ struct NetworkMonitorView: View {
 
         func matches(_ entry: NetworkEntry) -> Bool {
             switch self {
-            case .all: true
+            case .pinned: true // Handled separately
             case .success: entry.isSuccess
             case .error: (!entry.isSuccess && entry.responseStatusCode != nil) || entry.responseError != nil
             case .pending: entry.responseStatusCode == nil && entry.responseError == nil
@@ -49,13 +51,18 @@ struct NetworkMonitorView: View {
         }
     }
 
+    // MARK: - Computed
+
     private var uniqueHosts: [(host: String, count: Int)] {
         var hostCounts: [String: Int] = [:]
         for entry in store.networkEntries {
-            let host = entry.requestURL.extractHost()
-            hostCounts[host, default: 0] += 1
+            hostCounts[entry.requestURL.extractHost(), default: 0] += 1
         }
         return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
+    }
+
+    private var hasActiveFilters: Bool {
+        sortOrder != .newest || selectedHost != nil || showStats
     }
 
     private var filteredEntries: [NetworkEntry] {
@@ -65,26 +72,23 @@ struct NetworkMonitorView: View {
             entries = entries.filter { $0.requestURL.extractHost() == host }
         }
 
-        if selectedFilter != .all {
-            entries = entries.filter { selectedFilter.matches($0) }
+        if let filter = selectedFilter {
+            if filter == .pinned {
+                entries = entries.filter { store.isPinned($0.id) }
+            } else {
+                entries = entries.filter { filter.matches($0) }
+            }
         }
 
         if !searchText.isEmpty {
             let query = searchText.lowercased()
             entries = entries.filter { entry in
-                // Method: "get", "post", "delete"...
                 entry.requestMethod.lowercased().contains(query) ||
-                // URL path: "/v1/users", "/health"...
                 entry.requestURL.extractPath().lowercased().contains(query) ||
-                // Host: "api.example.com"
                 entry.requestURL.extractHost().lowercased().contains(query) ||
-                // Status code: "404", "200", "500"
                 (entry.responseStatusCode.map { String($0).contains(query) } ?? false) ||
-                // Status description: "not found", "ok", "internal server"
                 (entry.responseStatusCode.map { HTTPStatus.description(for: $0).lowercased().contains(query) } ?? false) ||
-                // Error message
                 (entry.responseError?.lowercased().contains(query) ?? false) ||
-                // Display error (extracted from JSON)
                 (entry.displayError?.lowercased().contains(query) ?? false)
             }
         }
@@ -100,9 +104,9 @@ struct NetworkMonitorView: View {
     }
 
     private var filterCounts: [NetworkFilter: Int] {
-        var counts: [NetworkFilter: Int] = [.all: 0, .success: 0, .error: 0, .pending: 0]
+        var counts: [NetworkFilter: Int] = [.pinned: 0, .success: 0, .error: 0, .pending: 0]
+        counts[.pinned] = store.pinnedRequestIDs.count
         for entry in store.networkEntries {
-            counts[.all, default: 0] += 1
             if entry.isSuccess {
                 counts[.success, default: 0] += 1
             } else if entry.responseStatusCode == nil && entry.responseError == nil {
@@ -114,6 +118,8 @@ struct NetworkMonitorView: View {
         return counts
     }
 
+    // MARK: - Body
+
     var body: some View {
         Group {
             if store.networkEntries.isEmpty {
@@ -124,113 +130,190 @@ struct NetworkMonitorView: View {
                 )
             } else {
                 List {
-                    ForEach(filteredEntries) { entry in
-                        NavigationLink(destination: NetworkRequestDetailView(entry: entry)) {
-                            NetworkRequestRowView(entry: entry)
+                    // Stats as first list section
+                    if showStats {
+                        Section {
+                            NetworkStatsView(entries: store.networkEntries)
+                                .listRowInsets(EdgeInsets())
+                                .listRowBackground(Color.clear)
                         }
-                        .listRowBackground(InspectorTheme.Colors.surface)
+                    }
+
+                    // Requests
+                    Section {
+                        ForEach(filteredEntries) { entry in
+                            NavigationLink(destination: NetworkRequestDetailView(entry: entry)) {
+                                NetworkRequestRowView(entry: entry, isPinned: store.isPinned(entry.id))
+                            }
+                            .listRowBackground(InspectorTheme.Colors.surface)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                Button(role: .destructive) {
+                                    store.removeNetworkEntry(entry.id)
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                            }
+                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                                Button {
+                                    store.togglePin(entry.id)
+                                } label: {
+                                    Image(systemName: store.isPinned(entry.id) ? "pin.slash" : "pin")
+                                }
+                                .tint(InspectorTheme.Colors.warning)
+                            }
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
-                .contentMargins(.top, InspectorTheme.Spacing.sm)
+                .contentMargins(.vertical, InspectorTheme.Spacing.sm)
             }
         }
         .inspectorBackground()
         .safeAreaInset(edge: .top, spacing: 0) {
-            toolbarArea
+            VStack(spacing: 0) {
+                chipBar
+                Divider()
+            }
         }
         .searchable(text: $searchText, prompt: "URL, method, status, host...")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showFilterSheet = true
+                } label: {
+                    Image(systemName: "line.3.horizontal.decrease")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(
+                            hasActiveFilters
+                                ? InspectorTheme.Colors.accent
+                                : InspectorTheme.Colors.textSecondary
+                        )
+                }
+            }
+        }
+        .sheet(isPresented: $showFilterSheet) {
+            filterSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+        }
     }
 
-    // MARK: - Toolbar Area (Chips + Sort)
+    // MARK: - Chip Bar (clean: only status filters + 1 filter button)
 
-    private var toolbarArea: some View {
-        HStack(spacing: 0) {
-            // Scrollable chips
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: InspectorTheme.Spacing.sm) {
-                    ForEach(NetworkFilter.allCases, id: \.self) { filter in
-                        FilterChipView(
-                            title: filter.rawValue,
-                            count: filterCounts[filter] ?? 0,
-                            color: filter.color,
-                            isSelected: selectedFilter == filter
-                        ) { selectedFilter = filter }
+    private var chipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: InspectorTheme.Spacing.sm) {
+                ForEach(NetworkFilter.allCases, id: \.self) { filter in
+                    FilterChipView(
+                        title: filter == .pinned ? "" : filter.rawValue,
+                        count: filterCounts[filter] ?? 0,
+                        icon: filter == .pinned ? "pin.fill" : nil,
+                        color: filter.color,
+                        isSelected: selectedFilter == filter
+                    ) {
+                        selectedFilter = selectedFilter == filter ? nil : filter
                     }
                 }
-                .padding(.horizontal, InspectorTheme.Spacing.lg)
-                .padding(.vertical, InspectorTheme.Spacing.sm)
             }
-
-            // Sort button (always visible, outside scroll)
-            Divider()
-                .frame(height: 20)
-
-            sortButton
-                .padding(.horizontal, InspectorTheme.Spacing.md)
-
-            Divider()
-                .frame(height: 20)
-
-            hostFilterButton
-                .padding(.horizontal, InspectorTheme.Spacing.md)
+            .padding(.horizontal, InspectorTheme.Spacing.lg)
+            .padding(.vertical, InspectorTheme.Spacing.sm)
         }
         .background(InspectorTheme.Colors.background)
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
     }
 
-    private var sortButton: some View {
-        Menu {
-            ForEach(SortOrder.allCases, id: \.self) { order in
-                Button {
-                    withAnimation { sortOrder = order }
-                } label: {
-                    Label(order.rawValue, systemImage: sortOrder == order ? "checkmark" : order.icon)
+    // MARK: - Filter Sheet (sort + host + stats toggle)
+
+    private var filterSheet: some View {
+        NavigationStack {
+            List {
+                // Sort
+                Section("Sort By") {
+                    ForEach(SortOrder.allCases, id: \.self) { order in
+                        Button {
+                            sortOrder = order
+                        } label: {
+                            HStack {
+                                Label(order.rawValue, systemImage: order.icon)
+                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                                Spacer()
+                                if sortOrder == order {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(InspectorTheme.Colors.accent)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Host
+                Section("Filter by Host") {
+                    Button {
+                        selectedHost = nil
+                    } label: {
+                        HStack {
+                            Label("All Hosts", systemImage: "globe")
+                                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                            Spacer()
+                            if selectedHost == nil {
+                                Image(systemName: "checkmark")
+                                    .foregroundStyle(InspectorTheme.Colors.accent)
+                            }
+                        }
+                    }
+
+                    ForEach(uniqueHosts, id: \.host) { item in
+                        Button {
+                            selectedHost = item.host
+                        } label: {
+                            HStack {
+                                Label(item.host, systemImage: "server.rack")
+                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                                Spacer()
+                                Text("\(item.count)")
+                                    .font(InspectorTheme.Typography.detail)
+                                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                                if selectedHost == item.host {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(InspectorTheme.Colors.accent)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Stats toggle
+                Section {
+                    Toggle(isOn: $showStats) {
+                        Label("Show Statistics", systemImage: "chart.bar")
+                    }
+                    .tint(InspectorTheme.Colors.accent)
                 }
             }
-        } label: {
-            Image(systemName: "arrow.up.arrow.down")
-                .font(InspectorTheme.Typography.body)
-                .fontWeight(.medium)
-                .foregroundStyle(
-                    sortOrder != .newest
-                        ? InspectorTheme.Colors.accent
-                        : InspectorTheme.Colors.textSecondary
-                )
-        }
-    }
-
-    private var hostFilterButton: some View {
-        Menu {
-            Button {
-                withAnimation { selectedHost = nil }
-            } label: {
-                Label("All Hosts", systemImage: selectedHost == nil ? "checkmark" : "globe")
-            }
-
-            ForEach(uniqueHosts, id: \.host) { item in
-                Button {
-                    withAnimation { selectedHost = item.host }
-                } label: {
-                    Label(
-                        "\(item.host) (\(item.count))",
-                        systemImage: selectedHost == item.host ? "checkmark" : "server.rack"
-                    )
+            .navigationTitle("Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showFilterSheet = false
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .fontWeight(.semibold)
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
+                    if hasActiveFilters {
+                        Button("Reset") {
+                            sortOrder = .newest
+                            selectedHost = nil
+                            showStats = false
+                        }
+                        .foregroundStyle(InspectorTheme.Colors.error)
+                    }
                 }
             }
-        } label: {
-            Image(systemName: "server.rack")
-                .font(InspectorTheme.Typography.body)
-                .fontWeight(.medium)
-                .foregroundStyle(
-                    selectedHost != nil
-                        ? InspectorTheme.Colors.accent
-                        : InspectorTheme.Colors.textSecondary
-                )
         }
+        .presentationBackground(InspectorTheme.Colors.background)
     }
 }
 
@@ -247,6 +330,13 @@ struct NetworkMonitorView: View {
 #Preview("Network - Empty") {
     NavigationStack {
         NetworkMonitorView(store: InspectorStore())
+            .navigationTitle("Network")
+    }
+}
+
+#Preview("Network - Full") {
+    NavigationStack {
+        NetworkMonitorView(store: .preview)
             .navigationTitle("Network")
     }
 }
