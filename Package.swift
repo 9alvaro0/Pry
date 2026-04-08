@@ -3,19 +3,19 @@
 import PackageDescription
 
 let package = Package(
-    name: "WarwareInspector",
+    name: "Pry",
     platforms: [
         .iOS(.v18)
     ],
     products: [
         .library(
-            name: "WarwareInspector",
-            targets: ["WarwareInspector"]
+            name: "Pry",
+            targets: ["Pry"]
         ),
     ],
     targets: [
         .target(
-            name: "WarwareInspector",
+            name: "Pry",
             linkerSettings: [
                 .linkedLibrary("sqlite3"),
             ]

@@ -27,7 +27,14 @@
       "WebFetch(domain:apps.apple.com)",
       "Bash(find /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector -name *Test* -o -name *Spec* -o -name *test*)",
       "Bash(ls:*)",
-      "Bash(git mv:*)"
+      "Bash(git mv:*)",
+      "Bash(gh search:*)",
+      "Bash(gh repo:*)",
+      "Bash(xargs -0 sed -i '' 's/WarwareInspector/Pry/g')",
+      "Bash(xargs -0 sed -i '' 's/warware_inspector_/pry_/g')",
+      "Bash(xargs -0 sed -i '' 's/warware_export/pry_export/g')",
+      "Bash(find Sources/Pry -name \"*.swift\" -exec sed -i '' 's/\\\\.warware/\\\\.pry/g' {} +)",
+      "Bash(find Sources/Pry -name \"*.swift\" -exec sed -i '' 's/warware session/pry session/g' {} +)"
     ]
   }
 }
