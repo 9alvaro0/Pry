@@ -49,11 +49,6 @@ final class NetworkLogger: @unchecked Sendable {
             self?.pendingRequests[requestID] = entry
         }
 
-        // Immediately show as pending in the UI
-        Task { @MainActor [store] in
-            store?.addNetworkEntry(entry)
-        }
-
         return requestID
     }
 
@@ -139,7 +134,7 @@ final class NetworkLogger: @unchecked Sendable {
             )
 
             Task { @MainActor in
-                self.store?.updateOrAddNetworkEntry(entry)
+                self.store?.addNetworkEntry(entry)
             }
         }
     }
@@ -181,7 +176,7 @@ final class NetworkLogger: @unchecked Sendable {
             entry.isMocked = true
 
             Task { @MainActor in
-                self.store?.updateOrAddNetworkEntry(entry)
+                self.store?.addNetworkEntry(entry)
             }
         }
     }

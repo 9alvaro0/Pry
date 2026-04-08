@@ -65,6 +65,14 @@ struct NetworkMonitorView: View {
         sortOrder != .newest || selectedHost != nil || showStats
     }
 
+    private var activeFilterCount: Int {
+        var count = 0
+        if sortOrder != .newest { count += 1 }
+        if selectedHost != nil { count += 1 }
+        if showStats { count += 1 }
+        return count
+    }
+
     private var filteredEntries: [NetworkEntry] {
         var entries = store.networkEntries
 
@@ -189,6 +197,17 @@ struct NetworkMonitorView: View {
                                 ? InspectorTheme.Colors.accent
                                 : InspectorTheme.Colors.textSecondary
                         )
+                        .overlay(alignment: .topTrailing) {
+                            if activeFilterCount > 0 {
+                                Text("\(activeFilterCount)")
+                                    .font(.system(size: 9, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .frame(minWidth: 14, minHeight: 14)
+                                    .background(InspectorTheme.Colors.accent)
+                                    .clipShape(.circle)
+                                    .offset(x: 8, y: -8)
+                            }
+                        }
                 }
             }
         }
@@ -196,6 +215,7 @@ struct NetworkMonitorView: View {
             filterSheet
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
+                .presentationBackground(InspectorTheme.Colors.background)
         }
     }
 
@@ -222,98 +242,145 @@ struct NetworkMonitorView: View {
         .background(InspectorTheme.Colors.background)
     }
 
-    // MARK: - Filter Sheet (sort + host + stats toggle)
+    // MARK: - Filter Sheet
 
     private var filterSheet: some View {
-        NavigationStack {
-            List {
-                // Sort
-                Section("Sort By") {
-                    ForEach(SortOrder.allCases, id: \.self) { order in
-                        Button {
-                            sortOrder = order
-                        } label: {
-                            HStack {
-                                Label(order.rawValue, systemImage: order.icon)
-                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                                Spacer()
-                                if sortOrder == order {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(InspectorTheme.Colors.accent)
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Host
-                Section("Filter by Host") {
+        VStack(spacing: 0) {
+            // Header
+            HStack {
+                if hasActiveFilters {
                     Button {
+                        sortOrder = .newest
                         selectedHost = nil
+                        showStats = false
                     } label: {
-                        HStack {
-                            Label("All Hosts", systemImage: "globe")
-                                .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                            Spacer()
-                            if selectedHost == nil {
-                                Image(systemName: "checkmark")
-                                    .foregroundStyle(InspectorTheme.Colors.accent)
-                            }
-                        }
-                    }
-
-                    ForEach(uniqueHosts, id: \.host) { item in
-                        Button {
-                            selectedHost = item.host
-                        } label: {
-                            HStack {
-                                Label(item.host, systemImage: "server.rack")
-                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                                Spacer()
-                                Text("\(item.count)")
-                                    .font(InspectorTheme.Typography.detail)
-                                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                                if selectedHost == item.host {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(InspectorTheme.Colors.accent)
-                                }
-                            }
-                        }
+                        Image(systemName: "arrow.counterclockwise")
+                            .font(InspectorTheme.Typography.body)
+                            .foregroundStyle(InspectorTheme.Colors.error)
                     }
                 }
 
-                // Stats toggle
-                Section {
-                    Toggle(isOn: $showStats) {
-                        Label("Show Statistics", systemImage: "chart.bar")
-                    }
-                    .tint(InspectorTheme.Colors.accent)
+                Spacer()
+
+                Text("Filters")
+                    .font(InspectorTheme.Typography.subheading)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+                Spacer()
+
+                Button {
+                    showFilterSheet = false
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(InspectorTheme.Typography.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(InspectorTheme.Colors.accent)
                 }
             }
-            .navigationTitle("Filters")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showFilterSheet = false
-                    } label: {
-                        Image(systemName: "checkmark")
-                            .fontWeight(.semibold)
-                    }
-                }
-                ToolbarItem(placement: .topBarLeading) {
-                    if hasActiveFilters {
-                        Button("Reset") {
-                            sortOrder = .newest
-                            selectedHost = nil
-                            showStats = false
+            .padding(.horizontal, InspectorTheme.Spacing.lg)
+            .padding(.vertical, InspectorTheme.Spacing.md)
+
+            Divider().overlay(InspectorTheme.Colors.border)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xl) {
+                    // Sort
+                    VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
+                        sheetLabel("Sort By")
+
+                        HStack(spacing: InspectorTheme.Spacing.sm) {
+                            ForEach(SortOrder.allCases, id: \.self) { order in
+                                Button {
+                                    sortOrder = order
+                                } label: {
+                                    Text(order.rawValue)
+                                        .font(InspectorTheme.Typography.body)
+                                        .fontWeight(sortOrder == order ? .semibold : .regular)
+                                        .foregroundStyle(sortOrder == order ? InspectorTheme.Colors.accent : InspectorTheme.Colors.textSecondary)
+                                        .padding(.horizontal, InspectorTheme.Spacing.md)
+                                        .padding(.vertical, InspectorTheme.Spacing.sm)
+                                        .background(sortOrder == order ? InspectorTheme.Colors.accent.opacity(0.15) : InspectorTheme.Colors.surface)
+                                        .clipShape(.capsule)
+                                }
+                            }
                         }
-                        .foregroundStyle(InspectorTheme.Colors.error)
                     }
+
+                    // Host
+                    if !uniqueHosts.isEmpty {
+                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
+                            sheetLabel("Host")
+
+                            VStack(spacing: 0) {
+                                ForEach(Array(uniqueHosts.enumerated()), id: \.element.host) { index, item in
+                                    if index > 0 {
+                                        Divider().overlay(InspectorTheme.Colors.border)
+                                    }
+                                    hostRow(label: item.host, count: item.count, isSelected: selectedHost == item.host) {
+                                        selectedHost = selectedHost == item.host ? nil : item.host
+                                    }
+                                }
+                            }
+                            .background(InspectorTheme.Colors.surface)
+                            .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
+                        }
+                    }
+
+                    // Stats toggle
+                    HStack {
+                        Text("Statistics")
+                            .font(InspectorTheme.Typography.body)
+                            .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                        Spacer()
+                        Toggle("", isOn: $showStats)
+                            .tint(InspectorTheme.Colors.accent)
+                            .labelsHidden()
+                    }
+                    .padding(InspectorTheme.Spacing.md)
+                    .background(InspectorTheme.Colors.surface)
+                    .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
                 }
+                .padding(.horizontal, InspectorTheme.Spacing.lg)
+                .padding(.top, InspectorTheme.Spacing.lg)
             }
         }
-        .presentationBackground(InspectorTheme.Colors.background)
+        .inspectorBackground()
+    }
+
+    private func hostRow(label: String, count: Int?, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack {
+                Text(label)
+                    .font(InspectorTheme.Typography.code)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if let count {
+                    Text("\(count)")
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                }
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(InspectorTheme.Typography.detail)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(InspectorTheme.Colors.accent)
+                }
+            }
+            .padding(.horizontal, InspectorTheme.Spacing.md)
+            .padding(.vertical, InspectorTheme.Spacing.md)
+            .contentShape(.rect)
+        }
+    }
+
+    private func sheetLabel(_ text: String) -> some View {
+        Text(text.uppercased())
+            .font(.system(size: 11, weight: .semibold))
+            .tracking(0.5)
+            .foregroundStyle(InspectorTheme.Colors.textTertiary)
     }
 }
 

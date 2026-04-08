@@ -132,7 +132,9 @@ enum InspectorLifecycle {
         InspectorURLProtocol.blacklistedHosts = store.blacklistedHosts
         InspectorURLProtocol.mockRules = store.mockRules
         InspectorURLProtocol.isMockingEnabled = store.isMockingEnabled
-        URLProtocol.registerClass(InspectorURLProtocol.self)
+
+        // Swizzle URLSessionConfiguration to inject our protocol into ALL sessions
+        URLSessionConfiguration.swizzleDefaultConfiguration()
 
         // Push notification interception
         PushNotificationInterceptor.store = store
