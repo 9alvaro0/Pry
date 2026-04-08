@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 struct NetworkMonitorView: View {
     @Bindable var store: InspectorStore
@@ -452,35 +451,29 @@ struct NetworkMonitorView: View {
                         .foregroundStyle(InspectorTheme.Colors.textTertiary)
                         .padding(.top, InspectorTheme.Spacing.md)
 
-                    exportButton(
+                    exportShareLink(
                         icon: "shippingbox",
                         title: "Postman Collection",
                         detail: "Import directly into Postman",
-                        color: InspectorTheme.Colors.warning
-                    ) {
-                        let json = SessionExporter.postmanCollection(entries: filteredEntries)
-                        shareExport(content: json, filename: "warware_export.postman_collection.json")
-                    }
+                        color: InspectorTheme.Colors.warning,
+                        content: SessionExporter.postmanCollection(entries: filteredEntries)
+                    )
 
-                    exportButton(
+                    exportShareLink(
                         icon: "terminal",
                         title: "cURL Commands",
                         detail: "All requests as cURL",
-                        color: InspectorTheme.Colors.success
-                    ) {
-                        let curl = SessionExporter.curlCollection(entries: filteredEntries)
-                        shareExport(content: curl, filename: "warware_export.sh")
-                    }
+                        color: InspectorTheme.Colors.success,
+                        content: SessionExporter.curlCollection(entries: filteredEntries)
+                    )
 
-                    exportButton(
+                    exportShareLink(
                         icon: "doc.text",
                         title: "HAR Archive",
                         detail: "HTTP Archive format (Chrome DevTools)",
-                        color: InspectorTheme.Colors.accent
-                    ) {
-                        let har = SessionExporter.harArchive(entries: filteredEntries)
-                        shareExport(content: har, filename: "warware_export.har")
-                    }
+                        color: InspectorTheme.Colors.accent,
+                        content: SessionExporter.harArchive(entries: filteredEntries)
+                    )
                 }
                 .padding(.horizontal, InspectorTheme.Spacing.lg)
                 .padding(.bottom, InspectorTheme.Spacing.xl)
@@ -489,8 +482,8 @@ struct NetworkMonitorView: View {
         .inspectorBackground()
     }
 
-    private func exportButton(icon: String, title: String, detail: String, color: Color, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func exportShareLink(icon: String, title: String, detail: String, color: Color, content: String) -> some View {
+        ShareLink(item: content) {
             HStack(spacing: InspectorTheme.Spacing.md) {
                 Image(systemName: icon)
                     .font(InspectorTheme.Typography.body)
@@ -512,7 +505,7 @@ struct NetworkMonitorView: View {
 
                 Spacer()
 
-                Image(systemName: "arrow.up.forward.square")
+                Image(systemName: "square.and.arrow.up")
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
             }
@@ -520,27 +513,6 @@ struct NetworkMonitorView: View {
             .background(InspectorTheme.Colors.surface)
             .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
         }
-    }
-
-    private func shareExport(content: String, filename: String) {
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent(filename)
-
-        try? content.write(to: fileURL, atomically: true, encoding: .utf8)
-
-        let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
-
-        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-           let rootVC = windowScene.windows.first?.rootViewController {
-            var presenter = rootVC
-            while let presented = presenter.presentedViewController {
-                presenter = presented
-            }
-            activityVC.popoverPresentationController?.sourceView = presenter.view
-            presenter.present(activityVC, animated: true)
-        }
-
-        showExportSheet = false
     }
 }
 
