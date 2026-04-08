@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Parsed GraphQL operation info extracted from a network request.
 struct GraphQLInfo: Sendable {
@@ -7,6 +8,10 @@ struct GraphQLInfo: Sendable {
         case query = "Query"
         case mutation = "Mutation"
         case subscription = "Subscription"
+
+        var color: Color {
+            self == .mutation ? InspectorTheme.Colors.warning : InspectorTheme.Colors.syntaxString
+        }
     }
 
     let operationType: OperationType

@@ -17,7 +17,7 @@ struct NetworkRequestRowView: View {
                     Text(gql.operationType.rawValue.prefix(3).uppercased())
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.bold)
-                        .foregroundStyle(gql.operationType == .mutation ? InspectorTheme.Colors.warning : InspectorTheme.Colors.syntaxString)
+                        .foregroundStyle(gql.operationType.color)
                         .frame(width: InspectorTheme.Size.methodColumn, alignment: .leading)
                 } else {
                     Text(entry.requestMethod)
@@ -64,7 +64,7 @@ struct NetworkRequestRowView: View {
                 }
 
                 if let duration = entry.duration {
-                    Text(Optional(duration).formattedDuration)
+                    Text(duration.formattedDuration)
                         .font(InspectorTheme.Typography.codeSmall)
                         .foregroundStyle(InspectorTheme.Colors.textTertiary)
                 }

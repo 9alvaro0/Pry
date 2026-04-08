@@ -73,6 +73,7 @@ enum SessionExporter {
 
         guard let data = try? JSONSerialization.data(withJSONObject: collection, options: [.prettyPrinted, .sortedKeys]),
               let json = String(data: data, encoding: .utf8) else {
+            assertionFailure("Failed to serialize Postman collection")
             return "{}"
         }
 
@@ -184,6 +185,7 @@ enum SessionExporter {
 
         guard let data = try? JSONSerialization.data(withJSONObject: har, options: [.prettyPrinted, .sortedKeys]),
               let json = String(data: data, encoding: .utf8) else {
+            assertionFailure("Failed to serialize HAR archive")
             return "{}"
         }
 

@@ -143,7 +143,7 @@ struct RequestDiffView: View {
             }
 
             if let d = entry.duration {
-                Text(Optional(d).formattedDuration)
+                Text(d.formattedDuration)
                     .font(InspectorTheme.Typography.codeSmall)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)
             }

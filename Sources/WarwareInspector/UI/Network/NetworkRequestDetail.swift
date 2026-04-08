@@ -184,7 +184,7 @@ struct NetworkRequestDetailView: View {
                 Spacer()
 
                 if let duration = entry.duration {
-                    Text(Optional(duration).formattedDuration)
+                    Text(duration.formattedDuration)
                         .font(InspectorTheme.Typography.code)
                         .foregroundStyle(InspectorTheme.Colors.textSecondary)
                 }
@@ -229,19 +229,10 @@ struct NetworkRequestDetailView: View {
                         Text(gql.operationType.rawValue)
                             .font(InspectorTheme.Typography.code)
                             .fontWeight(.bold)
-                            .foregroundStyle(
-                                gql.operationType == .mutation
-                                    ? InspectorTheme.Colors.warning
-                                    : InspectorTheme.Colors.syntaxString
-                            )
+                            .foregroundStyle(gql.operationType.color)
                             .padding(.horizontal, InspectorTheme.Spacing.sm)
                             .padding(.vertical, InspectorTheme.Spacing.xxs)
-                            .background(
-                                (gql.operationType == .mutation
-                                    ? InspectorTheme.Colors.warning
-                                    : InspectorTheme.Colors.syntaxString
-                                ).opacity(InspectorTheme.Opacity.badge)
-                            )
+                            .background(gql.operationType.color.opacity(InspectorTheme.Opacity.badge))
                             .clipShape(.capsule)
 
                         if let name = gql.operationName {
@@ -651,7 +642,7 @@ struct NetworkRequestDetailView: View {
             summary += " \u{2192} ERROR"
         }
         if let duration = entry.duration {
-            summary += " (\(Optional(duration).formattedDuration))"
+            summary += " (\(duration.formattedDuration))"
         }
         lines.append(summary)
         lines.append(entry.requestURL)
