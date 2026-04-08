@@ -8,8 +8,10 @@ import Foundation
 /// .pry(store: store, trigger: [.floatingButton, .shake])
 /// ```
 public struct PryTrigger: OptionSet, Sendable {
+    /// The raw integer value of the option set.
     public let rawValue: Int
 
+    /// Creates a trigger from a raw integer value.
     public init(rawValue: Int) {
         self.rawValue = rawValue
     }

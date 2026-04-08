@@ -5,8 +5,11 @@ import Foundation
 /// When a request matches the `urlPattern` (and optionally the `method`),
 /// the inspector returns the mock response instead of hitting the network.
 public struct MockRule: Identifiable, Codable, Sendable {
+    /// Unique identifier for this rule.
     public var id = UUID()
+    /// Whether this rule is currently active.
     public var isEnabled: Bool = true
+    /// A human-readable name for this rule.
     public var name: String
 
     // MARK: - Matching
@@ -31,6 +34,15 @@ public struct MockRule: Identifiable, Codable, Sendable {
     /// Simulated delay in seconds before returning the response.
     public var delay: TimeInterval
 
+    /// Creates a new mock rule.
+    /// - Parameters:
+    ///   - name: A human-readable name for the rule.
+    ///   - urlPattern: Substring to match against request URLs.
+    ///   - method: HTTP method to match, or `nil` for any method.
+    ///   - statusCode: HTTP status code to return. Defaults to 200.
+    ///   - responseBody: The response body string to return.
+    ///   - responseHeaders: Headers to include in the mock response.
+    ///   - delay: Simulated delay in seconds before returning the response.
     public init(
         name: String = "",
         urlPattern: String = "",

@@ -12,16 +12,27 @@ import Foundation
 public enum FeatureGate {
 
     /// All gated features.
+    /// All gated features available in the Pro tier.
     public enum Feature: String, CaseIterable, Sendable {
+        /// Pause and edit requests before they are sent.
         case breakpoints
+        /// Return custom responses instead of hitting the network.
         case mockResponses
+        /// Replay a previously captured request.
         case requestReplay
+        /// Compare two captured requests side by side.
         case requestDiff
+        /// Export the current session to a file.
         case sessionExport
+        /// Share a session with another developer.
         case shareSession
+        /// Simulate slow or lossy network conditions.
         case networkThrottle
+        /// Decode Protocol Buffer payloads.
         case protobufDecoder
+        /// Browse local SQLite databases.
         case sqliteViewer
+        /// View CPU, memory, and frame rate metrics.
         case performanceMetrics
     }
 

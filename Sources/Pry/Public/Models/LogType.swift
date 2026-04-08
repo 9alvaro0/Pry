@@ -5,11 +5,17 @@ import SwiftUI
 /// Each type has an associated color and icon for visual categorization.
 public enum LogType: String, CaseIterable, Codable, Sendable {
 
+    /// A network-related log entry.
     case network = "Network"
+    /// An error-level log entry.
     case error = "Error"
+    /// A warning-level log entry.
     case warning = "Warning"
+    /// An informational log entry.
     case info = "Info"
+    /// A success-level log entry.
     case success = "Success"
+    /// A debug-level log entry.
     case debug = "Debug"
 
     var systemImage: String {

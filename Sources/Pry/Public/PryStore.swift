@@ -16,15 +16,22 @@ import Foundation
 
     // MARK: - State
 
+    /// All captured network request/response entries, newest first.
     public private(set) var networkEntries: [NetworkEntry] = []
+    /// All captured console log entries, newest first.
     public private(set) var logEntries: [LogEntry] = []
+    /// All captured deeplink entries, newest first.
     public private(set) var deeplinkEntries: [DeeplinkEntry] = []
+    /// All captured push notification entries, newest first.
     public private(set) var pushNotificationEntries: [PushNotificationEntry] = []
 
     // MARK: - Pins
 
+    /// The set of network entry IDs that the user has pinned.
     public var pinnedRequestIDs: Set<UUID> = []
 
+    /// Toggles the pinned state of a network entry.
+    /// - Parameter id: The identifier of the network entry to pin or unpin.
     public func togglePin(_ id: UUID) {
         if pinnedRequestIDs.contains(id) {
             pinnedRequestIDs.remove(id)
@@ -33,30 +40,38 @@ import Foundation
         }
     }
 
+    /// Returns whether a network entry is currently pinned.
+    /// - Parameter id: The identifier of the network entry.
+    /// - Returns: `true` if the entry is pinned.
     public func isPinned(_ id: UUID) -> Bool {
         pinnedRequestIDs.contains(id)
     }
 
     // MARK: - Blacklist
 
+    /// Hosts excluded from network capture. Persisted across sessions.
     public var blacklistedHosts: Set<String> = [] {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(blacklistedHosts, for: .blacklistedHosts) }
     }
 
     // MARK: - Preferences
 
+    /// Whether to show the error count badge on the floating action button. Persisted.
     public var showErrorBadge: Bool = true {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(showErrorBadge, for: .showErrorBadge) }
     }
 
+    /// Whether logged messages are also printed to the Xcode console. Persisted.
     public var printToConsole: Bool = true {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(printToConsole, for: .printToConsole) }
     }
 
+    /// Places the floating action button on the left side of the screen. Persisted.
     public var fabOnLeft: Bool = false {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(fabOnLeft, for: .fabOnLeft) }
     }
 
+    /// Allows the floating action button to be repositioned by dragging. Persisted.
     public var fabDraggable: Bool = false {
         didSet {
             guard !isLoadingPreferences else { return }
@@ -89,6 +104,7 @@ import Foundation
 
     // MARK: - Network Throttle
 
+    /// The active network throttle preset. Persisted.
     public var networkThrottle: NetworkThrottle = .none {
         didSet {
             PryConfig.shared.throttle = networkThrottle
@@ -99,22 +115,30 @@ import Foundation
 
     // MARK: - Mock Rules
 
+    /// All configured mock response rules.
     public private(set) var mockRules: [MockRule] = []
 
+    /// Whether at least one mock rule is currently enabled.
     public var isMockingEnabled: Bool {
         mockRules.contains(where: \.isEnabled)
     }
 
+    /// Adds a new mock response rule.
+    /// - Parameter rule: The mock rule to add.
     public func addMockRule(_ rule: MockRule) {
         mockRules.append(rule)
         syncMockRules()
     }
 
+    /// Removes a mock rule by its identifier.
+    /// - Parameter id: The identifier of the mock rule to remove.
     public func removeMockRule(_ id: UUID) {
         mockRules.removeAll { $0.id == id }
         syncMockRules()
     }
 
+    /// Toggles the enabled state of a mock rule.
+    /// - Parameter id: The identifier of the mock rule to toggle.
     public func toggleMockRule(_ id: UUID) {
         guard let index = mockRules.firstIndex(where: { $0.id == id }) else { return }
         mockRules[index].isEnabled.toggle()
@@ -128,22 +152,30 @@ import Foundation
 
     // MARK: - Breakpoint Rules
 
+    /// All configured breakpoint rules.
     public private(set) var breakpointRules: [BreakpointRule] = []
 
+    /// Whether at least one breakpoint rule is currently enabled.
     public var isBreakpointEnabled: Bool {
         breakpointRules.contains(where: \.isEnabled)
     }
 
+    /// Adds a new breakpoint rule.
+    /// - Parameter rule: The breakpoint rule to add.
     public func addBreakpointRule(_ rule: BreakpointRule) {
         breakpointRules.append(rule)
         syncBreakpointRules()
     }
 
+    /// Removes a breakpoint rule by its identifier.
+    /// - Parameter id: The identifier of the breakpoint rule to remove.
     public func removeBreakpointRule(_ id: UUID) {
         breakpointRules.removeAll { $0.id == id }
         syncBreakpointRules()
     }
 
+    /// Toggles the enabled state of a breakpoint rule.
+    /// - Parameter id: The identifier of the breakpoint rule to toggle.
     public func toggleBreakpointRule(_ id: UUID) {
         guard let index = breakpointRules.firstIndex(where: { $0.id == id }) else { return }
         breakpointRules[index].isEnabled.toggle()
@@ -164,6 +196,12 @@ import Foundation
 
     // MARK: - Init
 
+    /// Creates a new inspector store with configurable entry limits.
+    /// - Parameters:
+    ///   - maxNetworkEntries: Maximum number of network entries to retain. Defaults to 200.
+    ///   - maxLogEntries: Maximum number of log entries to retain. Defaults to 500.
+    ///   - maxDeeplinkEntries: Maximum number of deeplink entries to retain. Defaults to 100.
+    ///   - maxPushEntries: Maximum number of push notification entries to retain. Defaults to 100.
     public init(
         maxNetworkEntries: Int = 200,
         maxLogEntries: Int = 500,
@@ -256,6 +294,7 @@ import Foundation
     // MARK: - Deeplinks
 
     /// Logs a received deeplink URL.
+    /// - Parameter url: The deeplink or universal link URL to record.
     public func logDeeplink(url: URL) {
         let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
 
@@ -290,10 +329,19 @@ import Foundation
 
     // MARK: - Push Notifications
 
-    /// Logs a received push notification.
     /// Logs a push notification manually.
-    /// Note: push notifications are captured automatically when the inspector is started.
+    ///
+    /// Push notifications are captured automatically when the inspector is started.
     /// Use this only for manual logging if needed.
+    /// - Parameters:
+    ///   - title: The notification title.
+    ///   - body: The notification body text.
+    ///   - subtitle: The notification subtitle.
+    ///   - badge: The badge count, if any.
+    ///   - sound: The sound name, if any.
+    ///   - categoryIdentifier: The notification category identifier.
+    ///   - threadIdentifier: The thread identifier for grouping.
+    ///   - userInfo: The raw APNs payload dictionary.
     public func logPushNotification(
         title: String?,
         body: String?,
@@ -344,30 +392,43 @@ import Foundation
 
     // MARK: - Remove
 
+    /// Removes a single network entry and unpins it if pinned.
+    /// - Parameter id: The identifier of the entry to remove.
     public func removeNetworkEntry(_ id: UUID) {
         networkEntries.removeAll { $0.id == id }
         pinnedRequestIDs.remove(id)
     }
 
+    /// Removes a single log entry.
+    /// - Parameter id: The identifier of the entry to remove.
     public func removeLogEntry(_ id: UUID) {
         logEntries.removeAll { $0.id == id }
     }
 
+    /// Removes a single deeplink entry.
+    /// - Parameter id: The identifier of the entry to remove.
     public func removeDeeplinkEntry(_ id: UUID) {
         deeplinkEntries.removeAll { $0.id == id }
     }
 
+    /// Removes a single push notification entry.
+    /// - Parameter id: The identifier of the entry to remove.
     public func removePushEntry(_ id: UUID) {
         pushNotificationEntries.removeAll { $0.id == id }
     }
 
     // MARK: - Clear
 
+    /// Removes all captured network entries.
     public func clearNetwork() { networkEntries.removeAll() }
+    /// Removes all captured log entries.
     public func clearLogs() { logEntries.removeAll() }
+    /// Removes all captured deeplink entries.
     public func clearDeeplinks() { deeplinkEntries.removeAll() }
+    /// Removes all captured push notification entries.
     public func clearPush() { pushNotificationEntries.removeAll() }
 
+    /// Removes all captured entries across every category.
     public func clearAll() {
         networkEntries.removeAll()
         logEntries.removeAll()

@@ -26,6 +26,7 @@ import SwiftUI
 public struct PryContentView: View {
     @Environment(\.pryStore) private var store
 
+    /// Creates a new inspector content view. Reads the store from the environment.
     public init() {}
 
     public var body: some View {

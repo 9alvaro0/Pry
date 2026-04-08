@@ -2,8 +2,11 @@ import Foundation
 
 /// Defines a breakpoint that pauses matching requests for inspection/editing.
 public struct BreakpointRule: Identifiable, Codable, Sendable {
+    /// Unique identifier for this rule.
     public var id = UUID()
+    /// Whether this rule is currently active.
     public var isEnabled: Bool = true
+    /// A human-readable name for this rule.
     public var name: String
 
     // MARK: - Matching
@@ -19,12 +22,22 @@ public struct BreakpointRule: Identifiable, Codable, Sendable {
     /// When to pause: before sending (request), after receiving (response), or both.
     public var pauseOn: PauseType
 
+    /// Determines when the breakpoint pauses execution.
     public enum PauseType: String, Codable, CaseIterable, Sendable {
+        /// Pause before the request is sent.
         case request = "Request"
+        /// Pause after the response is received.
         case response = "Response"
+        /// Pause on both request and response.
         case both = "Both"
     }
 
+    /// Creates a new breakpoint rule.
+    /// - Parameters:
+    ///   - name: A human-readable name for the rule.
+    ///   - urlPattern: Substring to match against request URLs.
+    ///   - method: HTTP method to match, or `nil` for any method.
+    ///   - pauseOn: When to pause execution. Defaults to `.request`.
     public init(
         name: String = "",
         urlPattern: String = "",
