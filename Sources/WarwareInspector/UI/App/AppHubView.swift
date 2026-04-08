@@ -183,20 +183,19 @@ struct AppHubView: View {
 
             rowDivider
 
-            if FeatureGate.isAvailable(.performanceMetrics) {
-                NavigationLink {
-                    PerformanceView()
-                        .navigationTitle("Performance")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    storageRow(
-                        icon: "gauge.high",
-                        title: "Performance",
-                        color: InspectorTheme.Colors.error,
-                        detail: ""
-                    )
-                }
+            NavigationLink {
+                PerformanceView()
+                    .navigationTitle("Performance")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                storageRow(
+                    icon: "gauge.high",
+                    title: FeatureGate.isAvailable(.performanceMetrics) ? "Performance" : "Performance (Pro)",
+                    color: FeatureGate.isAvailable(.performanceMetrics) ? InspectorTheme.Colors.error : InspectorTheme.Colors.textTertiary,
+                    detail: ""
+                )
             }
+            .disabled(!FeatureGate.isAvailable(.performanceMetrics))
         }
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
@@ -238,68 +237,82 @@ struct AppHubView: View {
 
     private var toolsSection: some View {
         VStack(spacing: 0) {
-            if FeatureGate.isAvailable(.networkThrottle) {
-                NavigationLink {
-                    NetworkThrottleView(store: store)
-                        .navigationTitle("Network Conditions")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
+            // Network Conditions
+            NavigationLink {
+                NetworkThrottleView(store: store)
+                    .navigationTitle("Network Conditions")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                toolRow(
+                    icon: store.networkThrottle.icon,
+                    title: "Network Conditions",
+                    color: store.networkThrottle.iconColor,
+                    detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
+                    showChevron: true,
+                    proFeature: .networkThrottle
+                )
+            }
+            .disabled(!FeatureGate.isAvailable(.networkThrottle))
+
+            rowDivider
+
+            // Breakpoints
+            NavigationLink {
+                BreakpointsView(store: store)
+                    .navigationTitle("Breakpoints")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                toolRow(
+                    icon: "pause.circle",
+                    title: "Breakpoints",
+                    color: InspectorTheme.Colors.warning,
+                    detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
+                    showChevron: true,
+                    proFeature: .breakpoints
+                )
+            }
+            .disabled(!FeatureGate.isAvailable(.breakpoints))
+
+            rowDivider
+
+            // Export session
+            if FeatureGate.isAvailable(.shareSession), let url = SessionFileManager.export(store: store) {
+                ShareLink(item: url) {
                     toolRow(
-                        icon: store.networkThrottle.icon,
-                        title: "Network Conditions",
-                        color: store.networkThrottle.iconColor,
-                        detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
-                        showChevron: true
+                        icon: "square.and.arrow.up",
+                        title: "Share Session",
+                        color: InspectorTheme.Colors.accent,
+                        detail: "\(store.networkEntries.count + store.logEntries.count) entries",
+                        showChevron: false
                     )
                 }
-                rowDivider
+            } else {
+                toolRow(
+                    icon: "square.and.arrow.up",
+                    title: "Share Session",
+                    color: InspectorTheme.Colors.accent,
+                    detail: nil,
+                    showChevron: false,
+                    proFeature: .shareSession
+                )
             }
 
-            if FeatureGate.isAvailable(.breakpoints) {
-                NavigationLink {
-                    BreakpointsView(store: store)
-                        .navigationTitle("Breakpoints")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    toolRow(
-                        icon: "pause.circle",
-                        title: "Breakpoints",
-                        color: InspectorTheme.Colors.warning,
-                        detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
-                        showChevron: true
-                    )
-                }
-                rowDivider
-            }
+            rowDivider
 
-            if FeatureGate.isAvailable(.shareSession) {
-                // Export session
-                if let url = SessionFileManager.export(store: store) {
-                    ShareLink(item: url) {
-                        toolRow(
-                            icon: "square.and.arrow.up",
-                            title: "Share Session",
-                            color: InspectorTheme.Colors.accent,
-                            detail: "\(store.networkEntries.count + store.logEntries.count) entries",
-                            showChevron: false
-                        )
-                    }
-                }
-                rowDivider
-
-                // Import session
-                Button {
-                    showFileImporter = true
-                } label: {
+            // Import session
+            Button {
+                showFileImporter = true
+            } label: {
                 toolRow(
                     icon: "square.and.arrow.down",
                     title: "Open Session",
                     color: InspectorTheme.Colors.warning,
                     detail: nil,
-                    showChevron: false
+                    showChevron: false,
+                    proFeature: .shareSession
                 )
             }
-            }
+            .disabled(!FeatureGate.isAvailable(.shareSession))
         }
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
@@ -314,30 +327,40 @@ struct AppHubView: View {
         }
     }
 
-    private func toolRow(icon: String, title: String, color: Color, detail: String?, showChevron: Bool) -> some View {
-        HStack(spacing: InspectorTheme.Spacing.md) {
+    private func toolRow(icon: String, title: String, color: Color, detail: String?, showChevron: Bool, proFeature: FeatureGate.Feature? = nil) -> some View {
+        let isLocked = proFeature.map { !FeatureGate.isAvailable($0) } ?? false
+
+        return HStack(spacing: InspectorTheme.Spacing.md) {
             Image(systemName: icon)
                 .font(InspectorTheme.Typography.body)
-                .foregroundStyle(color)
+                .foregroundStyle(isLocked ? InspectorTheme.Colors.textTertiary : color)
                 .frame(width: InspectorTheme.Size.iconMedium, height: InspectorTheme.Size.iconMedium)
-                .background(color.opacity(InspectorTheme.Opacity.badge))
+                .background((isLocked ? InspectorTheme.Colors.textTertiary : color).opacity(InspectorTheme.Opacity.badge))
                 .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
 
             Text(title)
                 .font(InspectorTheme.Typography.body)
                 .fontWeight(.medium)
-                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                .foregroundStyle(isLocked ? InspectorTheme.Colors.textTertiary : InspectorTheme.Colors.textPrimary)
 
             Spacer()
 
-            if let detail {
+            if isLocked {
+                Text("PRO")
+                    .font(InspectorTheme.Typography.badgeText)
+                    .foregroundStyle(InspectorTheme.Colors.accent)
+                    .padding(.horizontal, InspectorTheme.Spacing.xs)
+                    .padding(.vertical, InspectorTheme.Spacing.xxs)
+                    .background(InspectorTheme.Colors.accent.opacity(InspectorTheme.Opacity.badge))
+                    .clipShape(.capsule)
+            } else if let detail {
                 Text(detail)
                     .font(InspectorTheme.Typography.detail)
                     .fontWeight(.semibold)
                     .foregroundStyle(color)
             }
 
-            if showChevron {
+            if showChevron && !isLocked {
                 Image(systemName: "chevron.right")
                     .font(InspectorTheme.Typography.detail)
                     .foregroundStyle(InspectorTheme.Colors.textTertiary)

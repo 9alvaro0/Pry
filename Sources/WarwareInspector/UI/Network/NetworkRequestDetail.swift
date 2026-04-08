@@ -484,34 +484,30 @@ struct NetworkRequestDetailView: View {
                             showMockEditor = true
                         } label: {
                             Label(
-                                hasMockActive ? "Edit Mock" : "Mock Response",
+                                proLabel(hasMockActive ? "Edit Mock" : "Mock Response", feature: .mockResponses),
                                 systemImage: hasMockActive ? "theatermasks.fill" : "theatermasks"
                             )
                         }
-                        .proGated(.mockResponses)
+                        .disabled(!FeatureGate.isAvailable(.mockResponses))
 
                         Button {
                             showBreakpointCreator = true
                         } label: {
                             Label(
-                                hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint",
+                                proLabel(hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint", feature: .breakpoints),
                                 systemImage: hasBreakpointActive ? "pause.circle.fill" : "pause.circle"
                             )
                         }
-                        .proGated(.breakpoints)
+                        .disabled(!FeatureGate.isAvailable(.breakpoints))
                     }
-                }
 
-                // Actions section
-                if !isReadOnly {
                     Section {
                         Button {
                             replayRequest()
                         } label: {
-                            Label("Replay", systemImage: "arrow.clockwise")
+                            Label(proLabel("Replay", feature: .requestReplay), systemImage: "arrow.clockwise")
                         }
-                        .disabled(isReplaying)
-                        .proGated(.requestReplay)
+                        .disabled(isReplaying || !FeatureGate.isAvailable(.requestReplay))
 
                         Button {
                             store.togglePin(entry.id)
@@ -524,14 +520,13 @@ struct NetworkRequestDetailView: View {
                     }
                 }
 
-                // Share section
                 Section {
                     Button {
                         showDiffPicker = true
                     } label: {
-                        Label("Compare", systemImage: "arrow.left.arrow.right")
+                        Label(proLabel("Compare", feature: .requestDiff), systemImage: "arrow.left.arrow.right")
                     }
-                    .proGated(.requestDiff)
+                    .disabled(!FeatureGate.isAvailable(.requestDiff))
 
                     ShareLink(item: generateShareText()) {
                         Label("Share", systemImage: "square.and.arrow.up")
@@ -725,6 +720,10 @@ struct NetworkRequestDetailView: View {
         components.append("'\(escapeCurl(entry.requestURL))'")
 
         return components.joined(separator: " \\\n  ")
+    }
+
+    private func proLabel(_ text: String, feature: FeatureGate.Feature) -> String {
+        FeatureGate.isAvailable(feature) ? text : "\(text) (Pro)"
     }
 
     private func statusLabel(_ text: String, color: Color) -> some View {
