@@ -149,7 +149,7 @@ struct NetworkRulesView: View {
             set: { newValue in
                 if let index = store.breakpointRules.firstIndex(where: { $0.id == id }) {
                     store.breakpointRules[index].isEnabled = newValue
-                    store.syncBreakpointRulesPublic()
+                    store.syncBreakpointRules()
                 }
             }
         )

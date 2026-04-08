@@ -479,19 +479,19 @@ struct FilePreviewView: View {
 
     private var metadataSection: some View {
         VStack(spacing: 0) {
-            metadataRow(label: "Path", value: item.path, isFirst: true)
+            metadataRow(label: "Path", value: item.path)
             metadataDivider
             metadataRow(label: "Size", value: FileSystemHelper.formattedSize(item.size))
             metadataDivider
             metadataRow(label: "Created", value: FileSystemHelper.formattedDate(item.createdDate))
             metadataDivider
-            metadataRow(label: "Modified", value: FileSystemHelper.formattedDate(item.modifiedDate), isLast: true)
+            metadataRow(label: "Modified", value: FileSystemHelper.formattedDate(item.modifiedDate))
         }
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
     }
 
-    private func metadataRow(label: String, value: String, isFirst: Bool = false, isLast: Bool = false) -> some View {
+    private func metadataRow(label: String, value: String) -> some View {
         HStack(alignment: .top) {
             Text(label)
                 .font(InspectorTheme.Typography.body)

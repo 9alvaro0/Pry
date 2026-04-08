@@ -104,19 +104,9 @@ struct NetworkRequestDetailView: View {
                 $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod && $0.isEnabled
             }
             if hasMockNow && !hadMockBeforeEdit {
-                // Mock was created
-                showMockSaved = true
-                Task {
-                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
-                    showMockSaved = false
-                }
+                showToast($showMockSaved)
             } else if !hasMockNow && hadMockBeforeEdit {
-                // Mock was removed
-                showMockRemoved = true
-                Task {
-                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
-                    showMockRemoved = false
-                }
+                showToast($showMockRemoved)
             }
         }) {
             ResponseOverrideView(entry: entry)
@@ -135,11 +125,7 @@ struct NetworkRequestDetailView: View {
         }
         .sheet(isPresented: $showBreakpointCreator, onDismiss: {
             if hasBreakpointActive && !showBreakpointSaved {
-                showBreakpointSaved = true
-                Task {
-                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
-                    showBreakpointSaved = false
-                }
+                showToast($showBreakpointSaved)
             }
         }) {
             BreakpointRuleEditor(store: store, prefillEntry: entry)
@@ -380,10 +366,7 @@ struct NetworkRequestDetailView: View {
 
     @ViewBuilder
     private var requestHeadersSection: some View {
-        let headers = entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") &&
-            !["Content-Length", "Accept-Encoding"].contains(key)
-        }
+        let headers = displayHeaders
         if !headers.isEmpty {
             DetailSectionView(title: "Request Headers", collapsible: true, startCollapsed: true) {
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
@@ -484,7 +467,7 @@ struct NetworkRequestDetailView: View {
     }
 
     private var hasMockActive: Bool {
-        entry.isMocked || showMockSaved ||
+        entry.isMocked ||
         store.mockRules.contains {
             $0.urlPattern == entry.requestURL.extractPath() &&
             $0.method == entry.requestMethod &&
@@ -665,11 +648,7 @@ struct NetworkRequestDetailView: View {
 
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value
-        showCopied = true
-        Task {
-            try? await Task.sleep(for: InspectorTheme.Animation.toastDismiss)
-            showCopied = false
-        }
+        showToast($showCopied, duration: InspectorTheme.Animation.toastDismiss)
     }
 
     private func generateShareText() -> String {
@@ -692,10 +671,7 @@ struct NetworkRequestDetailView: View {
         lines.append(entry.requestURL)
 
         // Request headers
-        let reqHeaders = entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") &&
-            !["Content-Length", "Accept-Encoding"].contains(key)
-        }
+        let reqHeaders = displayHeaders
         if !reqHeaders.isEmpty {
             lines.append("")
             lines.append("\u{2500}\u{2500} Request Headers \u{2500}\u{2500}")
@@ -744,10 +720,7 @@ struct NetworkRequestDetailView: View {
             components.append("--request \(entry.requestMethod)")
         }
 
-        let realHeaders = entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") &&
-            !["Content-Length", "Host", "User-Agent", "Accept-Encoding"].contains(key)
-        }
+        let realHeaders = curlHeaders
 
         if let token = entry.authToken, !token.isEmpty {
             let authToken = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
@@ -773,8 +746,32 @@ struct NetworkRequestDetailView: View {
         return components.joined(separator: " \\\n  ")
     }
 
+    private func showToast(_ flag: Binding<Bool>, duration: Duration = InspectorTheme.Animation.toastLong) {
+        flag.wrappedValue = true
+        Task {
+            try? await Task.sleep(for: duration)
+            flag.wrappedValue = false
+        }
+    }
+
     private func escapeCurl(_ value: String) -> String {
         value.replacingOccurrences(of: "'", with: "'\"'\"'")
+    }
+
+    /// Filters out internal/transport headers from request headers.
+    private static let internalHeaders: Set<String> = ["Content-Length", "Accept-Encoding", "X-WarwareInspector-Replay"]
+    private static let curlExtraSkip: Set<String> = ["Host", "User-Agent"]
+
+    private var displayHeaders: [String: String] {
+        entry.requestHeaders.filter { key, _ in
+            !key.hasPrefix("X-Debug-") && !Self.internalHeaders.contains(key)
+        }
+    }
+
+    private var curlHeaders: [String: String] {
+        entry.requestHeaders.filter { key, _ in
+            !key.hasPrefix("X-Debug-") && !Self.internalHeaders.contains(key) && !Self.curlExtraSkip.contains(key)
+        }
     }
 }
 

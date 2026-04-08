@@ -125,7 +125,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             return
         }
 
-        let send = { [self] in
+        let send = { [weak self] in
+            guard let self else { return }
             let session = Self.sharedSession(delegate: self)
             self.dataTask = session.dataTask(with: request)
             self.dataTask?.resume()
@@ -181,7 +182,12 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
                 semaphore.signal()
             }
 
-            semaphore.wait()
+            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
+            if waitResult == .timedOut {
+                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
+                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
+                return
+            }
 
             switch result {
             case .sendResponse(let modifiedStatus, let modifiedHeaders, let modifiedBody):
@@ -226,8 +232,10 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         }
     }
 
+    /// Timeout for breakpoint user interaction (seconds).
+    private static let breakpointTimeout: TimeInterval = 120
+
     private func handleBreakpoint(request: URLRequest, rule: BreakpointRule) {
-        // Use DispatchQueue to bridge from sync to async, avoiding Sendable capture issues
         nonisolated(unsafe) let protocolSelf = self
         DispatchQueue.global(qos: .userInitiated).async {
             let semaphore = DispatchSemaphore(value: 0)
@@ -238,20 +246,27 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
                 semaphore.signal()
             }
 
-            semaphore.wait()
+            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
+            if waitResult == .timedOut {
+                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
+                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
+                return
+            }
 
             switch result {
             case .send(let modified):
-                guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
+                guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.badURL))
+                    return
+                }
                 URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
-                // If rule pauses on both, set up response breakpoint too
                 if rule.pauseOn == .both {
                     protocolSelf.hasResponseBreakpoint = true
                     protocolSelf.matchedBreakpointRule = rule
                 }
                 protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
             case .sendResponse:
-                break // Not applicable for request breakpoints
+                break
             case .cancel:
                 protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
             }

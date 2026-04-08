@@ -11,6 +11,9 @@ import Foundation
 /// ```
 @Observable public final class InspectorStore: @unchecked Sendable {
 
+    /// Suppresses didSet persistence during initial load.
+    private var isLoadingPreferences = false
+
     // MARK: - State
 
     public private(set) var networkEntries: [NetworkEntry] = []
@@ -37,47 +40,42 @@ import Foundation
     // MARK: - Blacklist
 
     public var blacklistedHosts: Set<String> = [] {
-        didSet { PreferenceStorage.set(blacklistedHosts, for: .blacklistedHosts) }
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(blacklistedHosts, for: .blacklistedHosts) }
     }
 
     // MARK: - Preferences
 
-    /// Show error count badge on the floating action button.
     public var showErrorBadge: Bool = true {
-        didSet { PreferenceStorage.set(showErrorBadge, for: .showErrorBadge) }
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(showErrorBadge, for: .showErrorBadge) }
     }
 
-    /// Also print log messages to Xcode console via `print()`.
     public var printToConsole: Bool = true {
-        didSet { PreferenceStorage.set(printToConsole, for: .printToConsole) }
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(printToConsole, for: .printToConsole) }
     }
 
-    /// FAB position: false = bottom-right (default), true = bottom-left.
     public var fabOnLeft: Bool = false {
-        didSet { PreferenceStorage.set(fabOnLeft, for: .fabOnLeft) }
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(fabOnLeft, for: .fabOnLeft) }
     }
 
-    /// Allow dragging the FAB to any position on screen.
     public var fabDraggable: Bool = false {
         didSet {
+            guard !isLoadingPreferences else { return }
             PreferenceStorage.set(fabDraggable, for: .fabDraggable)
-            if !fabDraggable {
-                fabDragOffset = .zero
-            }
+            if !fabDraggable { fabDragOffset = .zero }
         }
     }
 
-    /// Current FAB position when dragged.
     var fabDragOffset: CGSize = .zero {
         didSet {
+            guard !isLoadingPreferences else { return }
             PreferenceStorage.set(fabDragOffset.width, for: .fabDragOffsetX)
             PreferenceStorage.set(fabDragOffset.height, for: .fabDragOffsetY)
         }
     }
 
-    /// Trigger mode override. Nil = use the value from `.inspector(trigger:)`.
     var triggerOverride: InspectorTrigger? {
         didSet {
+            guard !isLoadingPreferences else { return }
             PreferenceStorage.set(triggerOverride?.rawValue ?? -1, for: .triggerOverride)
         }
     }
@@ -94,6 +92,7 @@ import Foundation
     public var networkThrottle: NetworkThrottle = .none {
         didSet {
             InspectorURLProtocol.throttle = networkThrottle
+            guard !isLoadingPreferences else { return }
             PreferenceStorage.set(networkThrottle.rawValue, for: .networkThrottle)
         }
     }
@@ -140,18 +139,9 @@ import Foundation
         syncBreakpointRules()
     }
 
-    func syncBreakpointRulesPublic() {
+    func syncBreakpointRules() {
         InspectorURLProtocol.breakpointRules = breakpointRules
         InspectorURLProtocol.isBreakpointEnabled = isBreakpointEnabled
-    }
-
-    private func syncBreakpointRules() {
-        syncBreakpointRulesPublic()
-    }
-
-    /// Finds the first enabled mock rule matching the given request.
-    func findMatchingMock(for request: URLRequest) -> MockRule? {
-        return mockRules.first { $0.matches(request) }
     }
 
     // MARK: - Configuration
@@ -179,6 +169,9 @@ import Foundation
     }
 
     private func loadPreferences() {
+        isLoadingPreferences = true
+        defer { isLoadingPreferences = false }
+
         showErrorBadge = PreferenceStorage.bool(for: .showErrorBadge, default: true)
         printToConsole = PreferenceStorage.bool(for: .printToConsole, default: true)
         fabOnLeft = PreferenceStorage.bool(for: .fabOnLeft, default: false)
