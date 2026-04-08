@@ -84,19 +84,6 @@ struct AppHubView: View {
 
             Section {
                 NavigationLink {
-                    MockRulesView(store: store)
-                        .navigationTitle("Mock Rules")
-                        .navigationBarTitleDisplayMode(.inline)
-                } label: {
-                    hubRow(
-                        icon: "theatermasks",
-                        title: "Mock Rules",
-                        color: InspectorTheme.Colors.syntaxBool,
-                        badge: store.mockRules.filter(\.isEnabled).count
-                    )
-                }
-
-                NavigationLink {
                     InspectorSettingsView(store: store)
                         .navigationTitle("Settings")
                         .navigationBarTitleDisplayMode(.inline)

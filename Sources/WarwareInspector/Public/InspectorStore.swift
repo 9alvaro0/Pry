@@ -41,19 +41,29 @@ import Foundation
     // MARK: - Mock Rules
 
     public var mockRules: [MockRule] = []
-    public var isMockingEnabled: Bool = false
+
+    /// Mocking is active when there are enabled rules.
+    public var isMockingEnabled: Bool {
+        mockRules.contains(where: \.isEnabled)
+    }
 
     public func addMockRule(_ rule: MockRule) {
         mockRules.append(rule)
+        syncMockRules()
     }
 
     public func removeMockRule(_ id: UUID) {
         mockRules.removeAll { $0.id == id }
+        syncMockRules()
+    }
+
+    private func syncMockRules() {
+        InspectorURLProtocol.mockRules = mockRules
+        InspectorURLProtocol.isMockingEnabled = isMockingEnabled
     }
 
     /// Finds the first enabled mock rule matching the given request.
     func findMatchingMock(for request: URLRequest) -> MockRule? {
-        guard isMockingEnabled else { return nil }
         return mockRules.first { $0.matches(request) }
     }
 

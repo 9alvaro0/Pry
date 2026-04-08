@@ -185,16 +185,23 @@ struct UserDefaultsEditorView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") { dismiss() }
-                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                    Button { dismiss() } label: {
+                        Image(systemName: "xmark")
+                            .font(InspectorTheme.Typography.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
+                    Button {
                         onSave()
                         dismiss()
+                    } label: {
+                        Image(systemName: "checkmark")
+                            .font(InspectorTheme.Typography.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(InspectorTheme.Colors.accent)
                     }
-                    .fontWeight(.semibold)
-                    .foregroundStyle(InspectorTheme.Colors.accent)
                 }
             }
         }

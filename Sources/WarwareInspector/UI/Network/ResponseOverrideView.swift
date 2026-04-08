@@ -92,7 +92,6 @@ struct ResponseOverrideView: View {
                     if let rule = existingRule {
                         Button(role: .destructive) {
                             store.removeMockRule(rule.id)
-                            InspectorURLProtocol.mockRules = store.mockRules
                             dismiss()
                         } label: {
                             HStack {
@@ -116,13 +115,16 @@ struct ResponseOverrideView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button { dismiss() } label: {
-                        Text("Cancel")
+                        Image(systemName: "xmark")
+                            .font(InspectorTheme.Typography.body)
+                            .fontWeight(.semibold)
                             .foregroundStyle(InspectorTheme.Colors.textSecondary)
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { save() } label: {
-                        Text(saved ? "Saved!" : "Save")
+                        Image(systemName: saved ? "checkmark.circle.fill" : "checkmark")
+                            .font(InspectorTheme.Typography.body)
                             .fontWeight(.semibold)
                             .foregroundStyle(saved ? InspectorTheme.Colors.success : InspectorTheme.Colors.accent)
                     }
@@ -207,9 +209,6 @@ struct ResponseOverrideView: View {
         )
 
         store.addMockRule(rule)
-        store.isMockingEnabled = true
-        InspectorURLProtocol.mockRules = store.mockRules
-        InspectorURLProtocol.isMockingEnabled = true
 
         withAnimation { saved = true }
         Task {
