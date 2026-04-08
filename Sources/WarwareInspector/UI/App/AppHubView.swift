@@ -252,6 +252,23 @@ struct AppHubView: View {
 
             rowDivider
 
+            // Breakpoints
+            NavigationLink {
+                BreakpointsView(store: store)
+                    .navigationTitle("Breakpoints")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                toolRow(
+                    icon: "pause.circle",
+                    title: "Breakpoints",
+                    color: InspectorTheme.Colors.warning,
+                    detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
+                    showChevron: true
+                )
+            }
+
+            rowDivider
+
             // Export session
             if let url = SessionFileManager.export(store: store) {
                 ShareLink(item: url) {

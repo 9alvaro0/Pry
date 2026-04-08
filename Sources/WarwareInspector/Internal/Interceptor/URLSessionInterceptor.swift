@@ -8,6 +8,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var mockRules: [MockRule] = []
     nonisolated(unsafe) static var isMockingEnabled: Bool = false
     nonisolated(unsafe) static var throttle: NetworkThrottle = .none
+    nonisolated(unsafe) static var breakpointRules: [BreakpointRule] = []
+    nonisolated(unsafe) static var isBreakpointEnabled: Bool = false
 
     private static let handledKey = "WarwareInspector.handled"
 
@@ -73,10 +75,36 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             return
         }
 
-        // Apply network throttle
+        // Check for request breakpoint BEFORE sending
+        if Self.isBreakpointEnabled,
+           let rule = Self.findMatchingBreakpoint(for: request),
+           rule.pauseOn == .request || rule.pauseOn == .both {
+            let capturedRequest = mutableRequest as URLRequest
+            Task { [weak self] in
+                let action = await BreakpointManager.shared.pauseRequest(capturedRequest, rule: rule)
+                guard let self else { return }
+                switch action {
+                case .send(let modified):
+                    guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
+                    URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
+                    self.proceedWithRequest(modifiedMutable as URLRequest)
+                case .cancel:
+                    self.client?.urlProtocol(self, didFailWithError: URLError(.cancelled))
+                }
+            }
+            return
+        }
+
+        // Send the request (applies throttle internally)
+        proceedWithRequest(mutableRequest as URLRequest)
+    }
+
+    /// Sends the request to the real server, applying throttle if needed.
+    private func proceedWithRequest(_ request: URLRequest) {
         let throttle = Self.throttle
+
+        // Apply throttle
         if throttle == .offline || (throttle.failureRate > 0 && Double.random(in: 0...1) < throttle.failureRate) {
-            // Simulate failure
             let delay = throttle.delay
             DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
                 guard let self else { return }
@@ -98,19 +126,18 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             return
         }
 
-        // Apply delay then proceed
-        let proceed = { [self] in
+        let send = { [self] in
             let session = Self.sharedSession(delegate: self)
-            self.dataTask = session.dataTask(with: mutableRequest as URLRequest)
+            self.dataTask = session.dataTask(with: request)
             self.dataTask?.resume()
         }
 
         if throttle.delay > 0 {
             DispatchQueue.global().asyncAfter(deadline: .now() + throttle.delay) {
-                proceed()
+                send()
             }
         } else {
-            proceed()
+            send()
         }
     }
 
@@ -123,6 +150,10 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
     private static func findMatchingMock(for request: URLRequest) -> MockRule? {
         mockRules.first { $0.matches(request) }
+    }
+
+    private static func findMatchingBreakpoint(for request: URLRequest) -> BreakpointRule? {
+        breakpointRules.first { $0.matches(request) }
     }
 
     private func respondWithMock(_ rule: MockRule) {

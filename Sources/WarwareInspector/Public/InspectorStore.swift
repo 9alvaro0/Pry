@@ -122,6 +122,33 @@ import Foundation
         InspectorURLProtocol.isMockingEnabled = isMockingEnabled
     }
 
+    // MARK: - Breakpoint Rules
+
+    public var breakpointRules: [BreakpointRule] = []
+
+    public var isBreakpointEnabled: Bool {
+        breakpointRules.contains(where: \.isEnabled)
+    }
+
+    public func addBreakpointRule(_ rule: BreakpointRule) {
+        breakpointRules.append(rule)
+        syncBreakpointRules()
+    }
+
+    public func removeBreakpointRule(_ id: UUID) {
+        breakpointRules.removeAll { $0.id == id }
+        syncBreakpointRules()
+    }
+
+    func syncBreakpointRulesPublic() {
+        InspectorURLProtocol.breakpointRules = breakpointRules
+        InspectorURLProtocol.isBreakpointEnabled = isBreakpointEnabled
+    }
+
+    private func syncBreakpointRules() {
+        syncBreakpointRulesPublic()
+    }
+
     /// Finds the first enabled mock rule matching the given request.
     func findMatchingMock(for request: URLRequest) -> MockRule? {
         return mockRules.first { $0.matches(request) }

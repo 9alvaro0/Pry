@@ -116,6 +116,17 @@ struct InspectorOverlayModifier: ViewModifier {
                 InspectorRootView(store: store)
                     .environment(\.inspectorStore, store)
             }
+            .sheet(item: Binding(
+                get: { BreakpointManager.shared.state.pausedRequest },
+                set: { if $0 == nil { BreakpointManager.shared.cancelRequest() } }
+            )) { paused in
+                BreakpointEditorView(
+                    paused: paused,
+                    onSend: { BreakpointManager.shared.resumeRequest() },
+                    onCancel: { BreakpointManager.shared.cancelRequest() }
+                )
+                .interactiveDismissDisabled()
+            }
     }
 
     // MARK: - FAB
