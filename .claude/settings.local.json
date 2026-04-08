@@ -24,7 +24,10 @@
       "WebFetch(domain:www.charlesproxy.com)",
       "WebFetch(domain:pulselogger.com)",
       "WebFetch(domain:www.shakebugs.com)",
-      "WebFetch(domain:apps.apple.com)"
+      "WebFetch(domain:apps.apple.com)",
+      "Bash(find /Users/aguerfr/Desktop/Personal/WARWERE/WarwareInspector -name *Test* -o -name *Spec* -o -name *test*)",
+      "Bash(ls:*)",
+      "Bash(git mv:*)"
     ]
   }
 }
