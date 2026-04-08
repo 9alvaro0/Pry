@@ -5,10 +5,33 @@ struct NetworkRequestDetailView: View {
 
     @Environment(\.inspectorStore) private var store
     @State private var showCopied = false
+    @State private var showMockEditor = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                // Mocked banner (tappable → opens editor)
+                if entry.isMocked {
+                    Button { showMockEditor = true } label: {
+                        HStack(spacing: InspectorTheme.Spacing.sm) {
+                            Image(systemName: "theatermasks.fill")
+                                .font(InspectorTheme.Typography.body)
+                            Text("Mocked Response")
+                                .font(InspectorTheme.Typography.body)
+                                .fontWeight(.semibold)
+                            Spacer()
+                            Text("Edit")
+                                .font(InspectorTheme.Typography.detail)
+                            Image(systemName: "chevron.right")
+                                .font(InspectorTheme.Typography.detail)
+                        }
+                        .foregroundStyle(InspectorTheme.Colors.syntaxBool)
+                        .padding(.horizontal, InspectorTheme.Spacing.lg)
+                        .padding(.vertical, InspectorTheme.Spacing.sm)
+                        .background(InspectorTheme.Colors.syntaxBool.opacity(0.12))
+                    }
+                }
+
                 summaryHeader
                 Divider().overlay(InspectorTheme.Colors.border)
 
@@ -46,6 +69,9 @@ struct NetworkRequestDetailView: View {
         .inspectorBackground()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
+        .sheet(isPresented: $showMockEditor) {
+            ResponseOverrideView(entry: entry)
+        }
         .overlay(alignment: .top) {
             if showCopied {
                 copiedToast
@@ -278,42 +304,34 @@ struct NetworkRequestDetailView: View {
                 .truncationMode(.middle)
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                store.togglePin(entry.id)
-            } label: {
-                Image(systemName: store.isPinned(entry.id) ? "pin.fill" : "pin")
+            Button { showMockEditor = true } label: {
+                Image(systemName: entry.isMocked ? "theatermasks.fill" : "theatermasks")
                     .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(store.isPinned(entry.id) ? InspectorTheme.Colors.warning : InspectorTheme.Colors.textSecondary)
-            }
-        }
-        ToolbarItem(placement: .topBarTrailing) {
-            ShareLink(item: generateShareText()) {
-                Image(systemName: "square.and.arrow.up")
-                    .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                    .foregroundStyle(entry.isMocked ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                Button { copyToClipboard(generateCurlCommand()) } label: {
-                    Label("Copy as cURL", systemImage: "terminal.fill")
-                }
-                Button { copyToClipboard(entry.requestURL) } label: {
-                    Label("Copy URL", systemImage: "link")
-                }
-                if let body = entry.responseBody, !body.isEmpty {
-                    Button { copyToClipboard(body) } label: {
-                        Label("Copy Response", systemImage: "doc.on.doc")
-                    }
+                Button {
+                    store.togglePin(entry.id)
+                } label: {
+                    Label(
+                        store.isPinned(entry.id) ? "Unpin" : "Pin",
+                        systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
+                    )
                 }
 
                 Divider()
 
-                Button { createMockFromEntry() } label: {
-                    Label("Mock this request", systemImage: "theatermasks")
+                ShareLink(item: generateShareText()) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
+
+                Button { copyToClipboard(generateCurlCommand()) } label: {
+                    Label("Copy as cURL", systemImage: "terminal.fill")
                 }
             } label: {
-                Image(systemName: "square.on.square")
+                Image(systemName: "ellipsis.circle")
                     .font(InspectorTheme.Typography.body)
                     .foregroundStyle(InspectorTheme.Colors.textSecondary)
             }
@@ -336,22 +354,6 @@ struct NetworkRequestDetailView: View {
     }
 
     // MARK: - Actions
-
-    private func createMockFromEntry() {
-        let rule = MockRule(
-            name: "\(entry.requestMethod) \(entry.requestURL.extractPath())",
-            urlPattern: entry.requestURL.extractPath(),
-            method: entry.requestMethod,
-            statusCode: entry.responseStatusCode ?? 200,
-            responseBody: entry.responseBody,
-            responseHeaders: entry.responseHeaders ?? ["Content-Type": "application/json"],
-            delay: 0
-        )
-        store.addMockRule(rule)
-        store.isMockingEnabled = true
-        InspectorURLProtocol.mockRules = store.mockRules
-        InspectorURLProtocol.isMockingEnabled = true
-    }
 
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value
