@@ -391,7 +391,7 @@ struct NetworkRequestDetailView: View {
 
     @ViewBuilder
     private var requestBodySection: some View {
-        if let body = entry.requestBody, !body.isEmpty {
+        if let body = entry.requestBody, !body.isEmpty, !body.hasPrefix("[Binary data:") {
             DetailSectionView(title: "Request Body", collapsible: true) {
                 CodeBlockView(text: body, language: .json)
             }
@@ -432,7 +432,7 @@ struct NetworkRequestDetailView: View {
 
     @ViewBuilder
     private var responseBodySection: some View {
-        if let body = entry.responseBody, !body.isEmpty, entry.displayError == nil {
+        if let body = entry.responseBody, !body.isEmpty, !body.hasPrefix("[Binary data:"), entry.displayError == nil {
             DetailSectionView(title: "Response Body", collapsible: true) {
                 CodeBlockView(text: body, language: .json)
             }

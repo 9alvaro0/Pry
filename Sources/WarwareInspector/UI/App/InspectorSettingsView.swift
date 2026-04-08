@@ -178,10 +178,13 @@ struct InspectorSettingsView: View {
 
     // MARK: - Helpers
 
+    private var activeTrigger: InspectorTrigger {
+        store.triggerOverride ?? .default
+    }
+
     private var triggerLabel: String {
-        guard let trigger = store.triggerOverride else { return "Default" }
-        if trigger.contains(.floatingButton) && trigger.contains(.shake) { return "Both" }
-        if trigger.contains(.shake) { return "Shake" }
+        if activeTrigger.contains(.floatingButton) && activeTrigger.contains(.shake) { return "Both" }
+        if activeTrigger.contains(.shake) { return "Shake" }
         return "Button"
     }
 }

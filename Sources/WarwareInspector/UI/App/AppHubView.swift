@@ -5,6 +5,9 @@ import UIKit
 struct AppHubView: View {
     @Bindable var store: InspectorStore
 
+    @State private var showFileImporter = false
+    @State private var importedSession: (store: InspectorStore, metadata: SessionFile.DeviceInfo)?
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
@@ -238,38 +241,92 @@ struct AppHubView: View {
                     .navigationTitle("Network Conditions")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                HStack(spacing: InspectorTheme.Spacing.md) {
-                    Image(systemName: store.networkThrottle.icon)
-                        .font(InspectorTheme.Typography.body)
-                        .foregroundStyle(store.networkThrottle.iconColor)
-                        .frame(width: 28, height: 28)
-                        .background(store.networkThrottle.iconColor.opacity(0.15))
-                        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+                toolRow(
+                    icon: store.networkThrottle.icon,
+                    title: "Network Conditions",
+                    color: store.networkThrottle.iconColor,
+                    detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
+                    showChevron: true
+                )
+            }
 
-                    Text("Network Conditions")
-                        .font(InspectorTheme.Typography.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+            rowDivider
 
-                    Spacer()
-
-                    if store.networkThrottle != .none {
-                        Text(store.networkThrottle.rawValue)
-                            .font(InspectorTheme.Typography.detail)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(store.networkThrottle.iconColor)
-                    }
-
-                    Image(systemName: "chevron.right")
-                        .font(InspectorTheme.Typography.detail)
-                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            // Export session
+            if let url = SessionFileManager.export(store: store) {
+                ShareLink(item: url) {
+                    toolRow(
+                        icon: "square.and.arrow.up",
+                        title: "Share Session",
+                        color: InspectorTheme.Colors.accent,
+                        detail: "\(store.networkEntries.count + store.logEntries.count) entries",
+                        showChevron: false
+                    )
                 }
-                .padding(.horizontal, InspectorTheme.Spacing.lg)
-                .padding(.vertical, InspectorTheme.Spacing.md)
+            }
+
+            rowDivider
+
+            // Import session
+            Button {
+                showFileImporter = true
+            } label: {
+                toolRow(
+                    icon: "square.and.arrow.down",
+                    title: "Open Session",
+                    color: InspectorTheme.Colors.warning,
+                    detail: nil,
+                    showChevron: false
+                )
             }
         }
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json, .data]) { result in
+            if case .success(let url) = result,
+               let session = SessionFileManager.importSession(from: url) {
+                importedSession = session
+            }
+        }
+        .sheet(item: Binding(
+            get: { importedSession.map { ImportedSessionWrapper(store: $0.store, metadata: $0.metadata) } },
+            set: { if $0 == nil { importedSession = nil } }
+        )) { wrapper in
+            SessionViewerView(store: wrapper.store, deviceInfo: wrapper.metadata)
+        }
+    }
+
+    private func toolRow(icon: String, title: String, color: Color, detail: String?, showChevron: Bool) -> some View {
+        HStack(spacing: InspectorTheme.Spacing.md) {
+            Image(systemName: icon)
+                .font(InspectorTheme.Typography.body)
+                .foregroundStyle(color)
+                .frame(width: 28, height: 28)
+                .background(color.opacity(0.15))
+                .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+
+            Text(title)
+                .font(InspectorTheme.Typography.body)
+                .fontWeight(.medium)
+                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+            Spacer()
+
+            if let detail {
+                Text(detail)
+                    .font(InspectorTheme.Typography.detail)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(color)
+            }
+
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(InspectorTheme.Typography.detail)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            }
+        }
+        .padding(.horizontal, InspectorTheme.Spacing.lg)
+        .padding(.vertical, InspectorTheme.Spacing.md)
     }
 
     // MARK: - Settings
@@ -400,6 +457,14 @@ struct AppHubView: View {
             .overlay(InspectorTheme.Colors.border)
             .padding(.leading, 58)
     }
+}
+
+// MARK: - Imported Session Wrapper
+
+private struct ImportedSessionWrapper: Identifiable {
+    let id = UUID()
+    let store: InspectorStore
+    let metadata: SessionFile.DeviceInfo
 }
 
 // MARK: - Previews
