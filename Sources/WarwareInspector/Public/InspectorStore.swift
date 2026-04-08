@@ -99,9 +99,8 @@ import Foundation
 
     // MARK: - Mock Rules
 
-    public var mockRules: [MockRule] = []
+    public private(set) var mockRules: [MockRule] = []
 
-    /// Mocking is active when there are enabled rules.
     public var isMockingEnabled: Bool {
         mockRules.contains(where: \.isEnabled)
     }
@@ -116,6 +115,12 @@ import Foundation
         syncMockRules()
     }
 
+    public func toggleMockRule(_ id: UUID) {
+        guard let index = mockRules.firstIndex(where: { $0.id == id }) else { return }
+        mockRules[index].isEnabled.toggle()
+        syncMockRules()
+    }
+
     private func syncMockRules() {
         InterceptorConfig.shared.mockRules = mockRules
         InterceptorConfig.shared.isMockingEnabled = isMockingEnabled
@@ -123,7 +128,7 @@ import Foundation
 
     // MARK: - Breakpoint Rules
 
-    public var breakpointRules: [BreakpointRule] = []
+    public private(set) var breakpointRules: [BreakpointRule] = []
 
     public var isBreakpointEnabled: Bool {
         breakpointRules.contains(where: \.isEnabled)
@@ -136,6 +141,12 @@ import Foundation
 
     public func removeBreakpointRule(_ id: UUID) {
         breakpointRules.removeAll { $0.id == id }
+        syncBreakpointRules()
+    }
+
+    public func toggleBreakpointRule(_ id: UUID) {
+        guard let index = breakpointRules.firstIndex(where: { $0.id == id }) else { return }
+        breakpointRules[index].isEnabled.toggle()
         syncBreakpointRules()
     }
 

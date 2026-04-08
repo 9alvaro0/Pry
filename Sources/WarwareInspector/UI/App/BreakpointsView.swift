@@ -106,12 +106,7 @@ struct BreakpointsView: View {
     private func toggleBinding(for id: UUID) -> Binding<Bool> {
         Binding(
             get: { store.breakpointRules.first { $0.id == id }?.isEnabled ?? false },
-            set: { newValue in
-                if let index = store.breakpointRules.firstIndex(where: { $0.id == id }) {
-                    store.breakpointRules[index].isEnabled = newValue
-                    store.syncBreakpointRules()
-                }
-            }
+            set: { _ in store.toggleBreakpointRule(id) }
         )
     }
 }

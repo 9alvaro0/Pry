@@ -146,25 +146,14 @@ struct NetworkRulesView: View {
     private func breakpointToggle(for id: UUID) -> Binding<Bool> {
         Binding(
             get: { store.breakpointRules.first { $0.id == id }?.isEnabled ?? false },
-            set: { newValue in
-                if let index = store.breakpointRules.firstIndex(where: { $0.id == id }) {
-                    store.breakpointRules[index].isEnabled = newValue
-                    store.syncBreakpointRules()
-                }
-            }
+            set: { _ in store.toggleBreakpointRule(id) }
         )
     }
 
     private func mockToggle(for id: UUID) -> Binding<Bool> {
         Binding(
             get: { store.mockRules.first { $0.id == id }?.isEnabled ?? false },
-            set: { newValue in
-                if let index = store.mockRules.firstIndex(where: { $0.id == id }) {
-                    store.mockRules[index].isEnabled = newValue
-                    InterceptorConfig.shared.mockRules = store.mockRules
-                    InterceptorConfig.shared.isMockingEnabled = store.isMockingEnabled
-                }
-            }
+            set: { _ in store.toggleMockRule(id) }
         )
     }
 }
