@@ -15,45 +15,47 @@ struct FileItem: Identifiable {
 
     var icon: String {
         if isDirectory { return "folder.fill" }
+        if isImage { return "photo" }
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
-        case "jpg", "jpeg", "png", "gif", "webp", "heic":
-            return "photo"
-        case "json":
-            return "curlybraces"
-        case "plist":
-            return "list.bullet"
-        case "sqlite", "db", "sqlite3":
-            return "cylinder"
-        case "txt", "log", "csv":
-            return "doc.text"
-        default:
-            return "doc"
+        case "json": return "curlybraces"
+        case "plist": return "list.bullet"
+        case "sqlite", "db", "sqlite3": return "cylinder"
+        case "txt", "log", "csv": return "doc.text"
+        default: return "doc"
         }
     }
 
     var iconColor: Color {
         if isDirectory { return .blue }
+        if isImage { return .green }
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
-        case "jpg", "jpeg", "png", "gif", "webp", "heic":
-            return .green
-        case "json":
-            return .yellow
-        case "plist":
-            return .orange
-        case "sqlite", "db", "sqlite3":
-            return .purple
-        case "txt", "log", "csv":
-            return .gray
-        default:
-            return .gray
+        case "json": return .yellow
+        case "plist": return .orange
+        case "sqlite", "db", "sqlite3": return .purple
+        case "txt", "log", "csv": return .gray
+        default: return .gray
         }
     }
 
     var isImage: Bool {
         let ext = (name as NSString).pathExtension.lowercased()
-        return ["jpg", "jpeg", "png", "gif", "webp", "heic"].contains(ext)
+        if ["jpg", "jpeg", "png", "gif", "webp", "heic"].contains(ext) { return true }
+        // Check magic bytes for files without extension (e.g. Kingfisher cache)
+        return Self.isImageByMagicBytes(path: path)
+    }
+
+    static func isImageByMagicBytes(path: String) -> Bool {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { handle.closeFile() }
+        let data = handle.readData(ofLength: 4)
+        guard data.count >= 3 else { return false }
+        let bytes = [UInt8](data)
+        return bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) || // PNG
+               bytes.starts(with: [0xFF, 0xD8, 0xFF]) ||        // JPEG
+               bytes.starts(with: [0x47, 0x49, 0x46]) ||        // GIF
+               bytes.starts(with: [0x52, 0x49, 0x46, 0x46])     // WebP
     }
 
     var isTextReadable: Bool {

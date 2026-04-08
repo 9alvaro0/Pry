@@ -4,9 +4,13 @@ import UIKit
 struct UserDefaultsView: View {
     @State private var entries: [(key: String, value: String, type: String)] = []
     @State private var searchText = ""
-    @State private var editingKey: String?
-    @State private var editValue = ""
-    @State private var showEditor = false
+    @State private var editingItem: EditItem?
+
+    private struct EditItem: Identifiable {
+        let id = UUID()
+        let key: String
+        var value: String
+    }
 
     private var filteredEntries: [(key: String, value: String, type: String)] {
         guard !searchText.isEmpty else { return entries }
@@ -29,9 +33,7 @@ struct UserDefaultsView: View {
                 List {
                     ForEach(filteredEntries, id: \.key) { entry in
                         Button {
-                            editingKey = entry.key
-                            editValue = entry.value
-                            showEditor = true
+                            editingItem = EditItem(key: entry.key, value: entry.value)
                         } label: {
                             defaultsRow(entry)
                         }
@@ -70,12 +72,10 @@ struct UserDefaultsView: View {
                 }
             }
         }
-        .sheet(isPresented: $showEditor) {
-            if let key = editingKey {
-                UserDefaultsEditorView(key: key, value: $editValue) {
-                    UserDefaults.standard.set(editValue, forKey: key)
-                    loadDefaults()
-                }
+        .sheet(item: $editingItem) { item in
+            UserDefaultsEditorView(key: item.key, initialValue: item.value) { newValue in
+                UserDefaults.standard.set(newValue, forKey: item.key)
+                loadDefaults()
             }
         }
     }
@@ -133,14 +133,19 @@ struct UserDefaultsView: View {
 
 struct UserDefaultsEditorView: View {
     let key: String
-    @Binding var value: String
-    let onSave: () -> Void
+    let onSave: (String) -> Void
+    @State private var value: String
     @Environment(\.dismiss) private var dismiss
+
+    init(key: String, initialValue: String, onSave: @escaping (String) -> Void) {
+        self.key = key
+        self.onSave = onSave
+        self._value = State(initialValue: initialValue)
+    }
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: InspectorTheme.Spacing.lg) {
-                // Key (read-only)
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
                     Text("KEY")
                         .font(InspectorTheme.Typography.detail)
@@ -156,7 +161,6 @@ struct UserDefaultsEditorView: View {
                         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
                 }
 
-                // Value (editable)
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
                     Text("VALUE")
                         .font(InspectorTheme.Typography.detail)
@@ -194,7 +198,7 @@ struct UserDefaultsEditorView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        onSave()
+                        onSave(value)
                         dismiss()
                     } label: {
                         Image(systemName: "checkmark")

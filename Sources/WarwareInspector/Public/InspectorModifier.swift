@@ -113,6 +113,7 @@ struct InspectorOverlayModifier: ViewModifier {
             }
             .sheet(isPresented: $isPresented) {
                 InspectorRootView(store: store)
+                    .environment(\.inspectorStore, store)
             }
     }
 }
