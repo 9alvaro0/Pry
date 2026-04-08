@@ -41,9 +41,10 @@ extension NetworkEntry {
             }
             """,
             responseError: nil,
-            authToken: "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9...",
+            // Real decodable JWT: {"sub":"user123","iss":"auth.example.com","iat":1712500000,"exp":9999999999,"name":"John Doe","role":"admin"}
+            authToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIiwiaXNzIjoiYXV0aC5leGFtcGxlLmNvbSIsImlhdCI6MTcxMjUwMDAwMCwiZXhwIjo5OTk5OTk5OTk5LCJuYW1lIjoiSm9obiBEb2UiLCJyb2xlIjoiYWRtaW4ifQ.mock-signature",
             authTokenType: "Bearer",
-            authTokenLength: 256,
+            authTokenLength: 186,
             duration: 0.43,
             requestSize: 163,
             responseSize: 247,

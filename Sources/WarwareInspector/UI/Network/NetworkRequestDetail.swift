@@ -14,6 +14,9 @@ struct NetworkRequestDetailView: View {
 
                 timingSection
 
+                // Auth / JWT
+                jwtSection
+
                 // Request
                 requestHeadersSection
                 requestBodySection
@@ -123,6 +126,20 @@ struct NetworkRequestDetailView: View {
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
         }
         .padding(.vertical, InspectorTheme.Spacing.lg)
+    }
+
+    // MARK: - JWT Token
+
+    @ViewBuilder
+    private var jwtSection: some View {
+        // Check Authorization header or auth token for JWT
+        let token = entry.authToken
+            ?? entry.requestHeaders["Authorization"]
+        if let token, JWTDecoder.decode(token) != nil {
+            DetailSectionView(title: "JWT Token", collapsible: true) {
+                JWTDetailView(token: token)
+            }
+        }
     }
 
     // MARK: - Timing Breakdown

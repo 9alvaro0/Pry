@@ -31,6 +31,29 @@ struct NetworkStatsView: View {
         entries.max(by: { ($0.duration ?? 0) < ($1.duration ?? 0) })
     }
 
+    private var errorGroups: [ErrorGroup] {
+        let errors = entries.filter { ($0.responseStatusCode ?? 0) >= 400 || $0.responseError != nil }
+        var groups: [String: ErrorGroup] = [:]
+
+        for entry in errors {
+            let path = entry.requestURL.extractPath()
+            let key = "\(entry.requestMethod) \(path) \(entry.responseStatusCode ?? 0)"
+            if groups[key] != nil {
+                groups[key]!.count += 1
+            } else {
+                groups[key] = ErrorGroup(
+                    key: key,
+                    method: entry.requestMethod,
+                    path: path,
+                    statusCode: entry.responseStatusCode,
+                    count: 1
+                )
+            }
+        }
+
+        return groups.values.sorted { $0.count > $1.count }
+    }
+
     private var topHosts: [(host: String, count: Int)] {
         var counts: [String: Int] = [:]
         for entry in entries {
@@ -48,6 +71,39 @@ struct NetworkStatsView: View {
                 statCard(value: "\(errorCount)", label: "Errors", color: InspectorTheme.Colors.error)
                 if pendingCount > 0 {
                     statCard(value: "\(pendingCount)", label: "Pending", color: InspectorTheme.Colors.pending)
+                }
+            }
+
+            // Error grouping
+            if !errorGroups.isEmpty {
+                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+                    ForEach(errorGroups.prefix(3), id: \.key) { group in
+                        HStack(spacing: InspectorTheme.Spacing.sm) {
+                            Text("\(group.count)x")
+                                .font(InspectorTheme.Typography.code)
+                                .fontWeight(.bold)
+                                .foregroundStyle(InspectorTheme.Colors.error)
+                                .frame(width: 32, alignment: .trailing)
+
+                            Text("\(group.method) \(group.path)")
+                                .font(InspectorTheme.Typography.code)
+                                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+
+                            Spacer()
+
+                            if let status = group.statusCode {
+                                Text("\(status)")
+                                    .font(InspectorTheme.Typography.codeSmall)
+                                    .foregroundStyle(InspectorTheme.Colors.error)
+                            }
+                        }
+                        .padding(.horizontal, InspectorTheme.Spacing.sm)
+                        .padding(.vertical, InspectorTheme.Spacing.xs)
+                        .background(InspectorTheme.Colors.error.opacity(0.08))
+                        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+                    }
                 }
             }
 
@@ -92,6 +148,16 @@ struct NetworkStatsView: View {
         .background(InspectorTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
     }
+}
+
+// MARK: - Error Group Model
+
+private struct ErrorGroup {
+    let key: String
+    let method: String
+    let path: String
+    let statusCode: Int?
+    var count: Int
 }
 
 // MARK: - Previews

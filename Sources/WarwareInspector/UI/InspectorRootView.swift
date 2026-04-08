@@ -24,6 +24,10 @@ struct InspectorRootView: View {
                 .tabItem { Label("Deeplinks", systemImage: "link") }
                 .badge(store.deeplinkEntries.count)
                 .tag(2)
+
+            environmentTab
+                .tabItem { Label("Device", systemImage: "info.circle") }
+                .tag(3)
         }
         .inspectorBackground()
         .alert("Clear entries?", isPresented: $showClearConfirmation) {
@@ -65,6 +69,26 @@ struct InspectorRootView: View {
                 .navigationTitle("Deeplinks")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { toolbarItems { store.clearDeeplinks() } }
+        }
+    }
+
+    private var environmentTab: some View {
+        NavigationStack {
+            EnvironmentView()
+                .navigationTitle("Device")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(InspectorTheme.Typography.body)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                        }
+                    }
+                }
         }
     }
 
