@@ -91,7 +91,7 @@ import Foundation
 
     public var networkThrottle: NetworkThrottle = .none {
         didSet {
-            InspectorURLProtocol.throttle = networkThrottle
+            InterceptorConfig.shared.throttle = networkThrottle
             guard !isLoadingPreferences else { return }
             PreferenceStorage.set(networkThrottle.rawValue, for: .networkThrottle)
         }
@@ -117,8 +117,8 @@ import Foundation
     }
 
     private func syncMockRules() {
-        InspectorURLProtocol.mockRules = mockRules
-        InspectorURLProtocol.isMockingEnabled = isMockingEnabled
+        InterceptorConfig.shared.mockRules = mockRules
+        InterceptorConfig.shared.isMockingEnabled = isMockingEnabled
     }
 
     // MARK: - Breakpoint Rules
@@ -140,8 +140,8 @@ import Foundation
     }
 
     func syncBreakpointRules() {
-        InspectorURLProtocol.breakpointRules = breakpointRules
-        InspectorURLProtocol.isBreakpointEnabled = isBreakpointEnabled
+        InterceptorConfig.shared.breakpointRules = breakpointRules
+        InterceptorConfig.shared.isBreakpointEnabled = isBreakpointEnabled
     }
 
     // MARK: - Configuration

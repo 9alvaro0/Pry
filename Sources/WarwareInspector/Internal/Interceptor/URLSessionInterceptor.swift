@@ -3,13 +3,7 @@ import Foundation
 /// URLProtocol subclass that transparently intercepts all URLSession traffic.
 final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
-    nonisolated(unsafe) static var logger: NetworkLogger?
-    nonisolated(unsafe) static var blacklistedHosts: Set<String> = []
-    nonisolated(unsafe) static var mockRules: [MockRule] = []
-    nonisolated(unsafe) static var isMockingEnabled: Bool = false
-    nonisolated(unsafe) static var throttle: NetworkThrottle = .none
-    nonisolated(unsafe) static var breakpointRules: [BreakpointRule] = []
-    nonisolated(unsafe) static var isBreakpointEnabled: Bool = false
+    private static var config: InterceptorConfig { InterceptorConfig.shared }
 
     private static let handledKey = "WarwareInspector.handled"
 
@@ -38,10 +32,10 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     // MARK: - URLProtocol
 
     override public class func canInit(with request: URLRequest) -> Bool {
-        if let host = request.url?.host, blacklistedHosts.contains(host) {
+        if let host = request.url?.host, config.blacklistedHosts.contains(host) {
             return false
         }
-        guard logger != nil else { return false }
+        guard config.logger != nil else { return false }
         return URLProtocol.property(forKey: handledKey, in: request) == nil
     }
 
@@ -63,7 +57,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
         // Log request start
         if let url = request.url {
-            requestID = Self.logger?.logRequest(
+            requestID = Self.config.logger?.logRequest(
                 url: url.absoluteString,
                 method: request.httpMethod ?? "UNKNOWN",
                 headers: request.allHTTPHeaderFields ?? [:],
@@ -72,14 +66,14 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         }
 
         // Check for mock response BEFORE making real request
-        if Self.isMockingEnabled, let rule = Self.findMatchingMock(for: request) {
+        if Self.config.isMockingEnabled, let rule = Self.config.findMatchingMock(for: request) {
             respondWithMock(rule)
             return
         }
 
         // Check for request breakpoint BEFORE sending
-        if Self.isBreakpointEnabled,
-           let rule = Self.findMatchingBreakpoint(for: request),
+        if Self.config.isBreakpointEnabled,
+           let rule = Self.config.findMatchingBreakpoint(for: request),
            rule.pauseOn == .request || rule.pauseOn == .both {
             let capturedRequest = mutableRequest as URLRequest
             handleBreakpoint(request: capturedRequest, rule: rule)
@@ -87,8 +81,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         }
 
         // Check if we need to intercept the response
-        if Self.isBreakpointEnabled,
-           let rule = Self.findMatchingBreakpoint(for: request),
+        if Self.config.isBreakpointEnabled,
+           let rule = Self.config.findMatchingBreakpoint(for: request),
            rule.pauseOn == .response || rule.pauseOn == .both {
             hasResponseBreakpoint = true
             matchedBreakpointRule = rule
@@ -100,7 +94,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
 
     /// Sends the request to the real server, applying throttle if needed.
     private func proceedWithRequest(_ request: URLRequest) {
-        let throttle = Self.throttle
+        let throttle = Self.config.throttle
 
         // Apply throttle
         if throttle == .offline || (throttle.failureRate > 0 && Double.random(in: 0...1) < throttle.failureRate) {
@@ -109,7 +103,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
                 guard let self else { return }
                 let error = URLError(.notConnectedToInternet)
                 if let requestID = self.requestID {
-                    Self.logger?.logResponse(
+                    Self.config.logger?.logResponse(
                         requestID: requestID,
                         statusCode: 0,
                         headers: [:],
@@ -147,14 +141,6 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     }
 
     // MARK: - Mock Response
-
-    private static func findMatchingMock(for request: URLRequest) -> MockRule? {
-        mockRules.first { $0.matches(request) }
-    }
-
-    private static func findMatchingBreakpoint(for request: URLRequest) -> BreakpointRule? {
-        breakpointRules.first { $0.matches(request) }
-    }
 
     /// Timeout for breakpoint user interaction (seconds).
     private static let breakpointTimeout: TimeInterval = 120
@@ -217,7 +203,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
                     protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
 
                     if let requestID {
-                        Self.logger?.logResponse(
+                        Self.config.logger?.logResponse(
                             requestID: requestID, statusCode: modifiedStatus, headers: modifiedHeaders,
                             body: modifiedBody?.data(using: .utf8), error: nil,
                             duration: duration, taskMetrics: nil, redirectCount: 0
@@ -287,7 +273,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             // Log mock response
             let duration = Date().timeIntervalSince(self.startTime)
             if let requestID = self.requestID {
-                Self.logger?.logMockResponse(
+                Self.config.logger?.logMockResponse(
                     requestID: requestID,
                     statusCode: rule.statusCode,
                     headers: rule.responseHeaders,
@@ -369,7 +355,7 @@ extension InspectorURLProtocol: URLSessionDataDelegate {
         }
 
         if let requestID {
-            Self.logger?.logResponse(
+            Self.config.logger?.logResponse(
                 requestID: requestID,
                 statusCode: httpResponse?.statusCode ?? 0,
                 headers: (httpResponse?.allHeaderFields as? [String: String]) ?? [:],

@@ -161,8 +161,8 @@ struct NetworkRulesView: View {
             set: { newValue in
                 if let index = store.mockRules.firstIndex(where: { $0.id == id }) {
                     store.mockRules[index].isEnabled = newValue
-                    InspectorURLProtocol.mockRules = store.mockRules
-                    InspectorURLProtocol.isMockingEnabled = store.isMockingEnabled
+                    InterceptorConfig.shared.mockRules = store.mockRules
+                    InterceptorConfig.shared.isMockingEnabled = store.isMockingEnabled
                 }
             }
         )

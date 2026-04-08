@@ -181,10 +181,11 @@ enum InspectorLifecycle {
         isStarted = true
 
         let logger = NetworkLogger(store: store)
-        InspectorURLProtocol.logger = logger
-        InspectorURLProtocol.blacklistedHosts = store.blacklistedHosts
-        InspectorURLProtocol.mockRules = store.mockRules
-        InspectorURLProtocol.isMockingEnabled = store.isMockingEnabled
+        let config = InterceptorConfig.shared
+        config.logger = logger
+        config.blacklistedHosts = store.blacklistedHosts
+        config.mockRules = store.mockRules
+        config.isMockingEnabled = store.isMockingEnabled
 
         // Swizzle URLSessionConfiguration to inject our protocol into ALL sessions
         URLSessionConfiguration.swizzleDefaultConfiguration()
@@ -196,7 +197,7 @@ enum InspectorLifecycle {
     }
 
     static func stop() {
-        InspectorURLProtocol.logger = nil
+        InterceptorConfig.shared.logger = nil
         URLProtocol.unregisterClass(InspectorURLProtocol.self)
         isStarted = false
     }
