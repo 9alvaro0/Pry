@@ -16,6 +16,7 @@ import Foundation
     public private(set) var networkEntries: [NetworkEntry] = []
     public private(set) var logEntries: [LogEntry] = []
     public private(set) var deeplinkEntries: [DeeplinkEntry] = []
+    public private(set) var pushNotificationEntries: [PushNotificationEntry] = []
 
     // MARK: - Pins
 
@@ -42,17 +43,20 @@ import Foundation
     private let maxNetworkEntries: Int
     private let maxLogEntries: Int
     private let maxDeeplinkEntries: Int
+    private let maxPushEntries: Int
 
     // MARK: - Init
 
     public init(
         maxNetworkEntries: Int = 200,
         maxLogEntries: Int = 500,
-        maxDeeplinkEntries: Int = 100
+        maxDeeplinkEntries: Int = 100,
+        maxPushEntries: Int = 100
     ) {
         self.maxNetworkEntries = maxNetworkEntries
         self.maxLogEntries = maxLogEntries
         self.maxDeeplinkEntries = maxDeeplinkEntries
+        self.maxPushEntries = maxPushEntries
     }
 
     // MARK: - Network (internal - fed by NetworkLogger)
@@ -147,6 +151,47 @@ import Foundation
         }
     }
 
+    // MARK: - Push Notifications
+
+    /// Logs a received push notification.
+    public func logPushNotification(
+        title: String?,
+        body: String?,
+        subtitle: String?,
+        badge: Int?,
+        sound: String?,
+        categoryIdentifier: String?,
+        threadIdentifier: String?,
+        userInfo: [String: Any]
+    ) {
+        let flatUserInfo = userInfo.reduce(into: [String: String]()) { result, pair in
+            result[pair.key] = String(describing: pair.value)
+        }
+
+        let entry = PushNotificationEntry(
+            timestamp: Date(),
+            title: title,
+            body: body,
+            subtitle: subtitle,
+            badge: badge,
+            sound: sound,
+            categoryIdentifier: categoryIdentifier,
+            threadIdentifier: threadIdentifier,
+            userInfo: flatUserInfo
+        )
+
+        Task { @MainActor in
+            self.addPushNotification(entry)
+        }
+    }
+
+    func addPushNotification(_ entry: PushNotificationEntry) {
+        pushNotificationEntries.insert(entry, at: 0)
+        if pushNotificationEntries.count > maxPushEntries {
+            pushNotificationEntries.removeLast(pushNotificationEntries.count - maxPushEntries)
+        }
+    }
+
     // MARK: - Remove
 
     public func removeNetworkEntry(_ id: UUID) {
@@ -162,15 +207,21 @@ import Foundation
         deeplinkEntries.removeAll { $0.id == id }
     }
 
+    public func removePushEntry(_ id: UUID) {
+        pushNotificationEntries.removeAll { $0.id == id }
+    }
+
     // MARK: - Clear
 
     public func clearNetwork() { networkEntries.removeAll() }
     public func clearLogs() { logEntries.removeAll() }
     public func clearDeeplinks() { deeplinkEntries.removeAll() }
+    public func clearPush() { pushNotificationEntries.removeAll() }
 
     public func clearAll() {
         networkEntries.removeAll()
         logEntries.removeAll()
         deeplinkEntries.removeAll()
+        pushNotificationEntries.removeAll()
     }
 }

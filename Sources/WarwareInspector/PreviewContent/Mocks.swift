@@ -609,4 +609,51 @@ extension NetworkEntry {
     }
 }
 
+// MARK: - PushNotificationEntry Mocks
+
+extension PushNotificationEntry {
+
+    static var mockPromo: PushNotificationEntry {
+        PushNotificationEntry(
+            timestamp: Date(),
+            title: "Flash Sale!",
+            body: "50% off all items for the next 2 hours. Don't miss out!",
+            subtitle: "Limited Time Offer",
+            badge: 3,
+            sound: "default",
+            categoryIdentifier: "PROMO",
+            threadIdentifier: "marketing",
+            userInfo: ["deeplink": "myapp://sale/flash", "campaign_id": "summer2026"]
+        )
+    }
+
+    static var mockChat: PushNotificationEntry {
+        PushNotificationEntry(
+            timestamp: Date().addingTimeInterval(-120),
+            title: "New Message",
+            body: "Hey, are you coming to the meeting?",
+            subtitle: nil,
+            badge: 1,
+            sound: "message.caf",
+            categoryIdentifier: "CHAT",
+            threadIdentifier: "chat-room-42",
+            userInfo: ["sender_id": "user456", "room_id": "42"]
+        )
+    }
+
+    static var mockSilent: PushNotificationEntry {
+        PushNotificationEntry(
+            timestamp: Date().addingTimeInterval(-300),
+            title: nil,
+            body: nil,
+            subtitle: nil,
+            badge: nil,
+            sound: nil,
+            categoryIdentifier: "BACKGROUND_SYNC",
+            threadIdentifier: nil,
+            userInfo: ["content-available": "1", "sync_type": "incremental"]
+        )
+    }
+}
+
 #endif

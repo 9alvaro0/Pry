@@ -24,11 +24,21 @@ struct DeeplinkMonitorView: View {
     var body: some View {
         Group {
             if store.deeplinkEntries.isEmpty {
-                EmptyStateView(
-                    title: "No deeplinks received",
-                    systemImage: "link",
-                    description: "Deeplinks and universal links will appear here as the app receives them"
-                )
+                ContentUnavailableView {
+                    Label("No deeplinks received", systemImage: "link")
+                } description: {
+                    Text("Deeplinks will appear here as the app receives them")
+                } actions: {
+                    Button {
+                        showSimulator = true
+                    } label: {
+                        Label("Simulate Deeplink", systemImage: "play.fill")
+                            .font(InspectorTheme.Typography.body)
+                            .fontWeight(.semibold)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(InspectorTheme.Colors.deeplinks)
+                }
             } else {
                 List {
                     Section {

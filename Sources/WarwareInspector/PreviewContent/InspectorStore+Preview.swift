@@ -32,6 +32,11 @@ extension InspectorStore {
         store.addDeeplinkEntry(.mockUniversalLink)
         store.addDeeplinkEntry(.mockWidgetLink)
 
+        // Push Notifications
+        store.addPushNotification(.mockPromo)
+        store.addPushNotification(.mockChat)
+        store.addPushNotification(.mockSilent)
+
         return store
     }
 
@@ -65,6 +70,15 @@ extension InspectorStore {
         store.addDeeplinkEntry(.mockCustomScheme)
         store.addDeeplinkEntry(.mockUniversalLink)
         store.addDeeplinkEntry(.mockWidgetLink)
+        return store
+    }
+
+    /// Store with only push notifications.
+    static var pushOnly: InspectorStore {
+        let store = InspectorStore()
+        store.addPushNotification(.mockPromo)
+        store.addPushNotification(.mockChat)
+        store.addPushNotification(.mockSilent)
         return store
     }
 }

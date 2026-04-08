@@ -20,14 +20,10 @@ struct InspectorRootView: View {
                 .badge(store.logEntries.count)
                 .tag(1)
 
-            deeplinksTab
-                .tabItem { Label("Deeplinks", systemImage: "link") }
-                .badge(store.deeplinkEntries.count)
+            appTab
+                .tabItem { Label("App", systemImage: "square.grid.2x2") }
+                .badge(store.deeplinkEntries.count + store.pushNotificationEntries.count)
                 .tag(2)
-
-            environmentTab
-                .tabItem { Label("Device", systemImage: "info.circle") }
-                .tag(3)
         }
         .inspectorBackground()
         .alert("Clear entries?", isPresented: $showClearConfirmation) {
@@ -63,19 +59,10 @@ struct InspectorRootView: View {
         }
     }
 
-    private var deeplinksTab: some View {
+    private var appTab: some View {
         NavigationStack {
-            DeeplinkMonitorView(store: store)
-                .navigationTitle("Deeplinks")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar { toolbarItems { store.clearDeeplinks() } }
-        }
-    }
-
-    private var environmentTab: some View {
-        NavigationStack {
-            EnvironmentView()
-                .navigationTitle("Device")
+            AppHubView(store: store)
+                .navigationTitle("App")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
