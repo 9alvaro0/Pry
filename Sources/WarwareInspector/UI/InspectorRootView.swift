@@ -4,10 +4,7 @@ struct InspectorRootView: View {
     @Bindable var store: InspectorStore
 
     @SwiftUI.Environment(\.dismiss) private var dismiss
-    @State private var exportURL: URL?
     @State private var selectedTab: Int = 0
-    @State private var isExporting: Bool = false
-    @State private var exportPhase: ExportPhase = .deviceInfo
     @State private var showClearConfirmation = false
     @State private var pendingClearAction: (() -> Void)?
 
@@ -29,9 +26,6 @@ struct InspectorRootView: View {
                 .tag(2)
         }
         .inspectorBackground()
-        .overlay {
-            if isExporting { exportOverlay }
-        }
         .alert("Clear entries?", isPresented: $showClearConfirmation) {
             Button("Clear", role: .destructive) {
                 pendingClearAction?()
@@ -45,28 +39,6 @@ struct InspectorRootView: View {
         }
     }
 
-    // MARK: - Export Overlay
-
-    private var exportOverlay: some View {
-        InspectorTheme.Colors.overlay
-            .ignoresSafeArea()
-            .overlay {
-                VStack(spacing: InspectorTheme.Spacing.xl) {
-                    ProgressView()
-                        .controlSize(.large)
-                    Text(exportPhase.message)
-                        .font(InspectorTheme.Typography.subheading)
-                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                        .contentTransition(.numericText())
-                        .animation(.easeInOut(duration: 0.2), value: exportPhase.message)
-                }
-                .frame(width: InspectorTheme.Size.exportDialog)
-                .padding(.vertical, InspectorTheme.Spacing.xxl + InspectorTheme.Spacing.sm)
-                .background(.ultraThickMaterial)
-                .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg + InspectorTheme.Spacing.xs))
-            }
-    }
-
     // MARK: - Tabs
 
     private var networkTab: some View {
@@ -75,9 +47,6 @@ struct InspectorRootView: View {
                 .navigationTitle("Network")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar { toolbarItems { store.clearNetwork() } }
-                .sheet(item: $exportURL) { url in
-                    ShareSheetView(activityItems: [url])
-                }
         }
     }
 
@@ -123,34 +92,8 @@ struct InspectorRootView: View {
                     .foregroundStyle(InspectorTheme.Colors.textSecondary)
             }
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button {
-                Task { await exportLogs() }
-            } label: {
-                Image(systemName: "square.and.arrow.up")
-                    .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
-            }
-        }
     }
 
-    // MARK: - Export
-
-    private func exportLogs() async {
-        exportPhase = .deviceInfo
-        isExporting = true
-
-        let url = await InspectorExporter.shareExport(
-            networkEntries: store.networkEntries,
-            logEntries: store.logEntries,
-            deeplinkEntries: store.deeplinkEntries
-        ) { phase in
-            withAnimation { exportPhase = phase }
-        }
-
-        isExporting = false
-        if let url { exportURL = url }
-    }
 }
 
 // MARK: - Previews

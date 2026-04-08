@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct ConsoleMonitorView: View {
     @Bindable var store: InspectorStore
 
     @State private var selectedLogType: LogType?
     @State private var searchText: String = ""
+    @State private var showCopiedAll = false
 
     private var filteredLogs: [LogEntry] {
         var logs = store.logEntries
@@ -14,69 +16,132 @@ struct ConsoleMonitorView: View {
         }
 
         if !searchText.isEmpty {
+            let query = searchText.lowercased()
             logs = logs.filter { log in
-                log.message.localizedCaseInsensitiveContains(searchText) ||
-                (log.file?.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                (log.function?.localizedCaseInsensitiveContains(searchText) ?? false) ||
-                (log.location?.localizedCaseInsensitiveContains(searchText) ?? false)
+                log.message.lowercased().contains(query) ||
+                log.type.rawValue.lowercased().contains(query) ||
+                (log.file?.lowercased().contains(query) ?? false) ||
+                (log.function?.lowercased().contains(query) ?? false) ||
+                (log.location?.lowercased().contains(query) ?? false)
             }
         }
 
         return logs.reversed()
     }
 
+    private var typeCounts: [LogType: Int] {
+        var counts: [LogType: Int] = [:]
+        for log in store.logEntries {
+            counts[log.type, default: 0] += 1
+        }
+        return counts
+    }
+
     var body: some View {
         Group {
-            if filteredLogs.isEmpty {
+            if store.logEntries.isEmpty {
                 EmptyStateView(
                     title: "No console logs",
                     systemImage: "text.alignleft",
-                    description: "Print statements will appear here as the app runs"
+                    description: "Logs will appear here as the app runs"
                 )
             } else {
                 List {
                     ForEach(filteredLogs) { log in
-                        ConsoleLogRowView(log: log)
-                            .listRowInsets(EdgeInsets(top: InspectorTheme.Spacing.xs, leading: InspectorTheme.Spacing.md, bottom: InspectorTheme.Spacing.xs, trailing: InspectorTheme.Spacing.md))
-                            .listRowSeparator(.hidden)
+                        NavigationLink(destination: ConsoleLogDetailView(log: log)) {
+                            ConsoleLogRowView(log: log)
+                        }
+                        .listRowBackground(InspectorTheme.Colors.surface)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                            Button(role: .destructive) {
+                                store.removeLogEntry(log.id)
+                            } label: {
+                                Image(systemName: "trash")
+                            }
+                        }
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                UIPasteboard.general.string = log.message
+                            } label: {
+                                Image(systemName: "doc.on.doc")
+                            }
+                            .tint(InspectorTheme.Colors.accent)
+                        }
                     }
                 }
                 .listStyle(.insetGrouped)
-                .contentMargins(.top, InspectorTheme.Spacing.lg)
+                .scrollContentBackground(.hidden)
+                .contentMargins(.vertical, InspectorTheme.Spacing.sm)
             }
         }
+        .inspectorBackground()
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
-                FilterChipBarView(chips: filterChips)
+                chipBar
                 Divider()
             }
         }
-        .searchable(text: $searchText, prompt: "Search in console logs...")
+        .searchable(text: $searchText, prompt: "Message, file, type...")
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    copyAllLogs()
+                } label: {
+                    Image(systemName: showCopiedAll ? "checkmark" : "doc.on.doc")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(
+                            showCopiedAll
+                                ? InspectorTheme.Colors.success
+                                : InspectorTheme.Colors.textSecondary
+                        )
+                }
+            }
+        }
     }
 
-    private var filterChips: [ChipItem] {
-        var chips: [ChipItem] = [
-            ChipItem(
-                title: "All",
-                count: store.logEntries.count,
-                isSelected: selectedLogType == nil
-            ) { selectedLogType = nil }
-        ]
+    // MARK: - Chip Bar
 
-        for type in LogType.allCases {
-            let count = store.logEntries.filter { $0.type == type }.count
-            chips.append(
-                ChipItem(
-                    title: type.rawValue,
-                    count: count,
-                    icon: type.systemImage,
-                    color: type.color,
-                    isSelected: selectedLogType == type
-                ) { selectedLogType = type }
-            )
+    private var chipBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: InspectorTheme.Spacing.sm) {
+                ForEach(LogType.allCases, id: \.self) { type in
+                    let count = typeCounts[type] ?? 0
+                    if count > 0 {
+                        FilterChipView(
+                            title: type.rawValue,
+                            count: count,
+                            icon: type.systemImage,
+                            color: type.color,
+                            isSelected: selectedLogType == type
+                        ) {
+                            selectedLogType = selectedLogType == type ? nil : type
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal, InspectorTheme.Spacing.lg)
+            .padding(.vertical, InspectorTheme.Spacing.sm)
         }
+        .background(InspectorTheme.Colors.background)
+    }
 
-        return chips
+    // MARK: - Copy All Logs
+
+    private func copyAllLogs() {
+        let text = filteredLogs.map { log in
+            var line = "[\(log.type.rawValue.uppercased())] \(log.message)"
+            if let location = log.location {
+                line += "  (\(location))"
+            }
+            return line
+        }.joined(separator: "\n")
+
+        UIPasteboard.general.string = text
+        showCopiedAll = true
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            showCopiedAll = false
+        }
     }
 }
 

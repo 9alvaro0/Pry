@@ -154,6 +154,10 @@ import Foundation
         pinnedRequestIDs.remove(id)
     }
 
+    public func removeLogEntry(_ id: UUID) {
+        logEntries.removeAll { $0.id == id }
+    }
+
     // MARK: - Clear
 
     public func clearNetwork() { networkEntries.removeAll() }
