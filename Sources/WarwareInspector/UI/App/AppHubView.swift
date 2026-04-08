@@ -21,6 +21,11 @@ struct AppHubView: View {
                 // DIAGNOSTICS
                 sectionHeader("Diagnostics")
                 diagnosticsSection
+                    .padding(.bottom, InspectorTheme.Spacing.xl)
+
+                // TOOLS
+                sectionHeader("Tools")
+                toolsSection
                     .padding(.bottom, InspectorTheme.Spacing.xxl)
 
                 // SETTINGS
@@ -224,6 +229,49 @@ struct AppHubView: View {
         .padding(.vertical, InspectorTheme.Spacing.md)
     }
 
+    // MARK: - Tools Section
+
+    private var toolsSection: some View {
+        VStack(spacing: 0) {
+            NavigationLink {
+                NetworkThrottleView(store: store)
+                    .navigationTitle("Network Conditions")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                HStack(spacing: InspectorTheme.Spacing.md) {
+                    Image(systemName: store.networkThrottle.icon)
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(store.networkThrottle.iconColor)
+                        .frame(width: 28, height: 28)
+                        .background(store.networkThrottle.iconColor.opacity(0.15))
+                        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+
+                    Text("Network Conditions")
+                        .font(InspectorTheme.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+                    Spacer()
+
+                    if store.networkThrottle != .none {
+                        Text(store.networkThrottle.rawValue)
+                            .font(InspectorTheme.Typography.detail)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(store.networkThrottle.iconColor)
+                    }
+
+                    Image(systemName: "chevron.right")
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                }
+                .padding(.horizontal, InspectorTheme.Spacing.lg)
+                .padding(.vertical, InspectorTheme.Spacing.md)
+            }
+        }
+        .background(InspectorTheme.Colors.surface)
+        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.lg))
+    }
+
     // MARK: - Settings
 
     private var settingsRow: some View {
@@ -332,34 +380,6 @@ struct AppHubView: View {
             Image(systemName: "chevron.right")
                 .font(InspectorTheme.Typography.detail)
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
-        }
-        .padding(.horizontal, InspectorTheme.Spacing.lg)
-        .padding(.vertical, InspectorTheme.Spacing.md)
-    }
-
-    private func comingSoonRow(icon: String, title: String, color: Color) -> some View {
-        HStack(spacing: InspectorTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(InspectorTheme.Typography.body)
-                .foregroundStyle(color.opacity(0.4))
-                .frame(width: 28, height: 28)
-                .background(color.opacity(0.06))
-                .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
-
-            Text(title)
-                .font(InspectorTheme.Typography.body)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-
-            Spacer()
-
-            Text("SOON")
-                .font(.system(size: 9, weight: .bold))
-                .tracking(0.5)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(InspectorTheme.Colors.surfaceElevated)
-                .clipShape(.capsule)
         }
         .padding(.horizontal, InspectorTheme.Spacing.lg)
         .padding(.vertical, InspectorTheme.Spacing.md)

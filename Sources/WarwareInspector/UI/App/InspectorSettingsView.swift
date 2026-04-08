@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings for the inspector: host blacklist, network simulation, etc.
+/// Settings for the inspector: host blacklist, data limits, clear data.
 struct InspectorSettingsView: View {
     @Bindable var store: InspectorStore
 
@@ -88,71 +88,12 @@ struct InspectorSettingsView: View {
             }
             .listRowBackground(InspectorTheme.Colors.surface)
 
-            // Network Throttle
-            Section {
-                ForEach(NetworkThrottle.allCases, id: \.self) { preset in
-                    Button {
-                        store.networkThrottle = preset
-                    } label: {
-                        HStack {
-                            VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
-                                Text(preset.rawValue)
-                                    .font(InspectorTheme.Typography.body)
-                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                                Text(preset.description)
-                                    .font(InspectorTheme.Typography.detail)
-                                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                            }
-                            Spacer()
-                            if store.networkThrottle == preset {
-                                Image(systemName: "checkmark")
-                                    .font(InspectorTheme.Typography.detail)
-                                    .fontWeight(.semibold)
-                                    .foregroundStyle(InspectorTheme.Colors.accent)
-                            }
-                        }
-                    }
-                }
-            } header: {
-                Text("Network Conditions")
-            } footer: {
-                Text("Simulates network latency and failures on real devices.")
-                    .font(InspectorTheme.Typography.detail)
-                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
-            }
-            .listRowBackground(InspectorTheme.Colors.surface)
-
-            // Coming Soon
-            Section {
-                comingSoonRow(icon: "location", title: "Mock Location", color: InspectorTheme.Colors.success)
-                comingSoonRow(icon: "flag", title: "Feature Flags", color: InspectorTheme.Colors.accent)
-            } header: {
-                Text("Coming Soon")
-            }
-            .listRowBackground(InspectorTheme.Colors.surface)
         }
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .inspectorBackground()
     }
 
-    private func comingSoonRow(icon: String, title: String, color: Color) -> some View {
-        HStack(spacing: InspectorTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(InspectorTheme.Typography.body)
-                .foregroundStyle(color.opacity(0.5))
-
-            Text(title)
-                .font(InspectorTheme.Typography.body)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-
-            Spacer()
-
-            Text("Soon")
-                .font(InspectorTheme.Typography.detail)
-                .foregroundStyle(InspectorTheme.Colors.textTertiary)
-        }
-    }
 }
 
 // MARK: - Previews
