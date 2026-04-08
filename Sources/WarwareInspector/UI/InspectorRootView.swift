@@ -8,20 +8,20 @@ struct InspectorRootView: View {
 
     var body: some View {
         TabView(selection: $selectedTab) {
-            networkTab
-                .tabItem { Label("Network", systemImage: "network") }
-                .badge(store.networkEntries.count)
-                .tag(0)
+            Tab("Network", systemImage: "network", value: 0) {
+                networkTab
+            }
+            .badge(store.networkEntries.count)
 
-            consoleTab
-                .tabItem { Label("Console", systemImage: "terminal") }
-                .badge(store.logEntries.count)
-                .tag(1)
+            Tab("Console", systemImage: "terminal", value: 1) {
+                consoleTab
+            }
+            .badge(store.logEntries.count)
 
-            appTab
-                .tabItem { Label("App", systemImage: "square.grid.2x2") }
-                .badge(store.deeplinkEntries.count + store.pushNotificationEntries.count)
-                .tag(2)
+            Tab("App", systemImage: "square.grid.2x2", value: 2) {
+                appTab
+            }
+            .badge(store.deeplinkEntries.count + store.pushNotificationEntries.count)
         }
         .inspectorBackground()
     }

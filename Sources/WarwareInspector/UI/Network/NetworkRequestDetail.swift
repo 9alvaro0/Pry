@@ -4,6 +4,7 @@ struct NetworkRequestDetailView: View {
     let entry: NetworkEntry
 
     @Environment(\.inspectorStore) private var store
+    @Environment(\.inspectorReadOnly) private var isReadOnly
     @Environment(\.dismiss) private var dismiss
     @State private var showCopied = false
     @State private var showMockEditor = false
@@ -482,21 +483,25 @@ struct NetworkRequestDetailView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        ToolbarItem(placement: .topBarTrailing) {
-            Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
-                Image(systemName: hasMockActive ? "theatermasks.fill" : "theatermasks")
-                    .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(hasMockActive ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
+        if !isReadOnly {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
+                    Image(systemName: hasMockActive ? "theatermasks.fill" : "theatermasks")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(hasMockActive ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
+                }
             }
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                Button {
-                    replayRequest()
-                } label: {
-                    Label("Replay Request", systemImage: "arrow.clockwise")
+                if !isReadOnly {
+                    Button {
+                        replayRequest()
+                    } label: {
+                        Label("Replay Request", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(isReplaying)
                 }
-                .disabled(isReplaying)
 
                 Button {
                     showDiffPicker = true
@@ -504,13 +509,15 @@ struct NetworkRequestDetailView: View {
                     Label("Compare with...", systemImage: "arrow.left.arrow.right")
                 }
 
-                Button {
-                    store.togglePin(entry.id)
-                } label: {
-                    Label(
-                        store.isPinned(entry.id) ? "Unpin" : "Pin",
-                        systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
-                    )
+                if !isReadOnly {
+                    Button {
+                        store.togglePin(entry.id)
+                    } label: {
+                        Label(
+                            store.isPinned(entry.id) ? "Unpin" : "Pin",
+                            systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
+                        )
+                    }
                 }
 
                 Divider()

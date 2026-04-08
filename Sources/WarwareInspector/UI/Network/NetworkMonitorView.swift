@@ -3,6 +3,7 @@ import SwiftUI
 struct NetworkMonitorView: View {
     @Bindable var store: InspectorStore
 
+    @Environment(\.inspectorReadOnly) private var isReadOnly
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
     @State private var showExportSheet = false
@@ -181,20 +182,24 @@ struct NetworkMonitorView: View {
                                 NetworkRequestRowView(entry: entry, isPinned: store.isPinned(entry.id))
                             }
                             .listRowBackground(InspectorTheme.Colors.surface)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                Button(role: .destructive) {
-                                    store.removeNetworkEntry(entry.id)
-                                } label: {
-                                    Image(systemName: "trash")
+                            .swipeActions(edge: .trailing, allowsFullSwipe: !isReadOnly) {
+                                if !isReadOnly {
+                                    Button(role: .destructive) {
+                                        store.removeNetworkEntry(entry.id)
+                                    } label: {
+                                        Image(systemName: "trash")
+                                    }
                                 }
                             }
-                            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                                Button {
-                                    store.togglePin(entry.id)
-                                } label: {
-                                    Image(systemName: store.isPinned(entry.id) ? "pin.slash" : "pin")
+                            .swipeActions(edge: .leading, allowsFullSwipe: !isReadOnly) {
+                                if !isReadOnly {
+                                    Button {
+                                        store.togglePin(entry.id)
+                                    } label: {
+                                        Image(systemName: store.isPinned(entry.id) ? "pin.slash" : "pin")
+                                    }
+                                    .tint(InspectorTheme.Colors.warning)
                                 }
-                                .tint(InspectorTheme.Colors.warning)
                             }
                         }
                     }
