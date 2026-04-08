@@ -3,7 +3,7 @@ import Foundation
 /// Persists inspector preferences to UserDefaults with a namespaced prefix.
 enum PreferenceStorage {
     private static let prefix = "warware_inspector_"
-    private static let defaults = UserDefaults.standard
+    private static var defaults: UserDefaults { UserDefaults.standard }
 
     // MARK: - Keys
 
