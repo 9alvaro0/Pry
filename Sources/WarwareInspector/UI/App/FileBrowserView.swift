@@ -16,24 +16,26 @@ struct FileItem: Identifiable {
     var icon: String {
         if isDirectory { return "folder.fill" }
         if isImage { return "photo" }
+        if isSQLite { return "cylinder" }
+        if isPlist { return "list.bullet" }
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
         case "json": return "curlybraces"
-        case "plist": return "list.bullet"
-        case "sqlite", "db", "sqlite3": return "cylinder"
         case "txt", "log", "csv": return "doc.text"
-        default: return "doc"
+        default:
+            if isTextReadable { return "doc.text" }
+            return "doc"
         }
     }
 
     var iconColor: Color {
         if isDirectory { return .blue }
         if isImage { return .green }
+        if isSQLite { return .purple }
+        if isPlist { return .orange }
         let ext = (name as NSString).pathExtension.lowercased()
         switch ext {
         case "json": return .yellow
-        case "plist": return .orange
-        case "sqlite", "db", "sqlite3": return .purple
         case "txt", "log", "csv": return .gray
         default: return .gray
         }
@@ -60,7 +62,47 @@ struct FileItem: Identifiable {
 
     var isTextReadable: Bool {
         let ext = (name as NSString).pathExtension.lowercased()
-        return ["json", "plist", "txt", "log", "csv", "xml", "html", "css", "js", "swift", "m", "h", "strings", "yaml", "yml", "md"].contains(ext)
+        if ["json", "plist", "txt", "log", "csv", "xml", "html", "css", "js", "swift", "m", "h", "strings", "yaml", "yml", "md"].contains(ext) { return true }
+        // Check content for files without extension
+        return Self.isTextByContent(path: path)
+    }
+
+    var isSQLite: Bool {
+        let ext = (name as NSString).pathExtension.lowercased()
+        if ["sqlite", "db", "sqlite3"].contains(ext) { return true }
+        return Self.isSQLiteByMagicBytes(path: path)
+    }
+
+    var isPlist: Bool {
+        let ext = (name as NSString).pathExtension.lowercased()
+        if ext == "plist" { return true }
+        return Self.isPlistByContent(path: path)
+    }
+
+    static func isTextByContent(path: String) -> Bool {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { handle.closeFile() }
+        let data = handle.readData(ofLength: 256)
+        guard let str = String(data: data, encoding: .utf8) else { return false }
+        let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.hasPrefix("{") || trimmed.hasPrefix("[") || trimmed.hasPrefix("<") || trimmed.allSatisfy { $0.isASCII }
+    }
+
+    static func isSQLiteByMagicBytes(path: String) -> Bool {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { handle.closeFile() }
+        let data = handle.readData(ofLength: 16)
+        guard let header = String(data: data, encoding: .utf8) else { return false }
+        return header.hasPrefix("SQLite format 3")
+    }
+
+    static func isPlistByContent(path: String) -> Bool {
+        guard let handle = FileHandle(forReadingAtPath: path) else { return false }
+        defer { handle.closeFile() }
+        let data = handle.readData(ofLength: 8)
+        let bytes = [UInt8](data)
+        // Binary plist magic: "bplist"
+        return bytes.starts(with: [0x62, 0x70, 0x6C, 0x69, 0x73, 0x74])
     }
 }
 

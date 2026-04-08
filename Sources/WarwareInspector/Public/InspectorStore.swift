@@ -38,6 +38,13 @@ import Foundation
 
     public var blacklistedHosts: Set<String> = []
 
+    // MARK: - UI State (persists across sheet open/close)
+
+    var networkSortOrder: Int = 0
+    var networkSelectedHost: String?
+    var networkShowStats: Bool = false
+    var networkSelectedFilter: String?
+
     // MARK: - Network Throttle
 
     public var networkThrottle: NetworkThrottle = .none {
@@ -102,15 +109,6 @@ import Foundation
         networkEntries.insert(entry, at: 0)
         if networkEntries.count > maxNetworkEntries {
             networkEntries.removeLast(networkEntries.count - maxNetworkEntries)
-        }
-    }
-
-    /// Updates an existing entry (by ID) with response data, or adds it if not found.
-    func updateOrAddNetworkEntry(_ entry: NetworkEntry) {
-        if let index = networkEntries.firstIndex(where: { $0.id == entry.id }) {
-            networkEntries[index] = entry
-        } else {
-            addNetworkEntry(entry)
         }
     }
 

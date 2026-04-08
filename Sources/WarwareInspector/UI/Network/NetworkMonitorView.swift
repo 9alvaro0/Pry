@@ -4,11 +4,27 @@ struct NetworkMonitorView: View {
     @Bindable var store: InspectorStore
 
     @State private var searchText: String = ""
-    @State private var selectedFilter: NetworkFilter?
-    @State private var sortOrder: SortOrder = .newest
-    @State private var selectedHost: String?
-    @State private var showStats = false
     @State private var showFilterSheet = false
+
+    private var selectedFilter: NetworkFilter? {
+        get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
+        nonmutating set { store.networkSelectedFilter = newValue?.rawValue }
+    }
+
+    private var sortOrder: SortOrder {
+        get { SortOrder.allCases.indices.contains(store.networkSortOrder) ? SortOrder.allCases[store.networkSortOrder] : .newest }
+        nonmutating set { store.networkSortOrder = SortOrder.allCases.firstIndex(of: newValue) ?? 0 }
+    }
+
+    private var selectedHost: String? {
+        get { store.networkSelectedHost }
+        nonmutating set { store.networkSelectedHost = newValue }
+    }
+
+    private var showStats: Bool {
+        get { store.networkShowStats }
+        nonmutating set { store.networkShowStats = newValue }
+    }
 
     private enum SortOrder: String, CaseIterable {
         case newest = "Newest"
@@ -332,7 +348,7 @@ struct NetworkMonitorView: View {
                             .font(InspectorTheme.Typography.body)
                             .foregroundStyle(InspectorTheme.Colors.textPrimary)
                         Spacer()
-                        Toggle("", isOn: $showStats)
+                        Toggle("", isOn: Binding(get: { showStats }, set: { showStats = $0 }))
                             .tint(InspectorTheme.Colors.accent)
                             .labelsHidden()
                     }
