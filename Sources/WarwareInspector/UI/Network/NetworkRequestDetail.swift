@@ -210,7 +210,20 @@ struct NetworkRequestDetailView: View {
             DetailSectionView(title: "Request Headers", collapsible: true, startCollapsed: true) {
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
                     ForEach(Array(headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                        DetailRowView(label: key, value: value)
+                        if key == "Authorization", value.count > 50 {
+                            HStack(alignment: .top) {
+                                Text(key)
+                                    .font(InspectorTheme.Typography.body)
+                                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                                Spacer(minLength: InspectorTheme.Spacing.sm)
+                                Text(String(value.prefix(30)) + "...")
+                                    .font(InspectorTheme.Typography.body)
+                                    .multilineTextAlignment(.trailing)
+                                CopyButtonView(valueToCopy: value)
+                            }
+                        } else {
+                            DetailRowView(label: key, value: value)
+                        }
                     }
                 }
             }
