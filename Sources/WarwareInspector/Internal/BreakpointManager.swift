@@ -67,6 +67,7 @@ final class BreakpointManager: @unchecked Sendable {
 
     enum BreakpointAction: Sendable {
         case send(URLRequest)     // Send with (possibly modified) request
+        case sendResponse(statusCode: Int, headers: [String: String], body: String?)
         case cancel               // Cancel the request entirely
     }
 
@@ -108,12 +109,23 @@ final class BreakpointManager: @unchecked Sendable {
 
     // MARK: - Called from UI (resumes the network thread)
 
-    /// User tapped "Send" — resume with the (possibly modified) request.
+    /// User tapped "Send" — resume with the (possibly modified) request or response.
     func resumeRequest() {
         guard let paused = state.pausedRequest else { return }
-        let modified = paused.buildModifiedRequest()
-        state.pausedRequest = nil
-        continuation?.resume(returning: .send(modified))
+
+        if paused.isResponseBreakpoint {
+            let action = BreakpointAction.sendResponse(
+                statusCode: paused.responseStatusCode ?? 200,
+                headers: paused.responseHeaders ?? [:],
+                body: paused.responseBody
+            )
+            state.pausedRequest = nil
+            continuation?.resume(returning: action)
+        } else {
+            let modified = paused.buildModifiedRequest()
+            state.pausedRequest = nil
+            continuation?.resume(returning: .send(modified))
+        }
         continuation = nil
     }
 

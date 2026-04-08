@@ -20,6 +20,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     private var requestID: UUID?
     private var taskMetrics: URLSessionTaskMetrics?
     private var redirectCount = 0
+    private var hasResponseBreakpoint = false
+    private var matchedBreakpointRule: BreakpointRule?
 
     private static func sharedSession(delegate: URLSessionDataDelegate) -> URLSession {
         URLSession(
@@ -84,6 +86,14 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             return
         }
 
+        // Check if we need to intercept the response
+        if Self.isBreakpointEnabled,
+           let rule = Self.findMatchingBreakpoint(for: request),
+           rule.pauseOn == .response || rule.pauseOn == .both {
+            hasResponseBreakpoint = true
+            matchedBreakpointRule = rule
+        }
+
         // Send the request (applies throttle internally)
         proceedWithRequest(mutableRequest as URLRequest)
     }
@@ -145,6 +155,77 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         breakpointRules.first { $0.matches(request) }
     }
 
+    private func handleResponseBreakpoint(
+        rule: BreakpointRule,
+        statusCode: Int,
+        headers: [String: String],
+        body: String?,
+        duration: TimeInterval
+    ) {
+        nonisolated(unsafe) let protocolSelf = self
+        let originalRequest = self.request
+        let requestID = self.requestID
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let semaphore = DispatchSemaphore(value: 0)
+            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
+
+            Task {
+                result = await BreakpointManager.shared.pauseResponse(
+                    request: originalRequest,
+                    rule: rule,
+                    statusCode: statusCode,
+                    headers: headers,
+                    body: body
+                )
+                semaphore.signal()
+            }
+
+            semaphore.wait()
+
+            switch result {
+            case .sendResponse(let modifiedStatus, let modifiedHeaders, let modifiedBody):
+                let url = originalRequest.url ?? URL(string: "about:blank")!
+                let httpResponse = HTTPURLResponse(
+                    url: url,
+                    statusCode: modifiedStatus,
+                    httpVersion: "HTTP/1.1",
+                    headerFields: modifiedHeaders
+                )
+
+                if let httpResponse {
+                    protocolSelf.client?.urlProtocol(protocolSelf, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
+                }
+
+                if let modifiedBody, let data = modifiedBody.data(using: .utf8) {
+                    protocolSelf.client?.urlProtocol(protocolSelf, didLoad: data)
+                }
+
+                protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
+
+                if let requestID {
+                    Self.logger?.logResponse(
+                        requestID: requestID,
+                        statusCode: modifiedStatus,
+                        headers: modifiedHeaders,
+                        body: modifiedBody?.data(using: .utf8),
+                        error: nil,
+                        duration: duration,
+                        taskMetrics: nil,
+                        redirectCount: 0
+                    )
+                }
+
+            case .send:
+                // Shouldn't happen for response breakpoints, but handle gracefully
+                protocolSelf.client?.urlProtocolDidFinishLoading(protocolSelf)
+
+            case .cancel:
+                protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
+            }
+        }
+    }
+
     private func handleBreakpoint(request: URLRequest, rule: BreakpointRule) {
         // Use DispatchQueue to bridge from sync to async, avoiding Sendable capture issues
         nonisolated(unsafe) let protocolSelf = self
@@ -164,6 +245,8 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
                 guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else { return }
                 URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
                 protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
+            case .sendResponse:
+                break // Not applicable for request breakpoints
             case .cancel:
                 protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
             }
@@ -231,13 +314,19 @@ extension InspectorURLProtocol: URLSessionDataDelegate {
         completionHandler: @escaping (URLSession.ResponseDisposition) -> Void
     ) {
         self.response = response
-        client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .allowed)
+        // If response breakpoint is active, don't forward yet — we'll deliver after editing
+        if !hasResponseBreakpoint {
+            client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .allowed)
+        }
         completionHandler(.allow)
     }
 
     public func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
         receivedData.append(data)
-        client?.urlProtocol(self, didLoad: data)
+        // If response breakpoint is active, buffer data instead of forwarding
+        if !hasResponseBreakpoint {
+            client?.urlProtocol(self, didLoad: data)
+        }
     }
 
     public func urlSession(
@@ -257,9 +346,25 @@ extension InspectorURLProtocol: URLSessionDataDelegate {
 
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         let duration = Date().timeIntervalSince(startTime)
+        let httpResponse = response as? HTTPURLResponse
+
+        // Response breakpoint: pause before delivering to the app
+        if hasResponseBreakpoint, error == nil, let rule = matchedBreakpointRule {
+            let statusCode = httpResponse?.statusCode ?? 200
+            let headers = (httpResponse?.allHeaderFields as? [String: String]) ?? [:]
+            let bodyString = receivedData.isEmpty ? nil : String(data: receivedData, encoding: .utf8)
+
+            handleResponseBreakpoint(
+                rule: rule,
+                statusCode: statusCode,
+                headers: headers,
+                body: bodyString,
+                duration: duration
+            )
+            return
+        }
 
         if let requestID {
-            let httpResponse = response as? HTTPURLResponse
             Self.logger?.logResponse(
                 requestID: requestID,
                 statusCode: httpResponse?.statusCode ?? 0,
