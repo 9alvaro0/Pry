@@ -59,7 +59,7 @@ struct BreakpointsView: View {
         }
         .sheet(isPresented: $showAddSheet) {
             BreakpointRuleEditor(store: store)
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(InspectorTheme.Colors.background)
         }

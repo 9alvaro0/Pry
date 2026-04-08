@@ -143,7 +143,7 @@ struct NetworkRequestDetailView: View {
             }
         }) {
             BreakpointRuleEditor(store: store, prefillEntry: entry)
-                .presentationDetents([.medium])
+                .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(InspectorTheme.Colors.background)
         }
