@@ -46,6 +46,9 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
     // Mock
     public var isMocked: Bool = false
 
+    // Replay
+    public var isReplay: Bool = false
+
     public var isSuccess: Bool {
         guard let statusCode = responseStatusCode else { return false }
         return statusCode >= 200 && statusCode < 300

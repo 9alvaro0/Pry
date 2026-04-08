@@ -15,7 +15,10 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "WarwareInspector"
+            name: "WarwareInspector",
+            linkerSettings: [
+                .linkedLibrary("sqlite3"),
+            ]
         ),
     ]
 )

@@ -756,4 +756,36 @@ extension NetworkEntry {
     }
 }
 
+// MARK: - Replayed NetworkEntry
+
+extension NetworkEntry {
+
+    static var mockReplay: NetworkEntry {
+        var entry = NetworkEntry(
+            timestamp: Date().addingTimeInterval(-2),
+            type: .network,
+            requestURL: "https://api.example.com/api/users/42",
+            requestMethod: "GET",
+            requestHeaders: [
+                "Accept": "application/json",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc"
+            ],
+            requestBody: nil,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: "{\n  \"id\": 42,\n  \"name\": \"Jane Doe\",\n  \"email\": \"jane@example.com\"\n}",
+            responseError: nil,
+            authToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc",
+            authTokenType: "Bearer Token",
+            authTokenLength: 48,
+            duration: 0.187,
+            requestSize: nil,
+            responseSize: 72,
+            metrics: nil
+        )
+        entry.isReplay = true
+        return entry
+    }
+}
+
 #endif

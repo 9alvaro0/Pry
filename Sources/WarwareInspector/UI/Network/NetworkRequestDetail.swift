@@ -4,15 +4,34 @@ struct NetworkRequestDetailView: View {
     let entry: NetworkEntry
 
     @Environment(\.inspectorStore) private var store
+    @Environment(\.dismiss) private var dismiss
     @State private var showCopied = false
     @State private var showMockEditor = false
     @State private var showMockSaved = false
     @State private var showMockRemoved = false
     @State private var hadMockBeforeEdit = false
+    @State private var showReplayed = false
+    @State private var isReplaying = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
+                // Replay banner
+                if entry.isReplay {
+                    HStack(spacing: InspectorTheme.Spacing.sm) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(InspectorTheme.Typography.body)
+                        Text("Replayed Request")
+                            .font(InspectorTheme.Typography.body)
+                            .fontWeight(.semibold)
+                        Spacer()
+                    }
+                    .foregroundStyle(InspectorTheme.Colors.accent)
+                    .padding(.horizontal, InspectorTheme.Spacing.lg)
+                    .padding(.vertical, InspectorTheme.Spacing.sm)
+                    .background(InspectorTheme.Colors.accent.opacity(0.12))
+                }
+
                 // Mocked banner (tappable → opens editor)
                 if entry.isMocked {
                     Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
@@ -105,10 +124,14 @@ struct NetworkRequestDetailView: View {
             if showMockRemoved {
                 mockRemovedToast
             }
+            if showReplayed {
+                replayedToast
+            }
         }
         .animation(.easeInOut(duration: 0.2), value: showCopied)
         .animation(.easeInOut(duration: 0.2), value: showMockSaved)
         .animation(.easeInOut(duration: 0.2), value: showMockRemoved)
+        .animation(.easeInOut(duration: 0.2), value: showReplayed)
     }
 
     // MARK: - Summary Header
@@ -366,6 +389,13 @@ struct NetworkRequestDetailView: View {
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
                 Button {
+                    replayRequest()
+                } label: {
+                    Label("Replay Request", systemImage: "arrow.clockwise")
+                }
+                .disabled(isReplaying)
+
+                Button {
                     store.togglePin(entry.id)
                 } label: {
                     Label(
@@ -440,7 +470,60 @@ struct NetworkRequestDetailView: View {
         .padding(.top, InspectorTheme.Spacing.sm)
     }
 
+    private var replayedToast: some View {
+        HStack(spacing: InspectorTheme.Spacing.xs) {
+            Image(systemName: "arrow.clockwise")
+                .font(InspectorTheme.Typography.detail)
+            Text("Request replayed")
+                .font(InspectorTheme.Typography.detail)
+                .fontWeight(.semibold)
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, InspectorTheme.Spacing.md)
+        .padding(.vertical, InspectorTheme.Spacing.sm)
+        .background(InspectorTheme.Colors.accent)
+        .clipShape(.capsule)
+        .transition(.move(edge: .top).combined(with: .opacity))
+        .padding(.top, InspectorTheme.Spacing.sm)
+    }
+
     // MARK: - Actions
+
+    private func replayRequest() {
+        guard let url = URL(string: entry.requestURL) else { return }
+        isReplaying = true
+
+        var request = URLRequest(url: url)
+        request.httpMethod = entry.requestMethod
+
+        // Restore headers (skip internal/transport headers)
+        let skipHeaders: Set<String> = ["Host", "Content-Length", "Accept-Encoding"]
+        for (key, value) in entry.requestHeaders where !skipHeaders.contains(key) {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+
+        // Tag as replay so the logger can mark the new entry
+        request.setValue("true", forHTTPHeaderField: "X-WarwareInspector-Replay")
+
+        // Restore body
+        if let body = entry.requestBody, !body.isEmpty {
+            request.httpBody = body.data(using: .utf8)
+        }
+
+        // Fire through URLSession.shared so the interceptor captures it as a new entry
+        Task {
+            _ = try? await URLSession.shared.data(for: request)
+            await MainActor.run {
+                isReplaying = false
+                showReplayed = true
+            }
+            try? await Task.sleep(for: .seconds(2))
+            await MainActor.run {
+                showReplayed = false
+                dismiss()
+            }
+        }
+    }
 
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value
@@ -605,6 +688,12 @@ struct NetworkRequestDetailView: View {
 #Preview("Detail - Timing Breakdown") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockSuccess)
+    }
+}
+
+#Preview("Detail - Replay") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockReplay)
     }
 }
 #endif

@@ -54,6 +54,9 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
         }
         URLProtocol.setProperty(true, forKey: Self.handledKey, in: mutableRequest)
 
+        // Strip internal replay header before forwarding to real server
+        mutableRequest.setValue(nil, forHTTPHeaderField: "X-WarwareInspector-Replay")
+
         // Log request start
         if let url = request.url {
             requestID = Self.logger?.logRequest(

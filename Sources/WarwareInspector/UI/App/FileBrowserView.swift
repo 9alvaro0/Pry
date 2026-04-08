@@ -443,6 +443,7 @@ struct FilePreviewView: View {
     @State private var fileContent: String?
     @State private var uiImage: UIImage?
     @State private var hexDump: String?
+    @State private var showSQLiteViewer = false
     @State private var isLoading = true
 
     var body: some View {
@@ -519,7 +520,9 @@ struct FilePreviewView: View {
 
     @ViewBuilder
     private var contentSection: some View {
-        if let uiImage {
+        if showSQLiteViewer {
+            SQLiteViewerView(path: item.path)
+        } else if let uiImage {
             imagePreview(uiImage)
         } else if let fileContent {
             CodeBlockView(text: fileContent, language: contentLanguage)
@@ -597,11 +600,14 @@ struct FilePreviewView: View {
             return
         }
 
-        // SQLite and auxiliary files → just show metadata, no hex
+        // SQLite → show table viewer; auxiliary files → metadata only
         let ext = (item.name as NSString).pathExtension.lowercased()
-        if item.isSQLite || ["db-shm", "db-wal", "db-journal"].contains(ext) {
-            fileContent = nil
-            hexDump = nil
+        if item.isSQLite {
+            showSQLiteViewer = true
+            isLoading = false
+            return
+        }
+        if ["db-shm", "db-wal", "db-journal"].contains(ext) {
             isLoading = false
             return
         }

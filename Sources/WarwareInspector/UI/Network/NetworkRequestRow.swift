@@ -26,6 +26,13 @@ struct NetworkRequestRowView: View {
 
                 Spacer()
 
+                if entry.isReplay {
+                    Text("REPLAY")
+                        .font(InspectorTheme.Typography.codeSmall)
+                        .fontWeight(.bold)
+                        .foregroundStyle(InspectorTheme.Colors.accent)
+                }
+
                 if entry.isMocked {
                     Text("MOCK")
                         .font(InspectorTheme.Typography.codeSmall)

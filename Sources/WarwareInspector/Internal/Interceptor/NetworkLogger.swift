@@ -19,18 +19,22 @@ final class NetworkLogger: @unchecked Sendable {
         let requestID = UUID()
         let timestamp = Date()
 
-        let authHeader = headers["Authorization"]
+        // Detect replay requests and strip the internal header
+        let isReplay = headers["X-WarwareInspector-Replay"] != nil
+        var cleanHeaders = headers
+        cleanHeaders.removeValue(forKey: "X-WarwareInspector-Replay")
+
+        let authHeader = cleanHeaders["Authorization"]
         let authTokenType = authHeader.flatMap { extractAuthType($0) }
-        // Extract just the token value (strip "Bearer ", "Basic ", etc.)
         let authToken = authHeader.flatMap { extractTokenValue($0) }
         let authTokenLength = authToken?.count
 
-        let entry = NetworkEntry(
+        var entry = NetworkEntry(
             timestamp: timestamp,
             type: .network,
             requestURL: url,
             requestMethod: method,
-            requestHeaders: headers,
+            requestHeaders: cleanHeaders,
             requestBody: bodyToString(body),
             responseStatusCode: nil,
             responseHeaders: nil,
@@ -44,6 +48,7 @@ final class NetworkLogger: @unchecked Sendable {
             responseSize: nil,
             metrics: nil
         )
+        entry.isReplay = isReplay
 
         queue.async { [weak self] in
             self?.pendingRequests[requestID] = entry
@@ -111,7 +116,7 @@ final class NetworkLogger: @unchecked Sendable {
                 )
             }()
 
-            let entry = NetworkEntry(
+            var entry = NetworkEntry(
                 id: pending?.id ?? UUID(),
                 timestamp: pending?.timestamp ?? Date(),
                 type: .network,
@@ -132,6 +137,7 @@ final class NetworkLogger: @unchecked Sendable {
                 metrics: metrics,
                 redirectCount: redirectCount
             )
+            entry.isReplay = pending?.isReplay ?? false
 
             Task { @MainActor in
                 self.store?.addNetworkEntry(entry)
