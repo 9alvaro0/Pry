@@ -176,13 +176,7 @@ struct BreakpointEditorView: View {
             }
 
             // Body
-            editSection("Body") {
-                TextEditor(text: $paused.body)
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: InspectorTheme.Size.editorMinHeight)
-            }
+            bodyEditor(title: "Body", text: $paused.body)
         }
     }
 
@@ -217,19 +211,13 @@ struct BreakpointEditorView: View {
             }
 
             // Response body
-            editSection("Response Body") {
-                TextEditor(text: $editResponseBody)
-                    .font(InspectorTheme.Typography.code)
-                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: InspectorTheme.Size.editorMinHeight)
-            }
+            bodyEditor(title: "Response Body", text: $editResponseBody)
         }
         .onAppear {
             guard !didInitResponseFields else { return }
             didInitResponseFields = true
             editStatusCode = paused.responseStatusCode.map(String.init) ?? "200"
-            editResponseBody = paused.responseBody ?? ""
+            editResponseBody = Self.prettyPrintJSON(paused.responseBody ?? "")
         }
     }
 
@@ -251,6 +239,52 @@ struct BreakpointEditorView: View {
                         .stroke(InspectorTheme.Colors.border, lineWidth: 1)
                 )
         }
+    }
+
+    private func bodyEditor(title: String, text: Binding<String>) -> some View {
+        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+            HStack {
+                Text(title.uppercased())
+                    .font(InspectorTheme.Typography.sectionLabel)
+                    .tracking(InspectorTheme.Text.tracking)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+                Spacer()
+
+                Button {
+                    text.wrappedValue = Self.prettyPrintJSON(text.wrappedValue)
+                } label: {
+                    Text("Prettify")
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.accent)
+                }
+            }
+
+            TextEditor(text: text)
+                .font(.system(.caption, design: .monospaced))
+                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                .scrollContentBackground(.hidden)
+                .autocorrectionDisabled()
+                .textInputAutocapitalization(.never)
+                .frame(minHeight: InspectorTheme.Size.editorMinHeight)
+                .padding(InspectorTheme.Spacing.sm)
+                .background(InspectorTheme.Colors.surface)
+                .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: InspectorTheme.Radius.md)
+                        .stroke(InspectorTheme.Colors.border, lineWidth: 1)
+                )
+        }
+    }
+
+    static func prettyPrintJSON(_ text: String) -> String {
+        guard let data = text.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data),
+              let pretty = try? JSONSerialization.data(withJSONObject: json, options: [.prettyPrinted, .sortedKeys]),
+              let result = String(data: pretty, encoding: .utf8) else {
+            return text
+        }
+        return result
     }
 
     private func syncResponseFieldsBack() {
