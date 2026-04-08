@@ -16,6 +16,7 @@ struct NetworkRequestDetailView: View {
     @State private var showDiffPicker = false
     @State private var diffTarget: NetworkEntry?
     @State private var showBreakpointCreator = false
+    @State private var showBreakpointSaved = false
 
     var body: some View {
         ScrollView {
@@ -132,7 +133,15 @@ struct NetworkRequestDetailView: View {
         .sheet(item: $diffTarget) { target in
             RequestDiffView(left: entry, right: target)
         }
-        .sheet(isPresented: $showBreakpointCreator) {
+        .sheet(isPresented: $showBreakpointCreator, onDismiss: {
+            if hasBreakpointActive && !showBreakpointSaved {
+                showBreakpointSaved = true
+                Task {
+                    try? await Task.sleep(for: InspectorTheme.Animation.toastLong)
+                    showBreakpointSaved = false
+                }
+            }
+        }) {
             BreakpointRuleEditor(store: store, prefillEntry: entry)
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
@@ -151,10 +160,14 @@ struct NetworkRequestDetailView: View {
             if showReplayed {
                 replayedToast
             }
+            if showBreakpointSaved {
+                breakpointSavedToast
+            }
         }
         .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showCopied)
         .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showMockSaved)
         .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showMockRemoved)
+        .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showBreakpointSaved)
         .animation(.easeInOut(duration: InspectorTheme.Animation.standard), value: showReplayed)
     }
 
@@ -479,6 +492,10 @@ struct NetworkRequestDetailView: View {
         }
     }
 
+    private var hasActiveRules: Bool {
+        hasMockActive || hasBreakpointActive
+    }
+
     private var hasBreakpointActive: Bool {
         store.breakpointRules.contains {
             $0.isEnabled &&
@@ -497,127 +514,111 @@ struct NetworkRequestDetailView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
         }
-        if !isReadOnly {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
-                    Image(systemName: hasMockActive ? "theatermasks.fill" : "theatermasks")
-                        .font(InspectorTheme.Typography.body)
-                        .foregroundStyle(hasMockActive ? InspectorTheme.Colors.syntaxBool : InspectorTheme.Colors.textSecondary)
-                }
-            }
-        }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
+                // Intercept section (mock + breakpoint)
                 if !isReadOnly {
-                    Button {
-                        replayRequest()
-                    } label: {
-                        Label("Replay Request", systemImage: "arrow.clockwise")
+                    Section("Intercept") {
+                        Button {
+                            hadMockBeforeEdit = hasMockActive
+                            showMockEditor = true
+                        } label: {
+                            Label(
+                                hasMockActive ? "Edit Mock" : "Mock Response",
+                                systemImage: hasMockActive ? "theatermasks.fill" : "theatermasks"
+                            )
+                        }
+
+                        Button {
+                            showBreakpointCreator = true
+                        } label: {
+                            Label(
+                                hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint",
+                                systemImage: hasBreakpointActive ? "pause.circle.fill" : "pause.circle"
+                            )
+                        }
                     }
-                    .disabled(isReplaying)
                 }
 
-                Button {
-                    showDiffPicker = true
-                } label: {
-                    Label("Compare with...", systemImage: "arrow.left.arrow.right")
-                }
-
+                // Actions section
                 if !isReadOnly {
-                    Button {
-                        showBreakpointCreator = true
-                    } label: {
-                        Label(hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint", systemImage: "pause.circle")
-                    }
+                    Section {
+                        Button {
+                            replayRequest()
+                        } label: {
+                            Label("Replay", systemImage: "arrow.clockwise")
+                        }
+                        .disabled(isReplaying)
 
-                    Button {
-                        store.togglePin(entry.id)
-                    } label: {
-                        Label(
-                            store.isPinned(entry.id) ? "Unpin" : "Pin",
-                            systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
-                        )
+                        Button {
+                            store.togglePin(entry.id)
+                        } label: {
+                            Label(
+                                store.isPinned(entry.id) ? "Unpin" : "Pin",
+                                systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
+                            )
+                        }
                     }
                 }
 
-                Divider()
+                // Share section
+                Section {
+                    Button {
+                        showDiffPicker = true
+                    } label: {
+                        Label("Compare", systemImage: "arrow.left.arrow.right")
+                    }
 
-                ShareLink(item: generateShareText()) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
+                    ShareLink(item: generateShareText()) {
+                        Label("Share", systemImage: "square.and.arrow.up")
+                    }
 
-                Button { copyToClipboard(generateCurlCommand()) } label: {
-                    Label("Copy as cURL", systemImage: "terminal.fill")
+                    Button { copyToClipboard(generateCurlCommand()) } label: {
+                        Label("Copy cURL", systemImage: "terminal.fill")
+                    }
                 }
             } label: {
-                Image(systemName: "ellipsis.circle")
+                Image(systemName: hasActiveRules ? "ellipsis.circle.fill" : "ellipsis.circle")
                     .font(InspectorTheme.Typography.body)
-                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                    .foregroundStyle(hasActiveRules ? InspectorTheme.Colors.warning : InspectorTheme.Colors.textSecondary)
             }
         }
     }
 
-    // MARK: - Copied Toast
+    // MARK: - Toasts
 
     private var copiedToast: some View {
-        Text("Copied!")
-            .font(InspectorTheme.Typography.detail)
-            .fontWeight(.semibold)
-            .foregroundStyle(.white)
-            .padding(.horizontal, InspectorTheme.Spacing.md)
-            .padding(.vertical, InspectorTheme.Spacing.xs)
-            .background(InspectorTheme.Colors.success)
-            .clipShape(.capsule)
-            .transition(.move(edge: .top).combined(with: .opacity))
-            .padding(.top, InspectorTheme.Spacing.sm)
+        toastView(icon: "checkmark", text: "Copied", color: InspectorTheme.Colors.success)
     }
 
     private var mockSavedToast: some View {
-        HStack(spacing: InspectorTheme.Spacing.xs) {
-            Image(systemName: "theatermasks.fill")
-                .font(InspectorTheme.Typography.detail)
-            Text("Mock saved - applies on next request")
-                .font(InspectorTheme.Typography.detail)
-                .fontWeight(.semibold)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, InspectorTheme.Spacing.md)
-        .padding(.vertical, InspectorTheme.Spacing.sm)
-        .background(InspectorTheme.Colors.syntaxBool)
-        .clipShape(.capsule)
-        .transition(.move(edge: .top).combined(with: .opacity))
-        .padding(.top, InspectorTheme.Spacing.sm)
+        toastView(icon: "theatermasks.fill", text: "Mock saved", color: InspectorTheme.Colors.syntaxBool)
     }
 
     private var mockRemovedToast: some View {
-        HStack(spacing: InspectorTheme.Spacing.xs) {
-            Image(systemName: "theatermasks")
-                .font(InspectorTheme.Typography.detail)
-            Text("Mock removed")
-                .font(InspectorTheme.Typography.detail)
-                .fontWeight(.semibold)
-        }
-        .foregroundStyle(.white)
-        .padding(.horizontal, InspectorTheme.Spacing.md)
-        .padding(.vertical, InspectorTheme.Spacing.sm)
-        .background(InspectorTheme.Colors.error)
-        .clipShape(.capsule)
-        .transition(.move(edge: .top).combined(with: .opacity))
-        .padding(.top, InspectorTheme.Spacing.sm)
+        toastView(icon: "theatermasks", text: "Mock removed", color: InspectorTheme.Colors.error)
     }
 
     private var replayedToast: some View {
+        toastView(icon: "arrow.clockwise", text: "Request replayed", color: InspectorTheme.Colors.accent)
+    }
+
+    private var breakpointSavedToast: some View {
+        toastView(icon: "pause.circle.fill", text: "Breakpoint set", color: InspectorTheme.Colors.warning)
+    }
+
+    private func toastView(icon: String, text: String, color: Color) -> some View {
         HStack(spacing: InspectorTheme.Spacing.xs) {
-            Image(systemName: "arrow.clockwise")
+            Image(systemName: icon)
                 .font(InspectorTheme.Typography.detail)
-            Text("Request replayed")
+            Text(text)
                 .font(InspectorTheme.Typography.detail)
                 .fontWeight(.semibold)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, InspectorTheme.Spacing.md)
         .padding(.vertical, InspectorTheme.Spacing.sm)
-        .background(InspectorTheme.Colors.accent)
+        .background(color)
         .clipShape(.capsule)
         .transition(.move(edge: .top).combined(with: .opacity))
         .padding(.top, InspectorTheme.Spacing.sm)
