@@ -12,6 +12,8 @@ struct NetworkRequestDetailView: View {
     @State private var hadMockBeforeEdit = false
     @State private var showReplayed = false
     @State private var isReplaying = false
+    @State private var showDiffPicker = false
+    @State private var diffTarget: NetworkEntry?
 
     var body: some View {
         ScrollView {
@@ -116,6 +118,17 @@ struct NetworkRequestDetailView: View {
         }) {
             ResponseOverrideView(entry: entry)
                 .environment(\.inspectorStore, store)
+        }
+        .sheet(isPresented: $showDiffPicker) {
+            DiffPickerSheet(entries: store.networkEntries, currentEntry: entry) { selected in
+                diffTarget = selected
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(InspectorTheme.Colors.background)
+        }
+        .sheet(item: $diffTarget) { target in
+            RequestDiffView(left: entry, right: target)
         }
         .overlay(alignment: .top) {
             if showCopied {
@@ -484,6 +497,12 @@ struct NetworkRequestDetailView: View {
                     Label("Replay Request", systemImage: "arrow.clockwise")
                 }
                 .disabled(isReplaying)
+
+                Button {
+                    showDiffPicker = true
+                } label: {
+                    Label("Compare with...", systemImage: "arrow.left.arrow.right")
+                }
 
                 Button {
                     store.togglePin(entry.id)
