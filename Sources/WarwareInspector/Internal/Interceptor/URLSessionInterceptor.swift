@@ -7,6 +7,7 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
     nonisolated(unsafe) static var blacklistedHosts: Set<String> = []
     nonisolated(unsafe) static var mockRules: [MockRule] = []
     nonisolated(unsafe) static var isMockingEnabled: Bool = false
+    nonisolated(unsafe) static var throttle: NetworkThrottle = .none
 
     private static let handledKey = "WarwareInspector.handled"
 
@@ -69,10 +70,45 @@ final class InspectorURLProtocol: URLProtocol, @unchecked Sendable {
             return
         }
 
-        // No mock match - proceed with real network request
-        let session = Self.sharedSession(delegate: self)
-        dataTask = session.dataTask(with: mutableRequest as URLRequest)
-        dataTask?.resume()
+        // Apply network throttle
+        let throttle = Self.throttle
+        if throttle == .offline || (throttle.failureRate > 0 && Double.random(in: 0...1) < throttle.failureRate) {
+            // Simulate failure
+            let delay = throttle.delay
+            DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
+                guard let self else { return }
+                let error = URLError(.notConnectedToInternet)
+                if let requestID = self.requestID {
+                    Self.logger?.logResponse(
+                        requestID: requestID,
+                        statusCode: 0,
+                        headers: [:],
+                        body: nil,
+                        error: error,
+                        duration: delay,
+                        taskMetrics: nil,
+                        redirectCount: 0
+                    )
+                }
+                self.client?.urlProtocol(self, didFailWithError: error)
+            }
+            return
+        }
+
+        // Apply delay then proceed
+        let proceed = { [self] in
+            let session = Self.sharedSession(delegate: self)
+            self.dataTask = session.dataTask(with: mutableRequest as URLRequest)
+            self.dataTask?.resume()
+        }
+
+        if throttle.delay > 0 {
+            DispatchQueue.global().asyncAfter(deadline: .now() + throttle.delay) {
+                proceed()
+            }
+        } else {
+            proceed()
+        }
     }
 
     override public func stopLoading() {

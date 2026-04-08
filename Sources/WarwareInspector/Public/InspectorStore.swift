@@ -38,6 +38,14 @@ import Foundation
 
     public var blacklistedHosts: Set<String> = []
 
+    // MARK: - Network Throttle
+
+    public var networkThrottle: NetworkThrottle = .none {
+        didSet {
+            InspectorURLProtocol.throttle = networkThrottle
+        }
+    }
+
     // MARK: - Mock Rules
 
     public var mockRules: [MockRule] = []

@@ -88,10 +88,43 @@ struct InspectorSettingsView: View {
             }
             .listRowBackground(InspectorTheme.Colors.surface)
 
+            // Network Throttle
+            Section {
+                ForEach(NetworkThrottle.allCases, id: \.self) { preset in
+                    Button {
+                        store.networkThrottle = preset
+                    } label: {
+                        HStack {
+                            VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
+                                Text(preset.rawValue)
+                                    .font(InspectorTheme.Typography.body)
+                                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                                Text(preset.description)
+                                    .font(InspectorTheme.Typography.detail)
+                                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                            }
+                            Spacer()
+                            if store.networkThrottle == preset {
+                                Image(systemName: "checkmark")
+                                    .font(InspectorTheme.Typography.detail)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(InspectorTheme.Colors.accent)
+                            }
+                        }
+                    }
+                }
+            } header: {
+                Text("Network Conditions")
+            } footer: {
+                Text("Simulates network latency and failures on real devices.")
+                    .font(InspectorTheme.Typography.detail)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            }
+            .listRowBackground(InspectorTheme.Colors.surface)
+
             // Coming Soon
             Section {
                 comingSoonRow(icon: "location", title: "Mock Location", color: InspectorTheme.Colors.success)
-                comingSoonRow(icon: "wifi.slash", title: "Network Conditions", color: InspectorTheme.Colors.warning)
                 comingSoonRow(icon: "flag", title: "Feature Flags", color: InspectorTheme.Colors.accent)
             } header: {
                 Text("Coming Soon")
