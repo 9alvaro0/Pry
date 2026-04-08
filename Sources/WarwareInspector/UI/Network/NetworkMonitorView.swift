@@ -1,10 +1,12 @@
 import SwiftUI
+import UIKit
 
 struct NetworkMonitorView: View {
     @Bindable var store: InspectorStore
 
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
+    @State private var showExportSheet = false
 
     private var selectedFilter: NetworkFilter? {
         get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
@@ -205,6 +207,16 @@ struct NetworkMonitorView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    showExportSheet = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(InspectorTheme.Typography.body)
+                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                }
+                .disabled(filteredEntries.isEmpty)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     showFilterSheet = true
                 } label: {
                     Image(systemName: "line.3.horizontal.decrease")
@@ -230,6 +242,12 @@ struct NetworkMonitorView: View {
         }
         .sheet(isPresented: $showFilterSheet) {
             filterSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(InspectorTheme.Colors.background)
+        }
+        .sheet(isPresented: $showExportSheet) {
+            exportSheet
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(InspectorTheme.Colors.background)
@@ -398,6 +416,131 @@ struct NetworkMonitorView: View {
             .font(.system(size: 11, weight: .semibold))
             .tracking(0.5)
             .foregroundStyle(InspectorTheme.Colors.textTertiary)
+    }
+
+    // MARK: - Export Sheet
+
+    private var exportSheet: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Spacer()
+
+                Text("Export")
+                    .font(InspectorTheme.Typography.subheading)
+                    .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+                Spacer()
+
+                Button {
+                    showExportSheet = false
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(InspectorTheme.Typography.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                }
+            }
+            .padding(.horizontal, InspectorTheme.Spacing.lg)
+            .padding(.vertical, InspectorTheme.Spacing.md)
+
+            Divider().overlay(InspectorTheme.Colors.border)
+
+            ScrollView {
+                VStack(spacing: InspectorTheme.Spacing.md) {
+                    Text("\(filteredEntries.count) requests")
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                        .padding(.top, InspectorTheme.Spacing.md)
+
+                    exportButton(
+                        icon: "shippingbox",
+                        title: "Postman Collection",
+                        detail: "Import directly into Postman",
+                        color: InspectorTheme.Colors.warning
+                    ) {
+                        let json = SessionExporter.postmanCollection(entries: filteredEntries)
+                        shareExport(content: json, filename: "warware_export.postman_collection.json")
+                    }
+
+                    exportButton(
+                        icon: "terminal",
+                        title: "cURL Commands",
+                        detail: "All requests as cURL",
+                        color: InspectorTheme.Colors.success
+                    ) {
+                        let curl = SessionExporter.curlCollection(entries: filteredEntries)
+                        shareExport(content: curl, filename: "warware_export.sh")
+                    }
+
+                    exportButton(
+                        icon: "doc.text",
+                        title: "HAR Archive",
+                        detail: "HTTP Archive format (Chrome DevTools)",
+                        color: InspectorTheme.Colors.accent
+                    ) {
+                        let har = SessionExporter.harArchive(entries: filteredEntries)
+                        shareExport(content: har, filename: "warware_export.har")
+                    }
+                }
+                .padding(.horizontal, InspectorTheme.Spacing.lg)
+                .padding(.bottom, InspectorTheme.Spacing.xl)
+            }
+        }
+        .inspectorBackground()
+    }
+
+    private func exportButton(icon: String, title: String, detail: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: InspectorTheme.Spacing.md) {
+                Image(systemName: icon)
+                    .font(InspectorTheme.Typography.body)
+                    .foregroundStyle(color)
+                    .frame(width: 36, height: 36)
+                    .background(color.opacity(0.15))
+                    .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+
+                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
+                    Text(title)
+                        .font(InspectorTheme.Typography.body)
+                        .fontWeight(.medium)
+                        .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+                    Text(detail)
+                        .font(InspectorTheme.Typography.detail)
+                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                }
+
+                Spacer()
+
+                Image(systemName: "arrow.up.forward.square")
+                    .font(InspectorTheme.Typography.body)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+            }
+            .padding(InspectorTheme.Spacing.md)
+            .background(InspectorTheme.Colors.surface)
+            .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
+        }
+    }
+
+    private func shareExport(content: String, filename: String) {
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent(filename)
+
+        try? content.write(to: fileURL, atomically: true, encoding: .utf8)
+
+        let activityVC = UIActivityViewController(activityItems: [fileURL], applicationActivities: nil)
+
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            var presenter = rootVC
+            while let presented = presenter.presentedViewController {
+                presenter = presented
+            }
+            activityVC.popoverPresentationController?.sourceView = presenter.view
+            presenter.present(activityVC, animated: true)
+        }
+
+        showExportSheet = false
     }
 }
 
