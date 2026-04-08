@@ -36,27 +36,51 @@ import Foundation
 
     // MARK: - Blacklist
 
-    public var blacklistedHosts: Set<String> = []
+    public var blacklistedHosts: Set<String> = [] {
+        didSet { PreferenceStorage.set(blacklistedHosts, for: .blacklistedHosts) }
+    }
 
     // MARK: - Preferences
 
     /// Show error count badge on the floating action button.
-    public var showErrorBadge: Bool = true
+    public var showErrorBadge: Bool = true {
+        didSet { PreferenceStorage.set(showErrorBadge, for: .showErrorBadge) }
+    }
 
     /// Also print log messages to Xcode console via `print()`.
-    public var printToConsole: Bool = true
+    public var printToConsole: Bool = true {
+        didSet { PreferenceStorage.set(printToConsole, for: .printToConsole) }
+    }
 
     /// FAB position: false = bottom-right (default), true = bottom-left.
-    public var fabOnLeft: Bool = false
+    public var fabOnLeft: Bool = false {
+        didSet { PreferenceStorage.set(fabOnLeft, for: .fabOnLeft) }
+    }
 
     /// Allow dragging the FAB to any position on screen.
-    public var fabDraggable: Bool = false
+    public var fabDraggable: Bool = false {
+        didSet {
+            PreferenceStorage.set(fabDraggable, for: .fabDraggable)
+            if !fabDraggable {
+                fabDragOffset = .zero
+            }
+        }
+    }
 
-    /// Current FAB position when dragged. Nil = use default corner position.
-    var fabDragOffset: CGSize = .zero
+    /// Current FAB position when dragged.
+    var fabDragOffset: CGSize = .zero {
+        didSet {
+            PreferenceStorage.set(fabDragOffset.width, for: .fabDragOffsetX)
+            PreferenceStorage.set(fabDragOffset.height, for: .fabDragOffsetY)
+        }
+    }
 
     /// Trigger mode override. Nil = use the value from `.inspector(trigger:)`.
-    var triggerOverride: InspectorTrigger?
+    var triggerOverride: InspectorTrigger? {
+        didSet {
+            PreferenceStorage.set(triggerOverride?.rawValue ?? -1, for: .triggerOverride)
+        }
+    }
 
     // MARK: - UI State (persists across sheet open/close)
 
@@ -70,6 +94,7 @@ import Foundation
     public var networkThrottle: NetworkThrottle = .none {
         didSet {
             InspectorURLProtocol.throttle = networkThrottle
+            PreferenceStorage.set(networkThrottle.rawValue, for: .networkThrottle)
         }
     }
 
@@ -121,6 +146,30 @@ import Foundation
         self.maxLogEntries = maxLogEntries
         self.maxDeeplinkEntries = maxDeeplinkEntries
         self.maxPushEntries = maxPushEntries
+
+        // Load persisted preferences
+        loadPreferences()
+    }
+
+    private func loadPreferences() {
+        showErrorBadge = PreferenceStorage.bool(for: .showErrorBadge, default: true)
+        printToConsole = PreferenceStorage.bool(for: .printToConsole, default: true)
+        fabOnLeft = PreferenceStorage.bool(for: .fabOnLeft, default: false)
+        fabDraggable = PreferenceStorage.bool(for: .fabDraggable, default: false)
+        blacklistedHosts = PreferenceStorage.stringSet(for: .blacklistedHosts)
+
+        let offsetX = PreferenceStorage.double(for: .fabDragOffsetX)
+        let offsetY = PreferenceStorage.double(for: .fabDragOffsetY)
+        fabDragOffset = CGSize(width: offsetX, height: offsetY)
+
+        if let triggerRaw = PreferenceStorage.integer(for: .triggerOverride), triggerRaw >= 0 {
+            triggerOverride = InspectorTrigger(rawValue: triggerRaw)
+        }
+
+        if let throttleRaw = PreferenceStorage.string(for: .networkThrottle),
+           let throttle = NetworkThrottle(rawValue: throttleRaw) {
+            networkThrottle = throttle
+        }
     }
 
     // MARK: - Network (internal - fed by NetworkLogger)

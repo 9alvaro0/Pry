@@ -89,12 +89,18 @@ struct InspectorOverlayModifier: ViewModifier {
             }
             .overlay(alignment: store.fabOnLeft ? .bottomLeading : .bottomTrailing) {
                 if activeTrigger.contains(.floatingButton) {
-                    fabView
-                        .offset(x: store.fabDragOffset.width + dragOffset.width,
-                                y: store.fabDragOffset.height + dragOffset.height)
-                        .gesture(store.fabDraggable ? fabDragGesture : nil)
-                        .padding(store.fabOnLeft ? .leading : .trailing, InspectorTheme.Spacing.xl)
-                        .padding(.bottom, InspectorTheme.Spacing.sm)
+                    if store.fabDraggable {
+                        fabView
+                            .offset(x: store.fabDragOffset.width + dragOffset.width,
+                                    y: store.fabDragOffset.height + dragOffset.height)
+                            .simultaneousGesture(fabDragGesture)
+                            .padding(store.fabOnLeft ? .leading : .trailing, InspectorTheme.Spacing.xl)
+                            .padding(.bottom, InspectorTheme.Spacing.sm)
+                    } else {
+                        fabView
+                            .padding(store.fabOnLeft ? .leading : .trailing, InspectorTheme.Spacing.xl)
+                            .padding(.bottom, InspectorTheme.Spacing.sm)
+                    }
                 }
             }
             .onChange(of: store.fabDraggable) {
