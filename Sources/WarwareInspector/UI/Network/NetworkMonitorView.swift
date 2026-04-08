@@ -90,19 +90,13 @@ struct NetworkMonitorView: View {
         return count
     }
 
-    private var filteredEntries: [NetworkEntry] {
+    /// Entries filtered by host + search but NOT by chip filter.
+    /// Used as the base for both the final list and chip counts.
+    private var baseFilteredEntries: [NetworkEntry] {
         var entries = store.networkEntries
 
         if let host = selectedHost {
             entries = entries.filter { $0.requestURL.extractHost() == host }
-        }
-
-        if let filter = selectedFilter {
-            if filter == .pinned {
-                entries = entries.filter { store.isPinned($0.id) }
-            } else {
-                entries = entries.filter { filter.matches($0) }
-            }
         }
 
         if !searchText.isEmpty {
@@ -119,6 +113,20 @@ struct NetworkMonitorView: View {
             }
         }
 
+        return entries
+    }
+
+    private var filteredEntries: [NetworkEntry] {
+        var entries = baseFilteredEntries
+
+        if let filter = selectedFilter {
+            if filter == .pinned {
+                entries = entries.filter { store.isPinned($0.id) }
+            } else {
+                entries = entries.filter { filter.matches($0) }
+            }
+        }
+
         switch sortOrder {
         case .newest: entries.sort { $0.timestamp > $1.timestamp }
         case .oldest: entries.sort { $0.timestamp < $1.timestamp }
@@ -130,9 +138,10 @@ struct NetworkMonitorView: View {
     }
 
     private var filterCounts: [NetworkFilter: Int] {
+        let entries = baseFilteredEntries
         var counts: [NetworkFilter: Int] = [.pinned: 0, .success: 0, .error: 0, .pending: 0]
-        counts[.pinned] = store.pinnedRequestIDs.count
-        for entry in store.networkEntries {
+        counts[.pinned] = entries.filter { store.isPinned($0.id) }.count
+        for entry in entries {
             if entry.isSuccess {
                 counts[.success, default: 0] += 1
             } else if entry.responseStatusCode == nil && entry.responseError == nil {
