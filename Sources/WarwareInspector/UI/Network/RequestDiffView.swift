@@ -7,17 +7,83 @@ struct RequestDiffView: View {
 
     @Environment(\.dismiss) private var dismiss
 
+    // MARK: - Diff Computation
+
+    private var statusChanged: Bool { left.responseStatusCode != right.responseStatusCode }
+    private var durationChanged: Bool { left.duration != right.duration }
+
+    private var requestHeaderDiffs: [HeaderDiff] {
+        computeHeaderDiffs(left: left.requestHeaders, right: right.requestHeaders)
+    }
+
+    private var responseHeaderDiffs: [HeaderDiff] {
+        computeHeaderDiffs(left: left.responseHeaders ?? [:], right: right.responseHeaders ?? [:])
+    }
+
+    private var requestBodyChanged: Bool { (left.requestBody ?? "") != (right.requestBody ?? "") }
+    private var responseBodyChanged: Bool { (left.responseBody ?? "") != (right.responseBody ?? "") }
+
+    private var totalDifferences: Int {
+        var count = 0
+        if statusChanged { count += 1 }
+        if durationChanged { count += 1 }
+        if !requestHeaderDiffs.isEmpty { count += 1 }
+        if !responseHeaderDiffs.isEmpty { count += 1 }
+        if requestBodyChanged { count += 1 }
+        if responseBodyChanged { count += 1 }
+        return count
+    }
+
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: InspectorTheme.Spacing.lg) {
-                    summaryDiff
-                    statusDiff
-                    timingDiff
-                    headersDiff(title: "Request Headers", left: left.requestHeaders, right: right.requestHeaders)
-                    bodyDiff(title: "Request Body", left: left.requestBody, right: right.requestBody)
-                    headersDiff(title: "Response Headers", left: left.responseHeaders ?? [:], right: right.responseHeaders ?? [:])
-                    bodyDiff(title: "Response Body", left: left.responseBody, right: right.responseBody)
+                    summaryCards
+                    diffSummaryBanner
+
+                    // Status
+                    if statusChanged {
+                        statusDiffSection
+                    } else {
+                        identicalRow("Status Code")
+                    }
+
+                    // Duration
+                    if durationChanged {
+                        timingDiffSection
+                    } else {
+                        identicalRow("Duration")
+                    }
+
+                    // Request Headers
+                    if !requestHeaderDiffs.isEmpty {
+                        headersDiffSection(title: "Request Headers", diffs: requestHeaderDiffs)
+                    } else {
+                        identicalRow("Request Headers")
+                    }
+
+                    // Request Body
+                    if requestBodyChanged {
+                        bodyDiffSection(title: "Request Body", left: left.requestBody, right: right.requestBody)
+                    } else {
+                        identicalRow("Request Body")
+                    }
+
+                    // Response Headers
+                    if !responseHeaderDiffs.isEmpty {
+                        headersDiffSection(title: "Response Headers", diffs: responseHeaderDiffs)
+                    } else {
+                        identicalRow("Response Headers")
+                    }
+
+                    // Response Body
+                    if responseBodyChanged {
+                        bodyDiffSection(title: "Response Body", left: left.responseBody, right: right.responseBody)
+                    } else {
+                        identicalRow("Response Body")
+                    }
                 }
                 .padding(.horizontal, InspectorTheme.Spacing.lg)
                 .padding(.vertical, InspectorTheme.Spacing.md)
@@ -38,9 +104,9 @@ struct RequestDiffView: View {
         }
     }
 
-    // MARK: - Summary
+    // MARK: - Summary Cards
 
-    private var summaryDiff: some View {
+    private var summaryCards: some View {
         VStack(spacing: 1) {
             diffEntryRow(entry: left, label: "A")
             diffEntryRow(entry: right, label: "B")
@@ -87,66 +153,105 @@ struct RequestDiffView: View {
         .background(InspectorTheme.Colors.surface)
     }
 
-    // MARK: - Status
+    // MARK: - Diff Summary Banner
 
-    @ViewBuilder
-    private var statusDiff: some View {
-        let leftStatus = left.responseStatusCode
-        let rightStatus = right.responseStatusCode
-        if leftStatus != rightStatus {
-            diffSection(title: "Status Code") {
-                HStack(spacing: InspectorTheme.Spacing.xl) {
-                    VStack(spacing: InspectorTheme.Spacing.xs) {
-                        diffLabel("A")
-                        if let s = leftStatus {
-                            Text("\(s)").inspectorStatusBadge(s)
-                        } else {
-                            Text("--").font(InspectorTheme.Typography.code).foregroundStyle(InspectorTheme.Colors.textTertiary)
-                        }
+    private var diffSummaryBanner: some View {
+        HStack(spacing: InspectorTheme.Spacing.sm) {
+            Image(systemName: totalDifferences > 0 ? "exclamationmark.triangle" : "checkmark.circle")
+                .font(InspectorTheme.Typography.body)
+                .foregroundStyle(totalDifferences > 0 ? InspectorTheme.Colors.warning : InspectorTheme.Colors.success)
+
+            Text(totalDifferences > 0
+                 ? "\(totalDifferences) difference\(totalDifferences == 1 ? "" : "s") found"
+                 : "Requests are identical"
+            )
+            .font(InspectorTheme.Typography.body)
+            .fontWeight(.medium)
+            .foregroundStyle(InspectorTheme.Colors.textPrimary)
+
+            Spacer()
+        }
+        .padding(InspectorTheme.Spacing.md)
+        .background(
+            (totalDifferences > 0 ? InspectorTheme.Colors.warning : InspectorTheme.Colors.success).opacity(0.1)
+        )
+        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.md))
+    }
+
+    // MARK: - Identical Row
+
+    private func identicalRow(_ title: String) -> some View {
+        HStack(spacing: InspectorTheme.Spacing.sm) {
+            Image(systemName: "checkmark")
+                .font(InspectorTheme.Typography.detail)
+                .foregroundStyle(InspectorTheme.Colors.success)
+
+            Text(title)
+                .font(InspectorTheme.Typography.body)
+                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+            Spacer()
+
+            Text("Identical")
+                .font(InspectorTheme.Typography.detail)
+                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+        }
+        .padding(.horizontal, InspectorTheme.Spacing.md)
+        .padding(.vertical, InspectorTheme.Spacing.sm)
+    }
+
+    // MARK: - Status Diff
+
+    private var statusDiffSection: some View {
+        diffSection(title: "Status Code") {
+            HStack(spacing: InspectorTheme.Spacing.xl) {
+                VStack(spacing: InspectorTheme.Spacing.xs) {
+                    diffLabel("A")
+                    if let s = left.responseStatusCode {
+                        Text("\(s)").inspectorStatusBadge(s)
+                    } else {
+                        Text("--").font(InspectorTheme.Typography.code).foregroundStyle(InspectorTheme.Colors.textTertiary)
                     }
-                    Image(systemName: "arrow.right")
-                        .font(InspectorTheme.Typography.detail)
-                        .foregroundStyle(InspectorTheme.Colors.textTertiary)
-                    VStack(spacing: InspectorTheme.Spacing.xs) {
-                        diffLabel("B")
-                        if let s = rightStatus {
-                            Text("\(s)").inspectorStatusBadge(s)
-                        } else {
-                            Text("--").font(InspectorTheme.Typography.code).foregroundStyle(InspectorTheme.Colors.textTertiary)
-                        }
+                }
+                Image(systemName: "arrow.right")
+                    .font(InspectorTheme.Typography.detail)
+                    .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                VStack(spacing: InspectorTheme.Spacing.xs) {
+                    diffLabel("B")
+                    if let s = right.responseStatusCode {
+                        Text("\(s)").inspectorStatusBadge(s)
+                    } else {
+                        Text("--").font(InspectorTheme.Typography.code).foregroundStyle(InspectorTheme.Colors.textTertiary)
                     }
-                    Spacer()
+                }
+                Spacer()
+            }
+        }
+    }
+
+    // MARK: - Timing Diff
+
+    private var timingDiffSection: some View {
+        diffSection(title: "Duration") {
+            HStack(spacing: InspectorTheme.Spacing.lg) {
+                timingPill("A", value: left.duration)
+                timingPill("B", value: right.duration)
+
+                Spacer()
+
+                if let ld = left.duration, let rd = right.duration {
+                    let diff = rd - ld
+                    let sign = diff >= 0 ? "+" : ""
+                    Text("\(sign)\(String(format: "%.0fms", diff * 1000))")
+                        .font(InspectorTheme.Typography.code)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(diff > 0 ? InspectorTheme.Colors.error : InspectorTheme.Colors.success)
                 }
             }
         }
     }
 
-    // MARK: - Timing
-
-    @ViewBuilder
-    private var timingDiff: some View {
-        if left.duration != right.duration {
-            diffSection(title: "Duration") {
-                HStack(spacing: InspectorTheme.Spacing.lg) {
-                    timingPill("A", value: left.duration, color: InspectorTheme.Colors.accent)
-                    timingPill("B", value: right.duration, color: InspectorTheme.Colors.warning)
-
-                    Spacer()
-
-                    if let ld = left.duration, let rd = right.duration {
-                        let diff = rd - ld
-                        let sign = diff >= 0 ? "+" : ""
-                        Text("\(sign)\(String(format: "%.0fms", diff * 1000))")
-                            .font(InspectorTheme.Typography.code)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(diff > 0 ? InspectorTheme.Colors.error : InspectorTheme.Colors.success)
-                    }
-                }
-            }
-        }
-    }
-
-    private func timingPill(_ label: String, value: TimeInterval?, color: Color) -> some View {
+    private func timingPill(_ label: String, value: TimeInterval?) -> some View {
         HStack(spacing: InspectorTheme.Spacing.xs) {
             diffLabel(label)
             Text(value.map { String(format: "%.0fms", $0 * 1000) } ?? "--")
@@ -157,38 +262,18 @@ struct RequestDiffView: View {
 
     // MARK: - Headers Diff
 
-    @ViewBuilder
-    private func headersDiff(title: String, left: [String: String], right: [String: String]) -> some View {
-        let allKeys = Set(left.keys).union(Set(right.keys)).sorted()
-        let diffs = allKeys.compactMap { key -> HeaderDiff? in
-            let lVal = left[key]
-            let rVal = right[key]
-            if lVal == rVal { return nil }
-            return HeaderDiff(key: key, leftValue: lVal, rightValue: rVal)
-        }
+    private func headersDiffSection(title: String, diffs: [HeaderDiff]) -> some View {
+        diffSection(title: title) {
+            VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
+                ForEach(diffs, id: \.key) { diff in
+                    VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
+                        Text(diff.key)
+                            .font(InspectorTheme.Typography.detail)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(InspectorTheme.Colors.textSecondary)
 
-        if !diffs.isEmpty {
-            diffSection(title: title) {
-                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
-                    ForEach(diffs, id: \.key) { diff in
-                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
-                            Text(diff.key)
-                                .font(InspectorTheme.Typography.detail)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(InspectorTheme.Colors.textSecondary)
-
-                            if let lv = diff.leftValue {
-                                diffValueRow("A", value: lv, color: InspectorTheme.Colors.accent)
-                            } else {
-                                diffValueRow("A", value: "(missing)", color: InspectorTheme.Colors.textTertiary)
-                            }
-
-                            if let rv = diff.rightValue {
-                                diffValueRow("B", value: rv, color: InspectorTheme.Colors.warning)
-                            } else {
-                                diffValueRow("B", value: "(missing)", color: InspectorTheme.Colors.textTertiary)
-                            }
-                        }
+                        diffValueRow("A", value: diff.leftValue ?? "(missing)", isMissing: diff.leftValue == nil)
+                        diffValueRow("B", value: diff.rightValue ?? "(missing)", isMissing: diff.rightValue == nil)
                     }
                 }
             }
@@ -197,24 +282,19 @@ struct RequestDiffView: View {
 
     // MARK: - Body Diff
 
-    @ViewBuilder
-    private func bodyDiff(title: String, left: String?, right: String?) -> some View {
-        let l = left ?? ""
-        let r = right ?? ""
-        if l != r {
-            diffSection(title: title) {
-                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
-                    if !l.isEmpty {
-                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
-                            diffLabel("A")
-                            CodeBlockView(text: l, language: .json)
-                        }
+    private func bodyDiffSection(title: String, left: String?, right: String?) -> some View {
+        diffSection(title: title) {
+            VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
+                if let l = left, !l.isEmpty {
+                    VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
+                        diffLabel("A")
+                        CodeBlockView(text: l, language: .json)
                     }
-                    if !r.isEmpty {
-                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
-                            diffLabel("B")
-                            CodeBlockView(text: r, language: .json)
-                        }
+                }
+                if let r = right, !r.isEmpty {
+                    VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xxs) {
+                        diffLabel("B")
+                        CodeBlockView(text: r, language: .json)
                     }
                 }
             }
@@ -247,13 +327,24 @@ struct RequestDiffView: View {
             .clipShape(.circle)
     }
 
-    private func diffValueRow(_ label: String, value: String, color: Color) -> some View {
+    private func diffValueRow(_ label: String, value: String, isMissing: Bool) -> some View {
         HStack(alignment: .top, spacing: InspectorTheme.Spacing.xs) {
             diffLabel(label)
             Text(value)
                 .font(InspectorTheme.Typography.code)
-                .foregroundStyle(color == InspectorTheme.Colors.textTertiary ? color : InspectorTheme.Colors.textPrimary)
+                .foregroundStyle(isMissing ? InspectorTheme.Colors.textTertiary : InspectorTheme.Colors.textPrimary)
                 .lineLimit(3)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func computeHeaderDiffs(left: [String: String], right: [String: String]) -> [HeaderDiff] {
+        Set(left.keys).union(Set(right.keys)).sorted().compactMap { key in
+            let lVal = left[key]
+            let rVal = right[key]
+            guard lVal != rVal else { return nil }
+            return HeaderDiff(key: key, leftValue: lVal, rightValue: rVal)
         }
     }
 }
@@ -275,5 +366,9 @@ private struct HeaderDiff {
 
 #Preview("Diff - GraphQL") {
     RequestDiffView(left: .mockGraphQLQuery, right: .mockGraphQLError)
+}
+
+#Preview("Diff - Same Request") {
+    RequestDiffView(left: .mockSuccess, right: .mockSuccess)
 }
 #endif
