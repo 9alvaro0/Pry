@@ -19,6 +19,9 @@ extension InspectorStore {
         store.addNetworkEntry(.mockFormPost)
         store.addNetworkEntry(.mockRedirect)
         store.addNetworkEntry(.mockMocked)
+        store.addNetworkEntry(.mockGraphQLQuery)
+        store.addNetworkEntry(.mockGraphQLMutation)
+        store.addNetworkEntry(.mockGraphQLError)
 
         // Mock rules
         store.addMockRule(.mockUsersSuccess)
@@ -55,6 +58,8 @@ extension InspectorStore {
         store.addNetworkEntry(.mockPatch)
         store.addNetworkEntry(.mockFormPost)
         store.addNetworkEntry(.mockMocked)
+        store.addNetworkEntry(.mockGraphQLQuery)
+        store.addNetworkEntry(.mockGraphQLMutation)
         return store
     }
 

@@ -113,7 +113,8 @@ struct NetworkMonitorView: View {
                 (entry.responseStatusCode.map { String($0).contains(query) } ?? false) ||
                 (entry.responseStatusCode.map { HTTPStatus.description(for: $0).lowercased().contains(query) } ?? false) ||
                 (entry.responseError?.lowercased().contains(query) ?? false) ||
-                (entry.displayError?.lowercased().contains(query) ?? false)
+                (entry.displayError?.lowercased().contains(query) ?? false) ||
+                (entry.graphQLInfo?.operationName?.lowercased().contains(query) ?? false)
             }
         }
 

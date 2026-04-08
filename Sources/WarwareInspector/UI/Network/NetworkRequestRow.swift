@@ -12,13 +12,23 @@ struct NetworkRequestRowView: View {
         VStack(alignment: .leading, spacing: InspectorTheme.Spacing.sm) {
             // Line 1: Method + Path + Pin + Duration
             HStack(alignment: .center, spacing: InspectorTheme.Spacing.sm) {
-                Text(entry.requestMethod)
-                    .font(InspectorTheme.Typography.code)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(InspectorTheme.Colors.textSecondary)
-                    .frame(width: 52, alignment: .leading)
+                // Method — for GraphQL show operation type badge instead
+                if let gql = entry.graphQLInfo {
+                    Text(gql.operationType.rawValue.prefix(3).uppercased())
+                        .font(InspectorTheme.Typography.codeSmall)
+                        .fontWeight(.bold)
+                        .foregroundStyle(gql.operationType == .mutation ? InspectorTheme.Colors.warning : InspectorTheme.Colors.syntaxString)
+                        .frame(width: 52, alignment: .leading)
+                } else {
+                    Text(entry.requestMethod)
+                        .font(InspectorTheme.Typography.code)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(InspectorTheme.Colors.textSecondary)
+                        .frame(width: 52, alignment: .leading)
+                }
 
-                Text(entry.requestURL.extractPath())
+                // Path — for GraphQL show operation name
+                Text(entry.displayPath)
                     .font(InspectorTheme.Typography.code)
                     .foregroundStyle(InspectorTheme.Colors.textPrimary)
                     .lineLimit(1)
@@ -38,6 +48,13 @@ struct NetworkRequestRowView: View {
                         .font(InspectorTheme.Typography.codeSmall)
                         .fontWeight(.bold)
                         .foregroundStyle(InspectorTheme.Colors.syntaxBool)
+                }
+
+                // GraphQL errors indicator
+                if let gql = entry.graphQLInfo, gql.hasErrors {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(InspectorTheme.Colors.error)
                 }
 
                 if isPinned {
@@ -114,6 +131,9 @@ struct NetworkRequestRowView: View {
         NetworkRequestRowView(entry: .mockNoAuth)
         NetworkRequestRowView(entry: .mockMocked)
         NetworkRequestRowView(entry: .mockReplay)
+        NetworkRequestRowView(entry: .mockGraphQLQuery)
+        NetworkRequestRowView(entry: .mockGraphQLMutation)
+        NetworkRequestRowView(entry: .mockGraphQLError)
     }
     .listStyle(.insetGrouped)
     .inspectorBackground()

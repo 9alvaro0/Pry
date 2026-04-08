@@ -788,4 +788,83 @@ extension NetworkEntry {
     }
 }
 
+// MARK: - GraphQL NetworkEntries
+
+extension NetworkEntry {
+
+    static var mockGraphQLQuery: NetworkEntry {
+        NetworkEntry(
+            timestamp: Date().addingTimeInterval(-8),
+            type: .network,
+            requestURL: "https://api.example.com/graphql",
+            requestMethod: "POST",
+            requestHeaders: [
+                "Content-Type": "application/json",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc"
+            ],
+            requestBody: #"{"query":"query GetUser($id: ID!) {\n  user(id: $id) {\n    id\n    name\n    email\n    avatar\n    posts {\n      id\n      title\n    }\n  }\n}","operationName":"GetUser","variables":{"id":"42"}}"#,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: "{\n  \"data\": {\n    \"user\": {\n      \"id\": \"42\",\n      \"name\": \"Jane Doe\",\n      \"email\": \"jane@example.com\",\n      \"posts\": [\n        {\"id\": \"1\", \"title\": \"Getting Started with GraphQL\"},\n        {\"id\": \"2\", \"title\": \"SwiftUI Best Practices\"}\n      ]\n    }\n  }\n}",
+            responseError: nil,
+            authToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc",
+            authTokenType: "Bearer Token",
+            authTokenLength: 48,
+            duration: 0.245,
+            requestSize: 180,
+            responseSize: 312,
+            metrics: nil
+        )
+    }
+
+    static var mockGraphQLMutation: NetworkEntry {
+        NetworkEntry(
+            timestamp: Date().addingTimeInterval(-3),
+            type: .network,
+            requestURL: "https://api.example.com/graphql",
+            requestMethod: "POST",
+            requestHeaders: [
+                "Content-Type": "application/json",
+                "Authorization": "Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc"
+            ],
+            requestBody: #"{"query":"mutation UpdateProfile($input: ProfileInput!) {\n  updateProfile(input: $input) {\n    id\n    name\n    bio\n  }\n}","operationName":"UpdateProfile","variables":{"input":{"name":"Jane Updated","bio":"iOS Developer"}}}"#,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: "{\n  \"data\": {\n    \"updateProfile\": {\n      \"id\": \"42\",\n      \"name\": \"Jane Updated\",\n      \"bio\": \"iOS Developer\"\n    }\n  }\n}",
+            responseError: nil,
+            authToken: nil,
+            authTokenType: nil,
+            authTokenLength: nil,
+            duration: 0.312,
+            requestSize: 220,
+            responseSize: 145,
+            metrics: nil
+        )
+    }
+
+    static var mockGraphQLError: NetworkEntry {
+        NetworkEntry(
+            timestamp: Date().addingTimeInterval(-1),
+            type: .network,
+            requestURL: "https://api.example.com/graphql",
+            requestMethod: "POST",
+            requestHeaders: [
+                "Content-Type": "application/json"
+            ],
+            requestBody: #"{"query":"query GetUser($id: ID!) {\n  user(id: $id) {\n    id\n    name\n    secretField\n  }\n}","operationName":"GetUser","variables":{"id":"999"}}"#,
+            responseStatusCode: 200,
+            responseHeaders: ["Content-Type": "application/json"],
+            responseBody: "{\n  \"data\": null,\n  \"errors\": [\n    {\n      \"message\": \"User not found\",\n      \"path\": [\"user\"]\n    },\n    {\n      \"message\": \"Cannot query field 'secretField' on type 'User'\",\n      \"path\": [\"user\", \"secretField\"]\n    }\n  ]\n}",
+            responseError: nil,
+            authToken: nil,
+            authTokenType: nil,
+            authTokenLength: nil,
+            duration: 0.089,
+            requestSize: 150,
+            responseSize: 280,
+            metrics: nil
+        )
+    }
+}
+
 #endif

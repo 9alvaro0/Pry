@@ -57,6 +57,9 @@ struct NetworkRequestDetailView: View {
                 summaryHeader
                 Divider().overlay(InspectorTheme.Colors.border)
 
+                // GraphQL
+                graphQLSection
+
                 timingSection
 
                 // Auth / JWT
@@ -206,6 +209,93 @@ struct NetworkRequestDetailView: View {
                 .foregroundStyle(InspectorTheme.Colors.textTertiary)
         }
         .padding(.vertical, InspectorTheme.Spacing.lg)
+    }
+
+    // MARK: - GraphQL
+
+    @ViewBuilder
+    private var graphQLSection: some View {
+        if let gql = entry.graphQLInfo {
+            DetailSectionView(title: "GraphQL", collapsible: false) {
+                VStack(alignment: .leading, spacing: InspectorTheme.Spacing.md) {
+                    // Operation info
+                    HStack(spacing: InspectorTheme.Spacing.sm) {
+                        Text(gql.operationType.rawValue)
+                            .font(InspectorTheme.Typography.code)
+                            .fontWeight(.bold)
+                            .foregroundStyle(
+                                gql.operationType == .mutation
+                                    ? InspectorTheme.Colors.warning
+                                    : InspectorTheme.Colors.syntaxString
+                            )
+                            .padding(.horizontal, InspectorTheme.Spacing.sm)
+                            .padding(.vertical, InspectorTheme.Spacing.xxs)
+                            .background(
+                                (gql.operationType == .mutation
+                                    ? InspectorTheme.Colors.warning
+                                    : InspectorTheme.Colors.syntaxString
+                                ).opacity(0.15)
+                            )
+                            .clipShape(.capsule)
+
+                        if let name = gql.operationName {
+                            Text(name)
+                                .font(InspectorTheme.Typography.code)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(InspectorTheme.Colors.textPrimary)
+                        } else {
+                            Text("Anonymous")
+                                .font(InspectorTheme.Typography.code)
+                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                                .italic()
+                        }
+                    }
+
+                    // GraphQL errors
+                    if gql.hasErrors {
+                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+                            ForEach(Array(gql.errors.enumerated()), id: \.offset) { _, error in
+                                HStack(alignment: .top, spacing: InspectorTheme.Spacing.xs) {
+                                    Image(systemName: "exclamationmark.triangle.fill")
+                                        .font(.system(size: 11))
+                                        .foregroundStyle(InspectorTheme.Colors.error)
+
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(error.message)
+                                            .font(InspectorTheme.Typography.code)
+                                            .foregroundStyle(InspectorTheme.Colors.error)
+                                        if let path = error.path {
+                                            Text(path)
+                                                .font(InspectorTheme.Typography.detail)
+                                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .padding(InspectorTheme.Spacing.sm)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(InspectorTheme.Colors.error.opacity(0.08))
+                        .clipShape(.rect(cornerRadius: InspectorTheme.Radius.sm))
+                    }
+
+                    // Query
+                    CodeBlockView(text: gql.query, language: .text)
+
+                    // Variables
+                    if let variables = gql.variables {
+                        VStack(alignment: .leading, spacing: InspectorTheme.Spacing.xs) {
+                            Text("VARIABLES")
+                                .font(.system(size: 11, weight: .semibold))
+                                .tracking(0.5)
+                                .foregroundStyle(InspectorTheme.Colors.textTertiary)
+
+                            CodeBlockView(text: variables, language: .json)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - JWT Token
@@ -373,7 +463,7 @@ struct NetworkRequestDetailView: View {
     @ToolbarContentBuilder
     private var toolbarItems: some ToolbarContent {
         ToolbarItem(placement: .principal) {
-            Text("\(entry.requestMethod) \(entry.requestURL.extractPath())")
+            Text("\(entry.requestMethod) \(entry.displayPath)")
                 .font(InspectorTheme.Typography.code)
                 .foregroundStyle(InspectorTheme.Colors.textPrimary)
                 .lineLimit(1)
@@ -695,6 +785,24 @@ struct NetworkRequestDetailView: View {
 #Preview("Detail - Replay") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockReplay)
+    }
+}
+
+#Preview("Detail - GraphQL Query") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockGraphQLQuery)
+    }
+}
+
+#Preview("Detail - GraphQL Mutation") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockGraphQLMutation)
+    }
+}
+
+#Preview("Detail - GraphQL Errors") {
+    NavigationStack {
+        NetworkRequestDetailView(entry: .mockGraphQLError)
     }
 }
 #endif

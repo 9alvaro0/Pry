@@ -49,6 +49,27 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
     // Replay
     public var isReplay: Bool = false
 
+    // MARK: - GraphQL
+
+    /// Parsed GraphQL info, if this is a GraphQL request.
+    var graphQLInfo: GraphQLInfo? {
+        GraphQLParser.parse(requestBody: requestBody, requestURL: requestURL, responseBody: responseBody)
+    }
+
+    public var isGraphQL: Bool {
+        graphQLInfo != nil
+    }
+
+    /// Display name for the row — uses GraphQL operation name when available.
+    public var displayPath: String {
+        if let info = graphQLInfo, let name = info.operationName {
+            return name
+        }
+        return requestURL.extractPath()
+    }
+
+    // MARK: - Status
+
     public var isSuccess: Bool {
         guard let statusCode = responseStatusCode else { return false }
         return statusCode >= 200 && statusCode < 300
