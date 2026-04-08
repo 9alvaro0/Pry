@@ -79,6 +79,10 @@ struct NetworkMonitorView: View {
         return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
     }
 
+    private var rulesCount: Int {
+        store.mockRules.filter(\.isEnabled).count + store.breakpointRules.filter(\.isEnabled).count
+    }
+
     private var hasActiveFilters: Bool {
         sortOrder != .newest || selectedHost != nil || showStats
     }
@@ -218,6 +222,19 @@ struct NetworkMonitorView: View {
         }
         .searchable(text: $searchText, prompt: "URL, method, status, host...")
         .toolbar {
+            if !isReadOnly {
+                ToolbarItem(placement: .topBarTrailing) {
+                    NavigationLink {
+                        NetworkRulesView(store: store)
+                            .navigationTitle("Rules")
+                            .navigationBarTitleDisplayMode(.inline)
+                    } label: {
+                        Image(systemName: rulesCount > 0 ? "bolt.circle.fill" : "bolt.circle")
+                            .font(InspectorTheme.Typography.body)
+                            .foregroundStyle(rulesCount > 0 ? InspectorTheme.Colors.warning : InspectorTheme.Colors.textSecondary)
+                    }
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showExportSheet = true

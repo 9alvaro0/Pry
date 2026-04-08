@@ -15,6 +15,7 @@ struct NetworkRequestDetailView: View {
     @State private var isReplaying = false
     @State private var showDiffPicker = false
     @State private var diffTarget: NetworkEntry?
+    @State private var showBreakpointCreator = false
 
     var body: some View {
         ScrollView {
@@ -130,6 +131,12 @@ struct NetworkRequestDetailView: View {
         }
         .sheet(item: $diffTarget) { target in
             RequestDiffView(left: entry, right: target)
+        }
+        .sheet(isPresented: $showBreakpointCreator) {
+            BreakpointRuleEditor(store: store, prefillEntry: entry)
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(InspectorTheme.Colors.background)
         }
         .overlay(alignment: .top) {
             if showCopied {
@@ -472,6 +479,13 @@ struct NetworkRequestDetailView: View {
         }
     }
 
+    private var hasBreakpointActive: Bool {
+        store.breakpointRules.contains {
+            $0.isEnabled &&
+            (entry.requestURL.localizedCaseInsensitiveContains($0.urlPattern))
+        }
+    }
+
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -510,6 +524,12 @@ struct NetworkRequestDetailView: View {
                 }
 
                 if !isReadOnly {
+                    Button {
+                        showBreakpointCreator = true
+                    } label: {
+                        Label(hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint", systemImage: "pause.circle")
+                    }
+
                     Button {
                         store.togglePin(entry.id)
                     } label: {

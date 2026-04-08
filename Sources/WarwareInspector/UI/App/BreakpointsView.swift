@@ -120,12 +120,15 @@ struct BreakpointsView: View {
 
 struct BreakpointRuleEditor: View {
     @Bindable var store: InspectorStore
+    var prefillEntry: NetworkEntry?
+
     @Environment(\.dismiss) private var dismiss
 
     @State private var name = ""
     @State private var urlPattern = ""
     @State private var method: String?
     @State private var pauseOn: BreakpointRule.PauseType = .request
+    @State private var didPrefill = false
 
     private let methods = [nil, "GET", "POST", "PUT", "DELETE", "PATCH"]
 
@@ -220,6 +223,13 @@ struct BreakpointRuleEditor: View {
                     }
                     .disabled(urlPattern.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
+            }
+            .onAppear {
+                guard !didPrefill, let entry = prefillEntry else { return }
+                didPrefill = true
+                urlPattern = entry.requestURL.extractPath()
+                method = entry.requestMethod
+                name = "\(entry.requestMethod) \(entry.requestURL.extractPath())"
             }
         }
     }
