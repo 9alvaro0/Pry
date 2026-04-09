@@ -1,52 +1,20 @@
 import SwiftUI
 
-/// Form to create or edit a breakpoint rule.
-/// Can be pre-filled from an existing NetworkEntry for contextual creation.
+/// Simple form to create a breakpoint from an existing network request.
+/// URL, method, and name are derived from the request automatically.
+/// The user only chooses when to pause (request, response, or both).
 struct BreakpointRuleEditor: View {
     @Bindable var store: PryStore
-    var prefillEntry: NetworkEntry?
+    let entry: NetworkEntry
 
     @Environment(\.dismiss) private var dismiss
-
-    @State private var name = ""
-    @State private var urlPattern = ""
-    @State private var method: String?
     @State private var pauseOn: BreakpointRule.PauseType = .request
-    @State private var didPrefill = false
-
-    private let methods = [nil, "GET", "POST", "PUT", "DELETE", "PATCH"]
 
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    TextField("Name (optional)", text: $name)
-                        .font(PryTheme.Typography.code)
-
-                    TextField("URL pattern (e.g. /api/login)", text: $urlPattern)
-                        .font(PryTheme.Typography.code)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                }
-                .listRowBackground(PryTheme.Colors.surface)
-
-                Section("Method") {
-                    ForEach(methods, id: \.self) { m in
-                        Button {
-                            method = m
-                        } label: {
-                            HStack {
-                                Text(m ?? "Any")
-                                    .font(PryTheme.Typography.code)
-                                    .foregroundStyle(PryTheme.Colors.textPrimary)
-                                Spacer()
-                                if method == m {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(PryTheme.Colors.accent)
-                                }
-                            }
-                        }
-                    }
+                    requestSummary
                 }
                 .listRowBackground(PryTheme.Colors.surface)
 
@@ -78,7 +46,7 @@ struct BreakpointRuleEditor: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .pryBackground()
-            .navigationTitle("New Breakpoint")
+            .navigationTitle("Add Breakpoint")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -92,9 +60,9 @@ struct BreakpointRuleEditor: View {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         let rule = BreakpointRule(
-                            name: name,
-                            urlPattern: urlPattern,
-                            method: method,
+                            name: "\(entry.requestMethod) \(entry.requestURL.extractPath())",
+                            urlPattern: entry.requestURL.extractPath(),
+                            method: entry.requestMethod,
                             pauseOn: pauseOn
                         )
                         store.addBreakpointRule(rule)
@@ -105,16 +73,23 @@ struct BreakpointRuleEditor: View {
                             .fontWeight(.semibold)
                             .foregroundStyle(PryTheme.Colors.accent)
                     }
-                    .disabled(urlPattern.trimmingCharacters(in: .whitespaces).isEmpty)
                 }
             }
-            .onAppear {
-                guard !didPrefill, let entry = prefillEntry else { return }
-                didPrefill = true
-                urlPattern = entry.requestURL.extractPath()
-                method = entry.requestMethod
-                name = "\(entry.requestMethod) \(entry.requestURL.extractPath())"
-            }
+        }
+    }
+
+    private var requestSummary: some View {
+        HStack(spacing: PryTheme.Spacing.sm) {
+            Text(entry.requestMethod)
+                .font(PryTheme.Typography.code)
+                .fontWeight(.semibold)
+                .foregroundStyle(PryTheme.Colors.textSecondary)
+
+            Text(entry.requestURL.extractPath())
+                .font(PryTheme.Typography.code)
+                .foregroundStyle(PryTheme.Colors.textPrimary)
+                .lineLimit(1)
+                .truncationMode(.middle)
         }
     }
 }

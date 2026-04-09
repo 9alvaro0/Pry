@@ -128,8 +128,8 @@ struct NetworkRequestDetailView: View {
                 showToast($showBreakpointSaved)
             }
         }) {
-            BreakpointRuleEditor(store: store, prefillEntry: entry)
-                .presentationDetents([.medium, .large])
+            BreakpointRuleEditor(store: store, entry: entry)
+                .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(PryTheme.Colors.background)
         }

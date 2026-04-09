@@ -4,8 +4,6 @@ import SwiftUI
 struct NetworkRulesView: View {
     @Bindable var store: PryStore
 
-    @State private var showAddBreakpoint = false
-
     var body: some View {
         List {
             // Breakpoints
@@ -61,24 +59,6 @@ struct NetworkRulesView: View {
         .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
         .pryBackground()
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showAddBreakpoint = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(PryTheme.Typography.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(PryTheme.Colors.accent)
-                }
-            }
-        }
-        .sheet(isPresented: $showAddBreakpoint) {
-            BreakpointRuleEditor(store: store)
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
-        }
     }
 
     // MARK: - Breakpoint Row
