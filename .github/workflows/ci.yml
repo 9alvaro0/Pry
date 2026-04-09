@@ -29,22 +29,18 @@ jobs:
 
       - name: Build
         run: |
-          set -o pipefail
           xcodebuild build \
             -scheme Pry \
             -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO \
-            | tail -80
+            CODE_SIGNING_ALLOWED=NO
 
       - name: Test
         run: |
-          set -o pipefail
           xcodebuild test \
             -scheme Pry \
             -destination 'platform=iOS Simulator,name=iPhone 16' \
             CODE_SIGNING_ALLOWED=NO \
-            -resultBundlePath TestResults.xcresult \
-            | tail -100
+            -resultBundlePath TestResults.xcresult
 
       - name: Upload test results
         if: failure()
