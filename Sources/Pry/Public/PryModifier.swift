@@ -67,6 +67,7 @@ struct PryOverlayModifier: ViewModifier {
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
+    @State private var isDragging = false
 
     private var activeTrigger: PryTrigger {
         store.triggerOverride ?? trigger
@@ -138,6 +139,7 @@ struct PryOverlayModifier: ViewModifier {
             foregroundColor: PryTheme.Colors.fabForeground,
             size: PryTheme.Size.fab
         ) {
+            guard !isDragging else { return }
             isPresented = true
         }
         .overlay(alignment: .topTrailing) {
@@ -156,8 +158,9 @@ struct PryOverlayModifier: ViewModifier {
     }
 
     private var fabDragGesture: some Gesture {
-        DragGesture()
+        DragGesture(minimumDistance: 5)
             .onChanged { value in
+                isDragging = true
                 dragOffset = value.translation
             }
             .onEnded { value in
@@ -166,6 +169,11 @@ struct PryOverlayModifier: ViewModifier {
                     height: store.fabDragOffset.height + value.translation.height
                 )
                 dragOffset = .zero
+                // Delay reset so the Button's tap gesture doesn't fire after drag ends
+                Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    isDragging = false
+                }
             }
     }
 }
