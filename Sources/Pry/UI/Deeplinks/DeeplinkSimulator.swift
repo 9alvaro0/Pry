@@ -10,13 +10,31 @@ struct DeeplinkSimulatorView: View {
     @State private var mode: InputMode = .raw
 
     // Raw mode
-    @State private var urlInput: String = ""
+    @State private var urlInput: String = {
+        let scheme = Self.defaultScheme()
+        return scheme.isEmpty ? "" : "\(scheme)://"
+    }()
 
     // Builder mode
-    @State private var scheme: String = ""
+    @State private var scheme: String = Self.defaultScheme()
     @State private var host: String = ""
     @State private var path: String = ""
     @State private var queryParams: [QueryParam] = [QueryParam()]
+
+    // MARK: - Scheme Detection
+
+    /// Reads the app's registered URL schemes from Info.plist and returns the first one.
+    private static func defaultScheme() -> String {
+        guard let urlTypes = Bundle.main.infoDictionary?["CFBundleURLTypes"] as? [[String: Any]] else {
+            return ""
+        }
+        for entry in urlTypes {
+            if let schemes = entry["CFBundleURLSchemes"] as? [String], let first = schemes.first {
+                return first
+            }
+        }
+        return ""
+    }
 
     // State
     @State private var history: [String] = []
