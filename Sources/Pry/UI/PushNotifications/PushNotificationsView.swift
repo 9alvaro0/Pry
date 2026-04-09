@@ -1,4 +1,5 @@
 import SwiftUI
+import UserNotifications
 
 struct PushNotificationsView: View {
     @Bindable var store: PryStore
@@ -52,11 +53,18 @@ struct PushNotificationsView: View {
                             }
                             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                                 Button {
-                                    UIPasteboard.general.string = entry.rawPayload ?? entry.displayTitle
+                                    relaunchNotification(entry)
+                                } label: {
+                                    Image(systemName: "arrow.clockwise")
+                                }
+                                .tint(PryTheme.Colors.warning)
+
+                                Button {
+                                    UIPasteboard.general.string = apnsPayload(for: entry)
                                 } label: {
                                     Image(systemName: "doc.on.doc")
                                 }
-                                .tint(PryTheme.Colors.warning)
+                                .tint(PryTheme.Colors.accent)
                             }
                         }
                     }
@@ -84,6 +92,66 @@ struct PushNotificationsView: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(PryTheme.Colors.background)
+        }
+    }
+
+    // MARK: - Helpers
+
+    /// Builds an APNs-style JSON payload from the entry that can be pasted
+    /// into the simulator's JSON mode.
+    private func apnsPayload(for entry: PushNotificationEntry) -> String {
+        if let raw = entry.rawPayload, !raw.isEmpty { return raw }
+
+        var alert: [String: Any] = [:]
+        if let title = entry.title { alert["title"] = title }
+        if let body = entry.body { alert["body"] = body }
+        if let subtitle = entry.subtitle { alert["subtitle"] = subtitle }
+
+        var aps: [String: Any] = [:]
+        if !alert.isEmpty { aps["alert"] = alert }
+        if let badge = entry.badge { aps["badge"] = badge }
+        if entry.sound != nil { aps["sound"] = "default" }
+        if let category = entry.categoryIdentifier { aps["category"] = category }
+        if let thread = entry.threadIdentifier { aps["thread-id"] = thread }
+
+        var payload: [String: Any] = ["aps": aps]
+        for (key, value) in entry.userInfo where key != "pry_simulated" {
+            payload[key] = value
+        }
+
+        guard let data = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .sortedKeys]),
+              let json = String(data: data, encoding: .utf8) else {
+            return entry.displayTitle
+        }
+        return json
+    }
+
+    /// Re-schedules a notification from a captured entry so it fires again.
+    private func relaunchNotification(_ entry: PushNotificationEntry) {
+        let content = UNMutableNotificationContent()
+        if let title = entry.title { content.title = title }
+        if let body = entry.body { content.body = body }
+        if let subtitle = entry.subtitle { content.subtitle = subtitle }
+        if let badge = entry.badge { content.badge = NSNumber(value: badge) }
+        if entry.sound != nil { content.sound = .default }
+        if let category = entry.categoryIdentifier { content.categoryIdentifier = category }
+        if let thread = entry.threadIdentifier { content.threadIdentifier = thread }
+        content.userInfo = ["pry_simulated": true]
+        content.interruptionLevel = .timeSensitive
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: "pry-relaunch-\(UUID().uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        Task {
+            let center = UNUserNotificationCenter.current()
+            let settings = await center.notificationSettings()
+            if settings.authorizationStatus != .authorized {
+                _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
+            }
+            try? await center.add(request)
         }
     }
 }

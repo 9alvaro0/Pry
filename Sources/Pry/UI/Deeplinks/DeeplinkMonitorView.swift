@@ -3,6 +3,7 @@ import SwiftUI
 struct DeeplinkMonitorView: View {
     @Bindable var store: PryStore
 
+    @Environment(\.openURL) private var openURL
     @State private var searchText: String = ""
     @State private var showSimulator = false
 
@@ -56,11 +57,18 @@ struct DeeplinkMonitorView: View {
                             }
                             .swipeActions(edge: .leading, allowsFullSwipe: true) {
                                 Button {
+                                    relaunchDeeplink(entry)
+                                } label: {
+                                    Image(systemName: "arrow.clockwise")
+                                }
+                                .tint(PryTheme.Colors.deeplinks)
+
+                                Button {
                                     UIPasteboard.general.string = entry.url
                                 } label: {
                                     Image(systemName: "doc.on.doc")
                                 }
-                                .tint(PryTheme.Colors.deeplinks)
+                                .tint(PryTheme.Colors.accent)
                             }
                         }
                     }
@@ -89,6 +97,12 @@ struct DeeplinkMonitorView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(PryTheme.Colors.background)
         }
+    }
+
+    private func relaunchDeeplink(_ entry: DeeplinkEntry) {
+        guard let url = URL(string: entry.url) else { return }
+        store.logDeeplink(url: url)
+        openURL(url)
     }
 }
 

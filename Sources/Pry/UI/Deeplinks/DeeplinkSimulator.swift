@@ -1,10 +1,10 @@
 import SwiftUI
-import UIKit
 
 struct DeeplinkSimulatorView: View {
     @Bindable var store: PryStore
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
 
     // Mode
     @State private var mode: InputMode = .raw
@@ -331,13 +331,7 @@ struct DeeplinkSimulatorView: View {
         }
 
         store.logDeeplink(url: url)
-
-        // Open the URL so the app actually receives it
-        Task { @MainActor in
-            if UIApplication.shared.canOpenURL(url) {
-                await UIApplication.shared.open(url)
-            }
-        }
+        openURL(url)
 
         // Update history (raw mode only)
         if mode == .raw {
