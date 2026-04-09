@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import Pry
+@testable import PryPro
 
 @Suite("ProtobufDecoder")
 struct ProtobufDecoderTests {
