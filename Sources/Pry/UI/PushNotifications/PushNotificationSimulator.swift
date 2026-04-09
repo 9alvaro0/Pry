@@ -25,6 +25,9 @@ struct PushNotificationSimulatorView: View {
     @State private var rawJSONInput = ""
     @State private var jsonError: String?
 
+    // Delay
+    @State private var delaySeconds: Double = 1
+
     // State
     @State private var permissionGranted = false
     @State private var sent = false
@@ -51,6 +54,9 @@ struct PushNotificationSimulatorView: View {
                     } else {
                         jsonContent
                     }
+
+                    // Delay slider
+                    delaySection
 
                     // Send button
                     Button {
@@ -134,6 +140,32 @@ struct PushNotificationSimulatorView: View {
                 inputField("Thread ID", placeholder: "marketing", text: $threadInput)
             }
         }
+    }
+
+    // MARK: - Delay Section
+
+    private var delaySection: some View {
+        VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
+            HStack {
+                fieldLabel("Delay")
+                Spacer()
+                Text(delayLabel)
+                    .font(PryTheme.Typography.code)
+                    .foregroundStyle(PryTheme.Colors.accent)
+            }
+
+            Slider(value: $delaySeconds, in: 1...15, step: 1)
+                .tint(PryTheme.Colors.warning)
+
+            Text("Use delays > 3s to background the app and see notifications land.")
+                .font(PryTheme.Typography.detail)
+                .foregroundStyle(PryTheme.Colors.textTertiary)
+        }
+    }
+
+    private var delayLabel: String {
+        let seconds = Int(delaySeconds)
+        return "\(seconds)s"
     }
 
     // MARK: - JSON Mode
@@ -330,7 +362,8 @@ struct PushNotificationSimulatorView: View {
                 }
             }
 
-            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            let interval = max(1, delaySeconds)
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: interval, repeats: false)
             let request = UNNotificationRequest(
                 identifier: "pry-\(UUID().uuidString)",
                 content: content,
