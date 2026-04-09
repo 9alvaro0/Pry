@@ -1,12 +1,15 @@
 import SwiftUI
 
-struct NetworkMonitorView: View {
-    @Bindable var store: PryStore
+package struct NetworkMonitorView: View {
+    @Bindable package var store: PryStore
+
+    package init(store: PryStore) {
+        self.store = store
+    }
 
     @Environment(\.pryReadOnly) private var isReadOnly
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
-    @State private var showExportSheet = false
 
     private var selectedFilter: NetworkFilter? {
         get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
@@ -77,10 +80,6 @@ struct NetworkMonitorView: View {
             hostCounts[entry.requestURL.extractHost(), default: 0] += 1
         }
         return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
-    }
-
-    private var rulesCount: Int {
-        store.mockRules.filter(\.isEnabled).count + store.breakpointRules.filter(\.isEnabled).count
     }
 
     private var hasActiveFilters: Bool {
@@ -160,7 +159,7 @@ struct NetworkMonitorView: View {
 
     // MARK: - Body
 
-    var body: some View {
+    package var body: some View {
         Group {
             if store.networkEntries.isEmpty {
                 EmptyStateView(
@@ -222,31 +221,6 @@ struct NetworkMonitorView: View {
         }
         .searchable(text: $searchText, prompt: "URL, method, status, host...")
         .toolbar {
-            if !isReadOnly {
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        NetworkRulesView(store: store)
-                            .navigationTitle("Rules")
-                            .navigationBarTitleDisplayMode(.inline)
-                    } label: {
-                        Image(systemName: rulesCount > 0 ? "bolt.circle.fill" : "bolt.circle")
-                            .font(PryTheme.Typography.body)
-                            .foregroundStyle(rulesCount > 0 ? PryTheme.Colors.warning : PryTheme.Colors.textSecondary)
-                    }
-                }
-            }
-            if FeatureGate.isAvailable(.sessionExport) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showExportSheet = true
-                    } label: {
-                        Image(systemName: "square.and.arrow.up")
-                            .font(PryTheme.Typography.body)
-                            .foregroundStyle(PryTheme.Colors.textSecondary)
-                    }
-                    .disabled(filteredEntries.isEmpty)
-                }
-            }
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     showFilterSheet = true
@@ -274,12 +248,6 @@ struct NetworkMonitorView: View {
         }
         .sheet(isPresented: $showFilterSheet) {
             filterSheet
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
-        }
-        .sheet(isPresented: $showExportSheet) {
-            exportSheet
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(PryTheme.Colors.background)
@@ -424,85 +392,6 @@ struct NetworkMonitorView: View {
             .foregroundStyle(PryTheme.Colors.textTertiary)
     }
 
-    // MARK: - Export Sheet
-
-    private var exportSheet: some View {
-        VStack(spacing: 0) {
-            SheetHeader(
-                title: "Export",
-                trailingAction: .close { showExportSheet = false }
-            )
-
-            ScrollView {
-                VStack(spacing: PryTheme.Spacing.md) {
-                    Text("\(filteredEntries.count) requests")
-                        .font(PryTheme.Typography.detail)
-                        .foregroundStyle(PryTheme.Colors.textTertiary)
-                        .padding(.top, PryTheme.Spacing.md)
-
-                    exportShareLink(
-                        icon: "shippingbox",
-                        title: "Postman Collection",
-                        detail: "Import directly into Postman",
-                        color: PryTheme.Colors.warning,
-                        content: SessionExporter.postmanCollection(entries: filteredEntries)
-                    )
-
-                    exportShareLink(
-                        icon: "terminal",
-                        title: "cURL Commands",
-                        detail: "All requests as cURL",
-                        color: PryTheme.Colors.success,
-                        content: SessionExporter.curlCollection(entries: filteredEntries)
-                    )
-
-                    exportShareLink(
-                        icon: "doc.text",
-                        title: "HAR Archive",
-                        detail: "HTTP Archive format (Chrome DevTools)",
-                        color: PryTheme.Colors.accent,
-                        content: SessionExporter.harArchive(entries: filteredEntries)
-                    )
-                }
-                .padding(.horizontal, PryTheme.Spacing.lg)
-                .padding(.bottom, PryTheme.Spacing.xl)
-            }
-        }
-        .pryBackground()
-    }
-
-    private func exportShareLink(icon: String, title: String, detail: String, color: Color, content: String) -> some View {
-        ShareLink(item: content) {
-            HStack(spacing: PryTheme.Spacing.md) {
-                Image(systemName: icon)
-                    .font(PryTheme.Typography.body)
-                    .foregroundStyle(color)
-                    .frame(width: PryTheme.Size.iconLarge, height: PryTheme.Size.iconLarge)
-                    .background(color.opacity(PryTheme.Opacity.badge))
-                    .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xxs) {
-                    Text(title)
-                        .font(PryTheme.Typography.body)
-                        .fontWeight(.medium)
-                        .foregroundStyle(PryTheme.Colors.textPrimary)
-
-                    Text(detail)
-                        .font(PryTheme.Typography.detail)
-                        .foregroundStyle(PryTheme.Colors.textTertiary)
-                }
-
-                Spacer()
-
-                Image(systemName: "square.and.arrow.up")
-                    .font(PryTheme.Typography.body)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-            }
-            .padding(PryTheme.Spacing.md)
-            .background(PryTheme.Colors.surface)
-            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-        }
-    }
 }
 
 // MARK: - Previews

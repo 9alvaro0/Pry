@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Dedicated view for selecting network condition presets.
 struct NetworkThrottleView: View {
-    @Bindable var store: PryStore
+    @Bindable var store: PryProStore
 
     var body: some View {
         List {

@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Centralized view showing all active network rules (mocks + breakpoints).
 struct NetworkRulesView: View {
-    @Bindable var store: PryStore
+    @Bindable var store: PryProStore
 
     var body: some View {
         List {
@@ -163,7 +163,7 @@ struct NetworkRulesView: View {
 #if DEBUG
 #Preview("Rules - Empty") {
     NavigationStack {
-        NetworkRulesView(store: PryStore())
+        NetworkRulesView(store: PryProStore())
             .navigationTitle("Rules")
             .navigationBarTitleDisplayMode(.inline)
     }

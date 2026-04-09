@@ -4,7 +4,7 @@ import SwiftUI
 /// URL, method, and name are derived from the request automatically.
 /// The user only chooses when to pause (request, response, or both).
 struct BreakpointRuleEditor: View {
-    @Bindable var store: PryStore
+    @Bindable var store: PryProStore
     let entry: NetworkEntry
 
     @Environment(\.dismiss) private var dismiss

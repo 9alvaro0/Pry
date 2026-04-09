@@ -1,8 +1,12 @@
 import SwiftUI
 import UIKit
 
-struct ConsoleMonitorView: View {
-    @Bindable var store: PryStore
+package struct ConsoleMonitorView: View {
+    @Bindable package var store: PryStore
+
+    package init(store: PryStore) {
+        self.store = store
+    }
 
     @State private var selectedLogType: LogType?
     @State private var searchText: String = ""
@@ -37,7 +41,7 @@ struct ConsoleMonitorView: View {
         return counts
     }
 
-    var body: some View {
+    package var body: some View {
         Group {
             if store.logEntries.isEmpty {
                 EmptyStateView(

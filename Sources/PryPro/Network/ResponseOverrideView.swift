@@ -4,7 +4,7 @@ import SwiftUI
 /// Save creates a mock rule and enables it automatically.
 struct ResponseOverrideView: View {
     let entry: NetworkEntry
-    @Environment(\.pryStore) private var store
+    @Environment(\.pryProStore) private var proStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var statusCode: String
@@ -14,7 +14,7 @@ struct ResponseOverrideView: View {
 
     /// Whether this entry already has an active override.
     private var existingRule: MockRule? {
-        store.mockRules.first { $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod }
+        proStore?.mockRules.first { $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod }
     }
 
     init(entry: NetworkEntry) {
@@ -91,7 +91,7 @@ struct ResponseOverrideView: View {
                     // Remove override (if exists)
                     if let rule = existingRule {
                         Button(role: .destructive) {
-                            store.removeMockRule(rule.id)
+                            proStore?.removeMockRule(rule.id)
                             dismiss()
                         } label: {
                             HStack {
@@ -195,7 +195,7 @@ struct ResponseOverrideView: View {
 
         // Remove existing rule for same path+method
         if let existing = existingRule {
-            store.removeMockRule(existing.id)
+            proStore?.removeMockRule(existing.id)
         }
 
         let rule = MockRule(
@@ -208,7 +208,7 @@ struct ResponseOverrideView: View {
             delay: delay
         )
 
-        store.addMockRule(rule)
+        proStore?.addMockRule(rule)
 
         withAnimation { saved = true }
         Task {

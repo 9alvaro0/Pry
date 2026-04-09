@@ -23,10 +23,6 @@ extension PryStore {
         store.addNetworkEntry(.mockGraphQLMutation)
         store.addNetworkEntry(.mockGraphQLError)
 
-        // Mock rules
-        store.addMockRule(.mockUsersSuccess)
-        store.addMockRule(.mockCartError)
-
         // Console: one of each type
         store.addLogEntry(.mockInfo)
         store.addLogEntry(.mockSuccess)
