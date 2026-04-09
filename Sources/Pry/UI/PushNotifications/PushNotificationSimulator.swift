@@ -310,6 +310,7 @@ struct PushNotificationSimulatorView: View {
         if !category.isEmpty { content.categoryIdentifier = category }
         if !thread.isEmpty { content.threadIdentifier = thread }
         content.userInfo = ["pry_simulated": true]
+        content.interruptionLevel = .timeSensitive
 
         scheduleAndLog(content: content, extraUserInfo: [:])
     }
@@ -340,6 +341,7 @@ struct PushNotificationSimulatorView: View {
 
         allUserInfo["pry_simulated"] = true
         content.userInfo = allUserInfo
+        content.interruptionLevel = .timeSensitive
 
         let customKeys = json.filter { $0.key != "aps" }
         scheduleAndLog(content: content, extraUserInfo: customKeys)
