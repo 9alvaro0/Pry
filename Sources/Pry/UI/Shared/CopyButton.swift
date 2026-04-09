@@ -6,19 +6,19 @@ import UIKit
 /// Two styles:
 /// - `.iconOnly` (default) — just the icon, 36x36 tap target, for toolbars/headers
 /// - `.labeled` — icon + text, for inline use
-struct CopyButtonView: View {
+@_spi(PryPro) public struct CopyButtonView: View {
 
-    enum Style {
+    @_spi(PryPro) public enum Style {
         case iconOnly
         case labeled(String, copiedLabel: String)
     }
 
-    let valueToCopy: String
-    var style: Style = .iconOnly
+    @_spi(PryPro) public let valueToCopy: String
+    @_spi(PryPro) public var style: Style = .iconOnly
 
     @State private var isCopied = false
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         Button {
             Task { await copy() }
         } label: {

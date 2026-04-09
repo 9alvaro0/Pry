@@ -4,7 +4,7 @@ import SwiftUI
 
 extension View {
 
-    /// Attaches the Pry to this view.
+    /// Attaches the Pry inspector overlay to this view.
     ///
     /// This single modifier does everything:
     /// - Registers the URLProtocol interceptor
@@ -24,7 +24,9 @@ extension View {
         store: PryStore,
         trigger: PryTrigger = .default
     ) -> some View {
-        modifier(PryOverlayModifier(store: store, trigger: trigger))
+        modifier(PryOverlayModifier(store: store, trigger: trigger) { store in
+            PryRootView(store: store)
+        })
     }
 
     /// Injects the inspector store into the environment without any UI.
@@ -61,13 +63,27 @@ struct PryEnvironmentModifier: ViewModifier {
 
 // MARK: - Overlay Modifier (includes environment)
 
-struct PryOverlayModifier: ViewModifier {
-    @Bindable var store: PryStore
-    let trigger: PryTrigger
+/// Generic overlay modifier. Parameterized by the root view type so PryPro
+/// can present its own root while reusing the FAB, shake and lifecycle
+/// plumbing.
+@_spi(PryPro) public struct PryOverlayModifier<Root: View>: ViewModifier {
+    @Bindable @_spi(PryPro) public var store: PryStore
+    @_spi(PryPro) public let trigger: PryTrigger
+    @_spi(PryPro) public let rootViewBuilder: (PryStore) -> Root
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
+
+    @_spi(PryPro) public init(
+        store: PryStore,
+        trigger: PryTrigger,
+        @ViewBuilder rootViewBuilder: @escaping (PryStore) -> Root
+    ) {
+        self.store = store
+        self.trigger = trigger
+        self.rootViewBuilder = rootViewBuilder
+    }
 
     private var activeTrigger: PryTrigger {
         store.triggerOverride ?? trigger
@@ -79,7 +95,7 @@ struct PryOverlayModifier: ViewModifier {
         }.count
     }
 
-    func body(content: Content) -> some View {
+    @_spi(PryPro) public func body(content: Content) -> some View {
         content
             .environment(\.pryStore, store)
             .onOpenURL { url in
@@ -114,19 +130,8 @@ struct PryOverlayModifier: ViewModifier {
                 isPresented = true
             }
             .sheet(isPresented: $isPresented) {
-                PryRootView(store: store)
+                rootViewBuilder(store)
                     .environment(\.pryStore, store)
-            }
-            .sheet(item: Binding(
-                get: { BreakpointManager.shared.state.pausedRequest },
-                set: { if $0 == nil { BreakpointManager.shared.cancelRequest() } }
-            )) { paused in
-                BreakpointEditorView(
-                    paused: paused,
-                    onSend: { BreakpointManager.shared.resumeRequest() },
-                    onCancel: { BreakpointManager.shared.cancelRequest() }
-                )
-                .interactiveDismissDisabled()
             }
     }
 
@@ -177,4 +182,3 @@ struct PryOverlayModifier: ViewModifier {
             }
     }
 }
-

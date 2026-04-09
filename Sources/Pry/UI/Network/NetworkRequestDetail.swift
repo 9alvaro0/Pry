@@ -1,83 +1,32 @@
 import SwiftUI
+import UIKit
 
-struct NetworkRequestDetailView: View {
-    let entry: NetworkEntry
+@_spi(PryPro) public struct NetworkRequestDetailView: View {
+    @_spi(PryPro) public let entry: NetworkEntry
 
     @Environment(\.pryStore) private var store
-    @Environment(\.pryReadOnly) private var isReadOnly
     @Environment(\.dismiss) private var dismiss
     @State private var showCopied = false
-    @State private var showMockEditor = false
-    @State private var showMockSaved = false
-    @State private var showMockRemoved = false
-    @State private var hadMockBeforeEdit = false
-    @State private var showReplayed = false
-    @State private var isReplaying = false
-    @State private var showDiffPicker = false
-    @State private var diffTarget: NetworkEntry?
-    @State private var showBreakpointCreator = false
-    @State private var showBreakpointSaved = false
 
-    var body: some View {
+    @_spi(PryPro) public init(entry: NetworkEntry) {
+        self.entry = entry
+    }
+
+    @_spi(PryPro) public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                // Replay banner
-                if entry.isReplay {
-                    HStack(spacing: PryTheme.Spacing.sm) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(PryTheme.Typography.body)
-                        Text("Replayed Request")
-                            .font(PryTheme.Typography.body)
-                            .fontWeight(.semibold)
-                        Spacer()
-                    }
-                    .foregroundStyle(PryTheme.Colors.accent)
-                    .padding(.horizontal, PryTheme.Spacing.lg)
-                    .padding(.vertical, PryTheme.Spacing.sm)
-                    .background(PryTheme.Colors.accent.opacity(PryTheme.Opacity.tint))
-                }
-
-                // Mocked banner (tappable → opens editor)
-                if entry.isMocked {
-                    Button { hadMockBeforeEdit = hasMockActive; showMockEditor = true } label: {
-                        HStack(spacing: PryTheme.Spacing.sm) {
-                            Image(systemName: "theatermasks.fill")
-                                .font(PryTheme.Typography.body)
-                            Text("Mocked Response")
-                                .font(PryTheme.Typography.body)
-                                .fontWeight(.semibold)
-                            Spacer()
-                            Text("Edit")
-                                .font(PryTheme.Typography.detail)
-                            Image(systemName: "chevron.right")
-                                .font(PryTheme.Typography.detail)
-                        }
-                        .foregroundStyle(PryTheme.Colors.syntaxBool)
-                        .padding(.horizontal, PryTheme.Spacing.lg)
-                        .padding(.vertical, PryTheme.Spacing.sm)
-                        .background(PryTheme.Colors.syntaxBool.opacity(PryTheme.Opacity.tint))
-                    }
-                }
-
                 summaryHeader
                 Divider().overlay(PryTheme.Colors.border)
 
-                // GraphQL
                 graphQLSection
-
                 timingSection
-
                 redirectChainSection
-
-                // Auth / JWT
                 jwtSection
 
-                // Request
                 requestHeadersSection
                 requestBodySection
                 queryParamsSection
 
-                // Divider between Request and Response
                 if entry.responseStatusCode != nil || entry.responseError != nil {
                     HStack(spacing: PryTheme.Spacing.sm) {
                         VStack { Divider().overlay(PryTheme.Colors.border) }
@@ -91,7 +40,6 @@ struct NetworkRequestDetailView: View {
                     .padding(.vertical, PryTheme.Spacing.sm)
                 }
 
-                // Response
                 responseHeadersSection
                 responseBodySection
                 errorSection
@@ -101,69 +49,18 @@ struct NetworkRequestDetailView: View {
         .pryBackground()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
-        .sheet(isPresented: $showMockEditor, onDismiss: {
-            let hasMockNow = store.mockRules.contains {
-                $0.urlPattern == entry.requestURL.extractPath() && $0.method == entry.requestMethod && $0.isEnabled
-            }
-            if hasMockNow && !hadMockBeforeEdit {
-                showToast($showMockSaved)
-            } else if !hasMockNow && hadMockBeforeEdit {
-                showToast($showMockRemoved)
-            }
-        }) {
-            ResponseOverrideView(entry: entry)
-                .environment(\.pryStore, store)
-        }
-        .sheet(isPresented: $showDiffPicker) {
-            DiffPickerSheet(entries: store.networkEntries, currentEntry: entry) { selected in
-                diffTarget = selected
-            }
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
-            .presentationBackground(PryTheme.Colors.background)
-        }
-        .sheet(item: $diffTarget) { target in
-            RequestDiffView(left: entry, right: target)
-        }
-        .sheet(isPresented: $showBreakpointCreator, onDismiss: {
-            if hasBreakpointActive && !showBreakpointSaved {
-                showToast($showBreakpointSaved)
-            }
-        }) {
-            BreakpointRuleEditor(store: store, entry: entry)
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
-        }
         .overlay(alignment: .top) {
             if showCopied {
                 copiedToast
             }
-            if showMockSaved {
-                mockSavedToast
-            }
-            if showMockRemoved {
-                mockRemovedToast
-            }
-            if showReplayed {
-                replayedToast
-            }
-            if showBreakpointSaved {
-                breakpointSavedToast
-            }
         }
         .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showCopied)
-        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showMockSaved)
-        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showMockRemoved)
-        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showBreakpointSaved)
-        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showReplayed)
     }
 
     // MARK: - Summary Header
 
     private var summaryHeader: some View {
         VStack(alignment: .leading, spacing: PryTheme.Spacing.md) {
-            // Status + Duration + Size
             HStack(spacing: PryTheme.Spacing.sm) {
                 if let statusCode = entry.responseStatusCode {
                     HStack(spacing: PryTheme.Spacing.xs) {
@@ -204,14 +101,12 @@ struct NetworkRequestDetailView: View {
                 }
             }
 
-            // Full URL (copyable)
             Text(entry.requestURL)
                 .font(PryTheme.Typography.codeSmall)
                 .foregroundStyle(PryTheme.Colors.textSecondary)
                 .textSelection(.enabled)
                 .lineLimit(3)
 
-            // Timestamp
             Text(entry.timestamp.formatFullTimestamp())
                 .font(PryTheme.Typography.detail)
                 .foregroundStyle(PryTheme.Colors.textTertiary)
@@ -226,7 +121,6 @@ struct NetworkRequestDetailView: View {
         if let gql = entry.graphQLInfo {
             DetailSectionView(title: "GraphQL", collapsible: false) {
                 VStack(alignment: .leading, spacing: PryTheme.Spacing.md) {
-                    // Operation info
                     HStack(spacing: PryTheme.Spacing.sm) {
                         Text(gql.operationType.rawValue)
                             .font(PryTheme.Typography.code)
@@ -250,7 +144,6 @@ struct NetworkRequestDetailView: View {
                         }
                     }
 
-                    // GraphQL errors
                     if gql.hasErrors {
                         VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
                             ForEach(Array(gql.errors.enumerated()), id: \.offset) { _, error in
@@ -278,10 +171,8 @@ struct NetworkRequestDetailView: View {
                         .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
                     }
 
-                    // Query
                     CodeBlockView(text: gql.query, language: .text)
 
-                    // Variables
                     if let variables = gql.variables {
                         VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
                             Text("VARIABLES")
@@ -301,7 +192,6 @@ struct NetworkRequestDetailView: View {
 
     @ViewBuilder
     private var jwtSection: some View {
-        // Check Authorization header or auth token for JWT
         let token = entry.authToken
             ?? entry.requestHeaders["Authorization"]
         if let token, JWTDecoder.decode(token) != nil {
@@ -352,7 +242,6 @@ struct NetworkRequestDetailView: View {
                         redirectHopRow(statusCode: hop.statusCode, url: hop.fromURL)
                         redirectConnector
                         if index == entry.redirects.count - 1 {
-                            // Final destination — use the actual response status
                             redirectHopRow(
                                 statusCode: entry.responseStatusCode ?? 0,
                                 url: hop.toURL,
@@ -386,7 +275,6 @@ struct NetworkRequestDetailView: View {
 
     private var redirectConnector: some View {
         HStack(spacing: 0) {
-            // Roughly centered under the status badge
             Rectangle()
                 .fill(PryTheme.Colors.border)
                 .frame(width: 1, height: 14)
@@ -499,26 +387,6 @@ struct NetworkRequestDetailView: View {
         }
     }
 
-    private var hasMockActive: Bool {
-        entry.isMocked ||
-        store.mockRules.contains {
-            $0.urlPattern == entry.requestURL.extractPath() &&
-            $0.method == entry.requestMethod &&
-            $0.isEnabled
-        }
-    }
-
-    private var hasActiveRules: Bool {
-        hasMockActive || hasBreakpointActive
-    }
-
-    private var hasBreakpointActive: Bool {
-        store.breakpointRules.contains {
-            $0.isEnabled &&
-            (entry.requestURL.localizedCaseInsensitiveContains($0.urlPattern))
-        }
-    }
-
     // MARK: - Toolbar
 
     @ToolbarContentBuilder
@@ -532,70 +400,26 @@ struct NetworkRequestDetailView: View {
         }
         ToolbarItem(placement: .topBarTrailing) {
             Menu {
-                // Intercept section (mock + breakpoint)
-                if !isReadOnly {
-                    Section("Intercept") {
-                        Button {
-                            hadMockBeforeEdit = hasMockActive
-                            showMockEditor = true
-                        } label: {
-                            Label(
-                                proLabel(hasMockActive ? "Edit Mock" : "Mock Response", feature: .mockResponses),
-                                systemImage: hasMockActive ? "theatermasks.fill" : "theatermasks"
-                            )
-                        }
-                        .disabled(!FeatureGate.isAvailable(.mockResponses))
-
-                        Button {
-                            showBreakpointCreator = true
-                        } label: {
-                            Label(
-                                proLabel(hasBreakpointActive ? "Breakpoint Active" : "Add Breakpoint", feature: .breakpoints),
-                                systemImage: hasBreakpointActive ? "pause.circle.fill" : "pause.circle"
-                            )
-                        }
-                        .disabled(!FeatureGate.isAvailable(.breakpoints))
-                    }
-
-                    Section {
-                        Button {
-                            replayRequest()
-                        } label: {
-                            Label(proLabel("Replay", feature: .requestReplay), systemImage: "arrow.clockwise")
-                        }
-                        .disabled(isReplaying || !FeatureGate.isAvailable(.requestReplay))
-
-                        Button {
-                            store.togglePin(entry.id)
-                        } label: {
-                            Label(
-                                store.isPinned(entry.id) ? "Unpin" : "Pin",
-                                systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
-                            )
-                        }
-                    }
+                Button {
+                    store.togglePin(entry.id)
+                } label: {
+                    Label(
+                        store.isPinned(entry.id) ? "Unpin" : "Pin",
+                        systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
+                    )
                 }
 
-                Section {
-                    Button {
-                        showDiffPicker = true
-                    } label: {
-                        Label(proLabel("Compare", feature: .requestDiff), systemImage: "arrow.left.arrow.right")
-                    }
-                    .disabled(!FeatureGate.isAvailable(.requestDiff))
+                ShareLink(item: generateShareText()) {
+                    Label("Share", systemImage: "square.and.arrow.up")
+                }
 
-                    ShareLink(item: generateShareText()) {
-                        Label("Share", systemImage: "square.and.arrow.up")
-                    }
-
-                    Button { copyToClipboard(generateCurlCommand()) } label: {
-                        Label("Copy cURL", systemImage: "terminal.fill")
-                    }
+                Button { copyToClipboard(generateCurlCommand()) } label: {
+                    Label("Copy cURL", systemImage: "terminal.fill")
                 }
             } label: {
-                Image(systemName: hasActiveRules ? "ellipsis.circle.fill" : "ellipsis.circle")
+                Image(systemName: "ellipsis.circle")
                     .font(PryTheme.Typography.body)
-                    .foregroundStyle(hasActiveRules ? PryTheme.Colors.warning : PryTheme.Colors.textSecondary)
+                    .foregroundStyle(PryTheme.Colors.textSecondary)
             }
         }
     }
@@ -604,22 +428,6 @@ struct NetworkRequestDetailView: View {
 
     private var copiedToast: some View {
         toastView(icon: "checkmark", text: "Copied", color: PryTheme.Colors.success)
-    }
-
-    private var mockSavedToast: some View {
-        toastView(icon: "theatermasks.fill", text: "Mock saved", color: PryTheme.Colors.syntaxBool)
-    }
-
-    private var mockRemovedToast: some View {
-        toastView(icon: "theatermasks", text: "Mock removed", color: PryTheme.Colors.error)
-    }
-
-    private var replayedToast: some View {
-        toastView(icon: "arrow.clockwise", text: "Request replayed", color: PryTheme.Colors.accent)
-    }
-
-    private var breakpointSavedToast: some View {
-        toastView(icon: "pause.circle.fill", text: "Breakpoint set", color: PryTheme.Colors.warning)
     }
 
     private func toastView(icon: String, text: String, color: Color) -> some View {
@@ -641,42 +449,6 @@ struct NetworkRequestDetailView: View {
 
     // MARK: - Actions
 
-    private func replayRequest() {
-        guard let url = URL(string: entry.requestURL) else { return }
-        isReplaying = true
-
-        var request = URLRequest(url: url)
-        request.httpMethod = entry.requestMethod
-
-        // Restore headers (skip internal/transport headers)
-        let skipHeaders: Set<String> = ["Host", "Content-Length", "Accept-Encoding"]
-        for (key, value) in entry.requestHeaders where !skipHeaders.contains(key) {
-            request.setValue(value, forHTTPHeaderField: key)
-        }
-
-        // Tag as replay so the logger can mark the new entry
-        request.setValue("true", forHTTPHeaderField: "X-Pry-Replay")
-
-        // Restore body (skip placeholder bodies that can't be reconstructed)
-        if let body = entry.requestBody, !body.isEmpty, !body.hasPrefix("[") {
-            request.httpBody = body.data(using: .utf8)
-        }
-
-        // Fire through URLSession.shared so the interceptor captures it as a new entry
-        Task {
-            _ = try? await URLSession.shared.data(for: request)
-            await MainActor.run {
-                isReplaying = false
-                showReplayed = true
-            }
-            try? await Task.sleep(for: PryTheme.Animation.replayDismiss)
-            await MainActor.run {
-                showReplayed = false
-                dismiss()
-            }
-        }
-    }
-
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value
         showToast($showCopied, duration: PryTheme.Animation.toastDismiss)
@@ -685,7 +457,6 @@ struct NetworkRequestDetailView: View {
     private func generateShareText() -> String {
         var lines: [String] = []
 
-        // Summary line: METHOD /path -> STATUS (duration)
         let path = entry.requestURL.extractPath()
         var summary = "\(entry.requestMethod) \(path)"
         if let statusCode = entry.responseStatusCode {
@@ -701,7 +472,6 @@ struct NetworkRequestDetailView: View {
         lines.append(summary)
         lines.append(entry.requestURL)
 
-        // Request headers
         let reqHeaders = displayHeaders
         if !reqHeaders.isEmpty {
             lines.append("")
@@ -711,14 +481,12 @@ struct NetworkRequestDetailView: View {
             }
         }
 
-        // Request body
         if let body = entry.requestBody, !body.isEmpty {
             lines.append("")
             lines.append("\u{2500}\u{2500} Request Body \u{2500}\u{2500}")
             lines.append(body)
         }
 
-        // Response headers
         if let resHeaders = entry.responseHeaders, !resHeaders.isEmpty {
             lines.append("")
             lines.append("\u{2500}\u{2500} Response Headers \u{2500}\u{2500}")
@@ -727,14 +495,12 @@ struct NetworkRequestDetailView: View {
             }
         }
 
-        // Response body
         if let body = entry.responseBody, !body.isEmpty {
             lines.append("")
             lines.append("\u{2500}\u{2500} Response Body \u{2500}\u{2500}")
             lines.append(body)
         }
 
-        // Error
         if let error = entry.responseError, !error.isEmpty {
             lines.append("")
             lines.append("\u{2500}\u{2500} Error \u{2500}\u{2500}")
@@ -777,10 +543,6 @@ struct NetworkRequestDetailView: View {
         return components.joined(separator: " \\\n  ")
     }
 
-    private func proLabel(_ text: String, feature: FeatureGate.Feature) -> String {
-        FeatureGate.isAvailable(feature) ? text : "\(text) (Pro)"
-    }
-
     private func statusLabel(_ text: String, color: Color) -> some View {
         Text(text)
             .font(PryTheme.Typography.codeSmall)
@@ -804,7 +566,6 @@ struct NetworkRequestDetailView: View {
         value.replacingOccurrences(of: "'", with: "'\"'\"'")
     }
 
-    /// Filters out internal/transport headers from request headers.
     private static let internalHeaders: Set<String> = ["Content-Length", "Accept-Encoding", "X-Pry-Replay"]
     private static let curlExtraSkip: Set<String> = ["Host", "User-Agent"]
 
@@ -848,51 +609,9 @@ struct NetworkRequestDetailView: View {
     }
 }
 
-#Preview("Detail - PATCH") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockPatch)
-    }
-}
-
-#Preview("Detail - Form POST") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockFormPost)
-    }
-}
-
 #Preview("Detail - Redirect + Timing") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockRedirect)
-    }
-}
-
-#Preview("Detail - Timing Breakdown") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockSuccess)
-    }
-}
-
-#Preview("Detail - Replay") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockReplay)
-    }
-}
-
-#Preview("Detail - GraphQL Query") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockGraphQLQuery)
-    }
-}
-
-#Preview("Detail - GraphQL Mutation") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockGraphQLMutation)
-    }
-}
-
-#Preview("Detail - GraphQL Errors") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockGraphQLError)
     }
 }
 #endif

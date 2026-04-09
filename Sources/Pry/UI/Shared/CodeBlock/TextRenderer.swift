@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// Renders plain text and HTTP content with expand/collapse and search highlight support.
-struct TextRenderer: View {
-    let text: String
-    var language: ContentLanguage = .text
-    var searchQuery: String = ""
+@_spi(PryPro) public struct TextRenderer: View {
+    @_spi(PryPro) public let text: String
+    @_spi(PryPro) public var language: ContentLanguage = .text
+    @_spi(PryPro) public var searchQuery: String = ""
 
     @State private var isExpanded = false
 
@@ -20,7 +20,7 @@ struct TextRenderer: View {
 
     private var isSearching: Bool { !searchQuery.isEmpty }
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
             if language == .http {
                 httpContent

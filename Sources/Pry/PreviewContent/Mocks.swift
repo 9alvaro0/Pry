@@ -5,7 +5,7 @@ import Foundation
 
 extension NetworkEntry {
 
-    static var mockSuccess: NetworkEntry {
+    @_spi(PryPro) public static var mockSuccess: NetworkEntry {
         NetworkEntry(
             timestamp: Date(),
             type: .network,
@@ -60,7 +60,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockError: NetworkEntry {
+    @_spi(PryPro) public static var mockError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-60),
             type: .network,
@@ -92,7 +92,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockServerError: NetworkEntry {
+    @_spi(PryPro) public static var mockServerError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-45),
             type: .network,
@@ -129,7 +129,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockNotification: NetworkEntry {
+    @_spi(PryPro) public static var mockNotification: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-120),
             type: .network,
@@ -160,7 +160,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockNoAuth: NetworkEntry {
+    @_spi(PryPro) public static var mockNoAuth: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-30),
             type: .network,
@@ -189,7 +189,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockPending: NetworkEntry {
+    @_spi(PryPro) public static var mockPending: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-2),
             type: .network,
@@ -214,7 +214,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockDelete: NetworkEntry {
+    @_spi(PryPro) public static var mockDelete: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-90),
             type: .network,
@@ -239,7 +239,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockPatch: NetworkEntry {
+    @_spi(PryPro) public static var mockPatch: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-15),
             type: .network,
@@ -280,7 +280,7 @@ extension NetworkEntry {
 
 extension LogEntry {
 
-    static var mockInfo: LogEntry {
+    @_spi(PryPro) public static var mockInfo: LogEntry {
         LogEntry(
             timestamp: Date(),
             type: .info,
@@ -292,7 +292,7 @@ extension LogEntry {
         )
     }
 
-    static var mockSuccess: LogEntry {
+    @_spi(PryPro) public static var mockSuccess: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-5),
             type: .success,
@@ -304,7 +304,7 @@ extension LogEntry {
         )
     }
 
-    static var mockWarning: LogEntry {
+    @_spi(PryPro) public static var mockWarning: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-10),
             type: .warning,
@@ -316,7 +316,7 @@ extension LogEntry {
         )
     }
 
-    static var mockError: LogEntry {
+    @_spi(PryPro) public static var mockError: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-15),
             type: .error,
@@ -328,7 +328,7 @@ extension LogEntry {
         )
     }
 
-    static var mockDebug: LogEntry {
+    @_spi(PryPro) public static var mockDebug: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-20),
             type: .debug,
@@ -340,7 +340,7 @@ extension LogEntry {
         )
     }
 
-    static var mockNetwork: LogEntry {
+    @_spi(PryPro) public static var mockNetwork: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-3),
             type: .network,
@@ -357,7 +357,7 @@ extension LogEntry {
 
 extension DeeplinkEntry {
 
-    static var mockCustomScheme: DeeplinkEntry {
+    @_spi(PryPro) public static var mockCustomScheme: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date(),
             url: "myapp://rooms/open?roomId=42&floor=3",
@@ -373,7 +373,7 @@ extension DeeplinkEntry {
         )
     }
 
-    static var mockUniversalLink: DeeplinkEntry {
+    @_spi(PryPro) public static var mockUniversalLink: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date().addingTimeInterval(-30),
             url: "https://app.example.com/booking/confirm/789?ref=push&source=notification",
@@ -389,7 +389,7 @@ extension DeeplinkEntry {
         )
     }
 
-    static var mockWidgetLink: DeeplinkEntry {
+    @_spi(PryPro) public static var mockWidgetLink: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date().addingTimeInterval(-60),
             url: "myapp://widget/quick-action?action=newTask",
@@ -541,7 +541,7 @@ enum MockForm {
 
 extension NetworkEntry {
 
-    static var mockRedirect: NetworkEntry {
+    @_spi(PryPro) public static var mockRedirect: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-7),
             type: .network,
@@ -589,7 +589,7 @@ extension NetworkEntry {
         return entry
     }
 
-    static var mockFormPost: NetworkEntry {
+    @_spi(PryPro) public static var mockFormPost: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-10),
             type: .network,
@@ -625,7 +625,7 @@ extension NetworkEntry {
 
 extension PushNotificationEntry {
 
-    static var mockPromo: PushNotificationEntry {
+    @_spi(PryPro) public static var mockPromo: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date(),
             title: "Flash Sale!",
@@ -656,7 +656,7 @@ extension PushNotificationEntry {
         )
     }
 
-    static var mockChat: PushNotificationEntry {
+    @_spi(PryPro) public static var mockChat: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date().addingTimeInterval(-120),
             title: "New Message",
@@ -684,7 +684,7 @@ extension PushNotificationEntry {
         )
     }
 
-    static var mockSilent: PushNotificationEntry {
+    @_spi(PryPro) public static var mockSilent: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date().addingTimeInterval(-300),
             title: nil,
@@ -707,40 +707,11 @@ extension PushNotificationEntry {
     }
 }
 
-// MARK: - MockRule Mocks
-
-extension MockRule {
-
-    static var mockUsersSuccess: MockRule {
-        MockRule(
-            name: "Users - Success",
-            urlPattern: "/api/users",
-            method: "GET",
-            statusCode: 200,
-            responseBody: "{\"users\": [{\"id\": 1, \"name\": \"John\"}]}",
-            responseHeaders: ["Content-Type": "application/json"],
-            delay: 0
-        )
-    }
-
-    static var mockCartError: MockRule {
-        MockRule(
-            name: "Cart - Server Error",
-            urlPattern: "/api/cart",
-            method: "POST",
-            statusCode: 500,
-            responseBody: "{\"error\": \"Internal server error\"}",
-            responseHeaders: ["Content-Type": "application/json"],
-            delay: 0.5
-        )
-    }
-}
-
 // MARK: - Mocked NetworkEntry
 
 extension NetworkEntry {
 
-    static var mockMocked: NetworkEntry {
+    @_spi(PryPro) public static var mockMocked: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-5),
             type: .network,
@@ -772,7 +743,7 @@ extension NetworkEntry {
 
 extension NetworkEntry {
 
-    static var mockReplay: NetworkEntry {
+    @_spi(PryPro) public static var mockReplay: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-2),
             type: .network,
@@ -804,7 +775,7 @@ extension NetworkEntry {
 
 extension NetworkEntry {
 
-    static var mockGraphQLQuery: NetworkEntry {
+    @_spi(PryPro) public static var mockGraphQLQuery: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-8),
             type: .network,
@@ -829,7 +800,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockGraphQLMutation: NetworkEntry {
+    @_spi(PryPro) public static var mockGraphQLMutation: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-3),
             type: .network,
@@ -854,7 +825,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockGraphQLError: NetworkEntry {
+    @_spi(PryPro) public static var mockGraphQLError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-1),
             type: .network,

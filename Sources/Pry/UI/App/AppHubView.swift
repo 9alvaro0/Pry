@@ -2,13 +2,20 @@ import SwiftUI
 import UIKit
 
 /// Hub view with cards differentiated by type: Monitor (live), Storage, Diagnostics, Config.
-struct AppHubView: View {
-    @Bindable var store: PryStore
+///
+/// The generic `Extras` parameter lets PryPro inject additional sections
+/// (Performance, Throttle, Share Session) between Diagnostics and
+/// Settings without duplicating the hub layout.
+@_spi(PryPro) public struct AppHubView<Extras: View>: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
+    @ViewBuilder @_spi(PryPro) public let extras: () -> Extras
 
-    @State private var showFileImporter = false
-    @State private var importedSession: ImportedSessionWrapper?
+    @_spi(PryPro) public init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
+        self.store = store
+        self.extras = extras
+    }
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // MONITOR
@@ -26,9 +33,8 @@ struct AppHubView: View {
                 diagnosticsSection
                     .padding(.bottom, PryTheme.Spacing.xl)
 
-                // TOOLS
-                sectionHeader("Tools")
-                toolsSection
+                // Extra sections injected by PryPro
+                extras()
                     .padding(.bottom, PryTheme.Spacing.xxl)
 
                 // SETTINGS
@@ -151,21 +157,6 @@ struct AppHubView: View {
                 )
             }
 
-            rowDivider
-
-            NavigationLink {
-                PerformanceView()
-                    .navigationTitle("Performance")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                storageRow(
-                    icon: "gauge.high",
-                    title: FeatureGate.isAvailable(.performanceMetrics) ? "Performance" : "Performance (Pro)",
-                    color: FeatureGate.isAvailable(.performanceMetrics) ? PryTheme.Colors.error : PryTheme.Colors.textTertiary,
-                    detail: ""
-                )
-            }
-            .disabled(!FeatureGate.isAvailable(.performanceMetrics))
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
@@ -198,124 +189,6 @@ struct AppHubView: View {
             Image(systemName: "chevron.right")
                 .font(PryTheme.Typography.detail)
                 .foregroundStyle(PryTheme.Colors.textTertiary)
-        }
-        .padding(.horizontal, PryTheme.Spacing.lg)
-        .padding(.vertical, PryTheme.Spacing.md)
-    }
-
-    // MARK: - Tools Section
-
-    private var toolsSection: some View {
-        VStack(spacing: 0) {
-            // Network Conditions
-            NavigationLink {
-                NetworkThrottleView(store: store)
-                    .navigationTitle("Network Conditions")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                toolRow(
-                    icon: store.networkThrottle.icon,
-                    title: "Network Conditions",
-                    color: store.networkThrottle.iconColor,
-                    detail: store.networkThrottle != .none ? store.networkThrottle.rawValue : nil,
-                    showChevron: true,
-                    proFeature: .networkThrottle
-                )
-            }
-            .disabled(!FeatureGate.isAvailable(.networkThrottle))
-
-            rowDivider
-
-            // Export session
-            if FeatureGate.isAvailable(.shareSession), let url = SessionFileManager.export(store: store) {
-                ShareLink(item: url) {
-                    toolRow(
-                        icon: "square.and.arrow.up",
-                        title: "Share Session",
-                        color: PryTheme.Colors.accent,
-                        detail: "\(store.networkEntries.count + store.logEntries.count) entries",
-                        showChevron: false
-                    )
-                }
-            } else {
-                toolRow(
-                    icon: "square.and.arrow.up",
-                    title: "Share Session",
-                    color: PryTheme.Colors.accent,
-                    detail: nil,
-                    showChevron: false,
-                    proFeature: .shareSession
-                )
-            }
-
-            rowDivider
-
-            // Import session
-            Button {
-                showFileImporter = true
-            } label: {
-                toolRow(
-                    icon: "square.and.arrow.down",
-                    title: "Open Session",
-                    color: PryTheme.Colors.warning,
-                    detail: nil,
-                    showChevron: false,
-                    proFeature: .shareSession
-                )
-            }
-            .disabled(!FeatureGate.isAvailable(.shareSession))
-        }
-        .background(PryTheme.Colors.surface)
-        .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.json, .data]) { result in
-            if case .success(let url) = result,
-               let session = SessionFileManager.importSession(from: url) {
-                importedSession = ImportedSessionWrapper(store: session.store, metadata: session.metadata)
-            }
-        }
-        .sheet(item: $importedSession) { wrapper in
-            SessionViewerView(store: wrapper.store, deviceInfo: wrapper.metadata)
-        }
-    }
-
-    private func toolRow(icon: String, title: String, color: Color, detail: String?, showChevron: Bool, proFeature: FeatureGate.Feature? = nil) -> some View {
-        let isLocked = proFeature.map { !FeatureGate.isAvailable($0) } ?? false
-
-        return HStack(spacing: PryTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(PryTheme.Typography.body)
-                .foregroundStyle(isLocked ? PryTheme.Colors.textTertiary : color)
-                .frame(width: PryTheme.Size.iconMedium, height: PryTheme.Size.iconMedium)
-                .background((isLocked ? PryTheme.Colors.textTertiary : color).opacity(PryTheme.Opacity.badge))
-                .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-
-            Text(title)
-                .font(PryTheme.Typography.body)
-                .fontWeight(.medium)
-                .foregroundStyle(isLocked ? PryTheme.Colors.textTertiary : PryTheme.Colors.textPrimary)
-
-            Spacer()
-
-            if isLocked {
-                Text("PRO")
-                    .font(PryTheme.Typography.badgeText)
-                    .foregroundStyle(PryTheme.Colors.accent)
-                    .padding(.horizontal, PryTheme.Spacing.xs)
-                    .padding(.vertical, PryTheme.Spacing.xxs)
-                    .background(PryTheme.Colors.accent.opacity(PryTheme.Opacity.badge))
-                    .clipShape(.capsule)
-            } else if let detail {
-                Text(detail)
-                    .font(PryTheme.Typography.detail)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(color)
-            }
-
-            if showChevron && !isLocked {
-                Image(systemName: "chevron.right")
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-            }
         }
         .padding(.horizontal, PryTheme.Spacing.lg)
         .padding(.vertical, PryTheme.Spacing.md)
@@ -451,12 +324,12 @@ struct AppHubView: View {
     }
 }
 
-// MARK: - Imported Session Wrapper
+// MARK: - Convenience Free Init
 
-private struct ImportedSessionWrapper: Identifiable {
-    let id = UUID()
-    let store: PryStore
-    let metadata: SessionFile.DeviceInfo
+extension AppHubView where Extras == EmptyView {
+    @_spi(PryPro) public init(store: PryStore) {
+        self.init(store: store) { EmptyView() }
+    }
 }
 
 // MARK: - Previews

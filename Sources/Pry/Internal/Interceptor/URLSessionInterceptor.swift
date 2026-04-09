@@ -1,6 +1,14 @@
 import Foundation
 
 /// URLProtocol subclass that transparently intercepts all URLSession traffic.
+///
+/// The interceptor only knows about Free responsibilities: observing
+/// requests, recovering their body, streaming responses back to the caller
+/// and capturing redirect chains. Every Pro behavior — mocks, breakpoints,
+/// throttle — is delegated to closures registered on ``PryInterceptorHooks``
+/// by the PryPro module during `PryPro.install()`. When PryPro is not
+/// linked, the hooks are `nil` and the interceptor behaves as a pure
+/// passthrough logger.
 final class PryURLProtocol: URLProtocol, @unchecked Sendable {
 
     private static var config: PryConfig { PryConfig.shared }
@@ -16,7 +24,6 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
     private var redirectCount = 0
     private var redirects: [RedirectHop] = []
     private var hasResponseBreakpoint = false
-    private var matchedBreakpointRule: BreakpointRule?
 
     private static func sharedSession(delegate: URLSessionDataDelegate) -> URLSession {
         URLSession(
@@ -56,12 +63,11 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
         // Strip internal replay header before forwarding to real server
         mutableRequest.setValue(nil, forHTTPHeaderField: "X-Pry-Replay")
 
-        // Recover the request body from the body stream if needed, then reinject it
-        // as httpBody so every downstream consumer (logger, URLSession, breakpoint
-        // editor, replay) sees the same bytes. URLSession strips httpBody → httpBodyStream
-        // before handing the request to URLProtocol, so reading the stream is the only
-        // way to recover the payload — and we read from the mutable copy to make sure
-        // the stream we consume is the same one that would otherwise be sent.
+        // Recover the request body from the body stream if needed, then reinject
+        // it as httpBody so every downstream consumer (logger, URLSession,
+        // breakpoint editor, replay) sees the same bytes. URLSession strips
+        // httpBody → httpBodyStream before passing the request to URLProtocol,
+        // so reading the stream is the only way to recover the payload.
         let bodyData = Self.extractBody(from: mutableRequest as URLRequest)
         if let bodyData {
             mutableRequest.httpBody = bodyData
@@ -77,27 +83,24 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
             )
         }
 
-        // Check for mock response BEFORE making real request
-        if Self.config.isMockingEnabled, let rule = Self.config.findMatchingMock(for: request) {
-            respondWithMock(rule)
+        // Check for mock response BEFORE making a real request
+        if let mockResponseFor = PryInterceptorHooks.mockResponseFor,
+           let mock = mockResponseFor(request) {
+            respondWithMock(mock)
             return
         }
 
         // Check for request breakpoint BEFORE sending
-        if Self.config.isBreakpointEnabled,
-           let rule = Self.config.findMatchingBreakpoint(for: request),
-           rule.pauseOn == .request || rule.pauseOn == .both {
+        if let pauseRequestIfNeeded = PryInterceptorHooks.pauseRequestIfNeeded,
+           let waiter = pauseRequestIfNeeded(mutableRequest as URLRequest) {
             let capturedRequest = mutableRequest as URLRequest
-            handleBreakpoint(request: capturedRequest, rule: rule)
+            handleRequestBreakpoint(request: capturedRequest, waiter: waiter)
             return
         }
 
         // Check if we need to intercept the response
-        if Self.config.isBreakpointEnabled,
-           let rule = Self.config.findMatchingBreakpoint(for: request),
-           rule.pauseOn == .response || rule.pauseOn == .both {
+        if PryInterceptorHooks.shouldPauseResponse?(request) == true {
             hasResponseBreakpoint = true
-            matchedBreakpointRule = rule
         }
 
         // Send the request (applies throttle internally)
@@ -106,10 +109,10 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
 
     /// Sends the request to the real server, applying throttle if needed.
     private func proceedWithRequest(_ request: URLRequest) {
-        let throttle = Self.config.throttle
+        let throttle = PryInterceptorHooks.throttle?() ?? .none
 
         // Apply throttle
-        if throttle == .offline || (throttle.failureRate > 0 && Double.random(in: 0...1) < throttle.failureRate) {
+        if throttle.isOffline || (throttle.failureRate > 0 && Double.random(in: 0...1) < throttle.failureRate) {
             let delay = throttle.delay
             DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
                 guard let self else { return }
@@ -155,10 +158,6 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
     // MARK: - Body Extraction
 
     /// Extracts the request body, reading from `httpBodyStream` when `httpBody` is nil.
-    ///
-    /// URLSession converts `httpBody` to `httpBodyStream` before passing the request
-    /// to URLProtocol, so `request.httpBody` is always nil in `startLoading()` for
-    /// requests created with `httpBody`. Reading the stream recovers the bytes.
     private static func extractBody(from request: URLRequest) -> Data? {
         if let body = request.httpBody {
             return body
@@ -184,30 +183,29 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
         return data.isEmpty ? nil : data
     }
 
-    // MARK: - Mock Response
+    // MARK: - Breakpoint Bridge
 
-    /// Timeout for breakpoint user interaction (seconds).
-    private static let breakpointTimeout: TimeInterval = 120
-
-    /// Bridges async BreakpointManager call to sync URLProtocol thread via semaphore.
-    /// Handles timeout and cancellation. Calls `onResult` on a background queue.
-    private func awaitBreakpointAction(
-        pause: @escaping () async -> BreakpointManager.BreakpointAction,
-        onResult: @escaping (BreakpointManager.BreakpointAction) -> Void
+    /// Bridges the async breakpoint waiter to URLProtocol's synchronous thread
+    /// via DispatchSemaphore, so the real send is suspended until the user acts.
+    /// Honors the timeout configured in ``PryInterceptorHooks/breakpointTimeout``.
+    private func awaitBreakpoint<Result: Sendable>(
+        waiter: @escaping @Sendable () async -> Result,
+        timeoutResult: Result,
+        onResult: @escaping @Sendable (Result) -> Void
     ) {
         nonisolated(unsafe) let protocolSelf = self
+        let timeout = PryInterceptorHooks.breakpointTimeout
         DispatchQueue.global(qos: .userInitiated).async {
             let semaphore = DispatchSemaphore(value: 0)
-            nonisolated(unsafe) var result: BreakpointManager.BreakpointAction = .cancel
+            nonisolated(unsafe) var result: Result = timeoutResult
 
             Task {
-                result = await pause()
+                result = await waiter()
                 semaphore.signal()
             }
 
-            let waitResult = semaphore.wait(timeout: .now() + Self.breakpointTimeout)
+            let waitResult = semaphore.wait(timeout: .now() + timeout)
             if waitResult == .timedOut {
-                Task { @MainActor in BreakpointManager.shared.cancelRequest() }
                 protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.timedOut))
                 return
             }
@@ -216,27 +214,61 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
         }
     }
 
+    private func handleRequestBreakpoint(
+        request: URLRequest,
+        waiter: @escaping @Sendable () async -> ProRequestBreakpointResult
+    ) {
+        nonisolated(unsafe) let protocolSelf = self
+
+        awaitBreakpoint(
+            waiter: waiter,
+            timeoutResult: .cancel,
+            onResult: { result in
+                switch result {
+                case .send(let modified):
+                    guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
+                        protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.badURL))
+                        return
+                    }
+                    URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
+                    // Response breakpoint flag is set below if needed
+                    if PryInterceptorHooks.shouldPauseResponse?(modified) == true {
+                        protocolSelf.hasResponseBreakpoint = true
+                    }
+                    protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
+                case .cancel:
+                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
+                }
+            }
+        )
+    }
+
     private func handleResponseBreakpoint(
-        rule: BreakpointRule,
         statusCode: Int,
         headers: [String: String],
         body: String?,
         duration: TimeInterval
     ) {
+        guard let pauseResponse = PryInterceptorHooks.pauseResponse else {
+            // Hook is gone — just deliver as-is
+            deliverBufferedResponse(duration: duration)
+            return
+        }
+
         nonisolated(unsafe) let protocolSelf = self
         let originalRequest = self.request
         let requestID = self.requestID
 
-        awaitBreakpointAction(
-            pause: {
-                await BreakpointManager.shared.pauseResponse(
-                    request: originalRequest, rule: rule,
-                    statusCode: statusCode, headers: headers, body: body
-                )
+        awaitBreakpoint(
+            waiter: {
+                await pauseResponse(originalRequest, statusCode, headers, body)
             },
+            timeoutResult: .cancel,
             onResult: { result in
                 switch result {
-                case .sendResponse(let modifiedStatus, let modifiedHeaders, let modifiedBody):
+                case .sendAsIs:
+                    protocolSelf.deliverBufferedResponse(duration: duration)
+                case .sendModified(let modifiedStatus, let modifiedHeaders, let modifiedBody):
                     let url = originalRequest.url ?? URL(string: "about:blank")!
                     if let httpResponse = HTTPURLResponse(url: url, statusCode: modifiedStatus, httpVersion: "HTTP/1.1", headerFields: modifiedHeaders) {
                         protocolSelf.client?.urlProtocol(protocolSelf, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
@@ -253,33 +285,6 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
                             duration: duration, taskMetrics: nil, redirectCount: 0
                         )
                     }
-                case .send, .cancel:
-                    protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
-                }
-            }
-        )
-    }
-
-    private func handleBreakpoint(request: URLRequest, rule: BreakpointRule) {
-        nonisolated(unsafe) let protocolSelf = self
-
-        awaitBreakpointAction(
-            pause: { await BreakpointManager.shared.pauseRequest(request, rule: rule) },
-            onResult: { result in
-                switch result {
-                case .send(let modified):
-                    guard let modifiedMutable = (modified as NSURLRequest).mutableCopy() as? NSMutableURLRequest else {
-                        protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.badURL))
-                        return
-                    }
-                    URLProtocol.setProperty(true, forKey: Self.handledKey, in: modifiedMutable)
-                    if rule.pauseOn == .both {
-                        protocolSelf.hasResponseBreakpoint = true
-                        protocolSelf.matchedBreakpointRule = rule
-                    }
-                    protocolSelf.proceedWithRequest(modifiedMutable as URLRequest)
-                case .sendResponse:
-                    break
                 case .cancel:
                     protocolSelf.client?.urlProtocol(protocolSelf, didFailWithError: URLError(.cancelled))
                 }
@@ -287,48 +292,72 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
         )
     }
 
-    private func respondWithMock(_ rule: MockRule) {
+    /// Flushes the buffered response to the client, used when a response
+    /// breakpoint decides to let the original bytes through unchanged.
+    private func deliverBufferedResponse(duration: TimeInterval) {
+        if let httpResponse = response as? HTTPURLResponse {
+            client?.urlProtocol(self, didReceive: httpResponse, cacheStoragePolicy: .allowed)
+        }
+        if !receivedData.isEmpty {
+            client?.urlProtocol(self, didLoad: receivedData)
+        }
+        client?.urlProtocolDidFinishLoading(self)
+
+        if let requestID {
+            Self.config.logger?.logResponse(
+                requestID: requestID,
+                statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0,
+                headers: ((response as? HTTPURLResponse)?.allHeaderFields as? [String: String]) ?? [:],
+                body: receivedData,
+                error: nil,
+                duration: duration,
+                taskMetrics: taskMetrics,
+                redirectCount: redirectCount,
+                redirects: redirects
+            )
+        }
+    }
+
+    // MARK: - Mock Response
+
+    private func respondWithMock(_ mock: ProMockResponse) {
         let url = request.url ?? URL(string: "about:blank")!
 
-        // Simulate delay if configured
         let deliver = { [weak self] in
             guard let self else { return }
 
-            // Build HTTP response
             let httpResponse = HTTPURLResponse(
                 url: url,
-                statusCode: rule.statusCode,
+                statusCode: mock.statusCode,
                 httpVersion: "HTTP/1.1",
-                headerFields: rule.responseHeaders
+                headerFields: mock.headers
             )
 
             if let httpResponse {
                 self.client?.urlProtocol(self, didReceive: httpResponse, cacheStoragePolicy: .notAllowed)
             }
 
-            // Send body data
-            if let body = rule.responseBody, let data = body.data(using: .utf8) {
+            if let body = mock.body, let data = body.data(using: .utf8) {
                 self.client?.urlProtocol(self, didLoad: data)
             }
 
-            // Finish
             self.client?.urlProtocolDidFinishLoading(self)
 
-            // Log mock response
             let duration = Date().timeIntervalSince(self.startTime)
+
             if let requestID = self.requestID {
                 Self.config.logger?.logMockResponse(
                     requestID: requestID,
-                    statusCode: rule.statusCode,
-                    headers: rule.responseHeaders,
-                    body: rule.responseBody,
+                    statusCode: mock.statusCode,
+                    headers: mock.headers,
+                    body: mock.body,
                     duration: duration
                 )
             }
         }
 
-        if rule.delay > 0 {
-            DispatchQueue.global().asyncAfter(deadline: .now() + rule.delay) {
+        if mock.delay > 0 {
+            DispatchQueue.global().asyncAfter(deadline: .now() + mock.delay) {
                 deliver()
             }
         } else {
@@ -390,13 +419,12 @@ extension PryURLProtocol: URLSessionDataDelegate {
         let httpResponse = response as? HTTPURLResponse
 
         // Response breakpoint: pause before delivering to the app
-        if hasResponseBreakpoint, error == nil, let rule = matchedBreakpointRule {
+        if hasResponseBreakpoint, error == nil {
             let statusCode = httpResponse?.statusCode ?? 200
             let headers = (httpResponse?.allHeaderFields as? [String: String]) ?? [:]
             let bodyString = receivedData.isEmpty ? nil : String(data: receivedData, encoding: .utf8)
 
             handleResponseBreakpoint(
-                rule: rule,
                 statusCode: statusCode,
                 headers: headers,
                 body: bodyString,

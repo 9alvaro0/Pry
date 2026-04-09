@@ -1,28 +1,28 @@
 import Foundation
 import SwiftUI
 
-extension String {
+@_spi(PryPro) public extension String {
 
     // MARK: - URL parts
 
     private var parsedURL: URL? { URL(string: self) }
 
-    func extractProtocol() -> String {
+    @_spi(PryPro) public func extractProtocol() -> String {
         components(separatedBy: "://").first ?? ""
     }
 
-    func extractHost() -> String {
+    @_spi(PryPro) public func extractHost() -> String {
         guard let url = parsedURL else { return self }
         return url.host ?? self
     }
 
-    func extractPath() -> String {
+    @_spi(PryPro) public func extractPath() -> String {
         guard let url = parsedURL else { return "/" }
         let path = url.path
         return path.isEmpty ? "/" : path
     }
 
-    func extractQuery() -> String? {
+    @_spi(PryPro) public func extractQuery() -> String? {
         guard let query = parsedURL?.query,
               !query.isEmpty else { return nil }
         return query
@@ -30,11 +30,11 @@ extension String {
 
     // MARK: - HTTP
 
-    func methodColor() -> Color {
+    @_spi(PryPro) public func methodColor() -> Color {
         PryTheme.Colors.methodColor(self)
     }
 
-    func sanitizedURL() -> String {
+    @_spi(PryPro) public func sanitizedURL() -> String {
         guard let urlComponents = URLComponents(string: self) else { return self }
 
         var sanitized = urlComponents
@@ -50,7 +50,7 @@ extension String {
         return sanitized.url?.absoluteString ?? self
     }
 
-    func sanitizedError() -> String {
+    @_spi(PryPro) public func sanitizedError() -> String {
         var sanitized = self
 
         sanitized = sanitized.replacingOccurrences(

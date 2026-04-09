@@ -13,8 +13,6 @@ enum PryLifecycle {
         let config = PryConfig.shared
         config.logger = logger
         config.blacklistedHosts = store.blacklistedHosts
-        config.mockRules = store.mockRules
-        config.isMockingEnabled = store.isMockingEnabled
 
         // Swizzle URLSessionConfiguration to inject our protocol into ALL sessions
         URLSessionConfiguration.swizzleDefaultConfiguration()

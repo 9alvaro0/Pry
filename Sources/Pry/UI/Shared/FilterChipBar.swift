@@ -2,23 +2,23 @@ import SwiftUI
 
 // MARK: - Chip Model
 
-struct ChipItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let count: Int
-    var icon: String?
-    var color: Color = PryTheme.Colors.textSecondary
-    let isSelected: Bool
-    let action: () -> Void
+@_spi(PryPro) public struct ChipItem: Identifiable {
+    @_spi(PryPro) public let id = UUID()
+    @_spi(PryPro) public let title: String
+    @_spi(PryPro) public let count: Int
+    @_spi(PryPro) public var icon: String?
+    @_spi(PryPro) public var color: Color = PryTheme.Colors.textSecondary
+    @_spi(PryPro) public let isSelected: Bool
+    @_spi(PryPro) public let action: () -> Void
 }
 
 // MARK: - Chip Bar
 
-struct FilterChipBarView<TrailingContent: View>: View {
-    let chips: [ChipItem]
+@_spi(PryPro) public struct FilterChipBarView<TrailingContent: View>: View {
+    @_spi(PryPro) public let chips: [ChipItem]
     @ViewBuilder var trailing: () -> TrailingContent
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: PryTheme.Spacing.sm) {
                 ForEach(chips) { chip in
@@ -42,7 +42,7 @@ struct FilterChipBarView<TrailingContent: View>: View {
 }
 
 extension FilterChipBarView where TrailingContent == EmptyView {
-    init(chips: [ChipItem]) {
+    @_spi(PryPro) public init(chips: [ChipItem]) {
         self.chips = chips
         self.trailing = { EmptyView() }
     }
@@ -50,15 +50,15 @@ extension FilterChipBarView where TrailingContent == EmptyView {
 
 // MARK: - Chip View
 
-struct FilterChipView: View {
-    let title: String
-    let count: Int
-    var icon: String?
-    var color: Color = PryTheme.Colors.textSecondary
-    let isSelected: Bool
-    let action: () -> Void
+@_spi(PryPro) public struct FilterChipView: View {
+    @_spi(PryPro) public let title: String
+    @_spi(PryPro) public let count: Int
+    @_spi(PryPro) public var icon: String?
+    @_spi(PryPro) public var color: Color = PryTheme.Colors.textSecondary
+    @_spi(PryPro) public let isSelected: Bool
+    @_spi(PryPro) public let action: () -> Void
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         Button(action: action) {
             HStack(spacing: PryTheme.Spacing.xs) {
                 if let icon {

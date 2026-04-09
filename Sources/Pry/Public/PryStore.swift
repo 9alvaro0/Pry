@@ -102,91 +102,6 @@ import Foundation
     var networkShowStats: Bool = false
     var networkSelectedFilter: String?
 
-    // MARK: - Network Throttle
-
-    /// The active network throttle preset. Persisted.
-    public var networkThrottle: NetworkThrottle = .none {
-        didSet {
-            PryConfig.shared.throttle = networkThrottle
-            guard !isLoadingPreferences else { return }
-            PreferenceStorage.set(networkThrottle.rawValue, for: .networkThrottle)
-        }
-    }
-
-    // MARK: - Mock Rules
-
-    /// All configured mock response rules.
-    public private(set) var mockRules: [MockRule] = []
-
-    /// Whether at least one mock rule is currently enabled.
-    public var isMockingEnabled: Bool {
-        mockRules.contains(where: \.isEnabled)
-    }
-
-    /// Adds a new mock response rule.
-    /// - Parameter rule: The mock rule to add.
-    public func addMockRule(_ rule: MockRule) {
-        mockRules.append(rule)
-        syncMockRules()
-    }
-
-    /// Removes a mock rule by its identifier.
-    /// - Parameter id: The identifier of the mock rule to remove.
-    public func removeMockRule(_ id: UUID) {
-        mockRules.removeAll { $0.id == id }
-        syncMockRules()
-    }
-
-    /// Toggles the enabled state of a mock rule.
-    /// - Parameter id: The identifier of the mock rule to toggle.
-    public func toggleMockRule(_ id: UUID) {
-        guard let index = mockRules.firstIndex(where: { $0.id == id }) else { return }
-        mockRules[index].isEnabled.toggle()
-        syncMockRules()
-    }
-
-    private func syncMockRules() {
-        PryConfig.shared.mockRules = mockRules
-        PryConfig.shared.isMockingEnabled = isMockingEnabled
-    }
-
-    // MARK: - Breakpoint Rules
-
-    /// All configured breakpoint rules.
-    public private(set) var breakpointRules: [BreakpointRule] = []
-
-    /// Whether at least one breakpoint rule is currently enabled.
-    public var isBreakpointEnabled: Bool {
-        breakpointRules.contains(where: \.isEnabled)
-    }
-
-    /// Adds a new breakpoint rule.
-    /// - Parameter rule: The breakpoint rule to add.
-    public func addBreakpointRule(_ rule: BreakpointRule) {
-        breakpointRules.append(rule)
-        syncBreakpointRules()
-    }
-
-    /// Removes a breakpoint rule by its identifier.
-    /// - Parameter id: The identifier of the breakpoint rule to remove.
-    public func removeBreakpointRule(_ id: UUID) {
-        breakpointRules.removeAll { $0.id == id }
-        syncBreakpointRules()
-    }
-
-    /// Toggles the enabled state of a breakpoint rule.
-    /// - Parameter id: The identifier of the breakpoint rule to toggle.
-    public func toggleBreakpointRule(_ id: UUID) {
-        guard let index = breakpointRules.firstIndex(where: { $0.id == id }) else { return }
-        breakpointRules[index].isEnabled.toggle()
-        syncBreakpointRules()
-    }
-
-    func syncBreakpointRules() {
-        PryConfig.shared.breakpointRules = breakpointRules
-        PryConfig.shared.isBreakpointEnabled = isBreakpointEnabled
-    }
-
     // MARK: - Configuration
 
     private let maxNetworkEntries: Int
@@ -234,16 +149,11 @@ import Foundation
         if let triggerRaw = PreferenceStorage.integer(for: .triggerOverride), triggerRaw >= 0 {
             triggerOverride = PryTrigger(rawValue: triggerRaw)
         }
-
-        if let throttleRaw = PreferenceStorage.string(for: .networkThrottle),
-           let throttle = NetworkThrottle(rawValue: throttleRaw) {
-            networkThrottle = throttle
-        }
     }
 
     // MARK: - Network (internal - fed by NetworkLogger)
 
-    func addNetworkEntry(_ entry: NetworkEntry) {
+    @_spi(PryPro) public func addNetworkEntry(_ entry: NetworkEntry) {
         networkEntries.insert(entry, at: 0)
         if networkEntries.count > maxNetworkEntries {
             networkEntries.removeLast(networkEntries.count - maxNetworkEntries)
@@ -284,7 +194,7 @@ import Foundation
         }
     }
 
-    func addLogEntry(_ entry: LogEntry) {
+    @_spi(PryPro) public func addLogEntry(_ entry: LogEntry) {
         logEntries.insert(entry, at: 0)
         if logEntries.count > maxLogEntries {
             logEntries.removeLast(logEntries.count - maxLogEntries)
@@ -320,7 +230,7 @@ import Foundation
         }
     }
 
-    func addDeeplinkEntry(_ entry: DeeplinkEntry) {
+    @_spi(PryPro) public func addDeeplinkEntry(_ entry: DeeplinkEntry) {
         deeplinkEntries.insert(entry, at: 0)
         if deeplinkEntries.count > maxDeeplinkEntries {
             deeplinkEntries.removeLast(deeplinkEntries.count - maxDeeplinkEntries)
@@ -383,7 +293,7 @@ import Foundation
         }
     }
 
-    func addPushNotification(_ entry: PushNotificationEntry) {
+    @_spi(PryPro) public func addPushNotification(_ entry: PushNotificationEntry) {
         pushNotificationEntries.insert(entry, at: 0)
         if pushNotificationEntries.count > maxPushEntries {
             pushNotificationEntries.removeLast(pushNotificationEntries.count - maxPushEntries)

@@ -1,9 +1,9 @@
 import Foundation
 
 /// Human-readable descriptions for HTTP status codes.
-enum HTTPStatus {
+@_spi(PryPro) public enum HTTPStatus {
 
-    static func description(for code: Int) -> String {
+    @_spi(PryPro) public static func description(for code: Int) -> String {
         switch code {
         // 1xx Informational
         case 100: return "Continue"

@@ -1,7 +1,7 @@
 import Foundation
 
-extension NSNumber {
-    var isBool: Bool {
+@_spi(PryPro) public extension NSNumber {
+    @_spi(PryPro) public var isBool: Bool {
         return CFBooleanGetTypeID() == CFGetTypeID(self)
     }
 }

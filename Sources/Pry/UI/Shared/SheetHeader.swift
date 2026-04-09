@@ -1,30 +1,36 @@
 import SwiftUI
 
 /// Standardized sheet header with title and optional leading/trailing actions.
-struct SheetHeader: View {
-    let title: String
-    var leadingAction: HeaderAction?
-    var trailingAction: HeaderAction
+@_spi(PryPro) public struct SheetHeader: View {
+    @_spi(PryPro) public let title: String
+    @_spi(PryPro) public var leadingAction: HeaderAction?
+    @_spi(PryPro) public var trailingAction: HeaderAction
 
-    struct HeaderAction {
-        let icon: String
-        let color: Color
-        let action: () -> Void
+    @_spi(PryPro) public init(title: String, leadingAction: HeaderAction? = nil, trailingAction: HeaderAction) {
+        self.title = title
+        self.leadingAction = leadingAction
+        self.trailingAction = trailingAction
+    }
 
-        static func close(_ action: @escaping () -> Void) -> HeaderAction {
+    @_spi(PryPro) public struct HeaderAction {
+        @_spi(PryPro) public let icon: String
+        @_spi(PryPro) public let color: Color
+        @_spi(PryPro) public let action: () -> Void
+
+        @_spi(PryPro) public static func close(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "xmark", color: PryTheme.Colors.textSecondary, action: action)
         }
 
-        static func done(_ action: @escaping () -> Void) -> HeaderAction {
+        @_spi(PryPro) public static func done(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "checkmark", color: PryTheme.Colors.accent, action: action)
         }
 
-        static func reset(_ action: @escaping () -> Void) -> HeaderAction {
+        @_spi(PryPro) public static func reset(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "arrow.counterclockwise", color: PryTheme.Colors.error, action: action)
         }
     }
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         VStack(spacing: 0) {
             HStack {
                 if let leading = leadingAction {

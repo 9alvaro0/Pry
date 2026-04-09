@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct EmptyStateView: View {
-    let title: String
-    let systemImage: String
-    let description: String
+@_spi(PryPro) public struct EmptyStateView: View {
+    @_spi(PryPro) public let title: String
+    @_spi(PryPro) public let systemImage: String
+    @_spi(PryPro) public let description: String
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         ContentUnavailableView {
             Label(title, systemImage: systemImage)
         } description: {

@@ -2,13 +2,18 @@ import SwiftUI
 import UIKit
 
 /// Unified code block component with language detection, syntax highlighting, and copy support.
-struct CodeBlockView: View {
-    let text: String
-    var language: ContentLanguage = .text
+@_spi(PryPro) public struct CodeBlockView: View {
+    @_spi(PryPro) public let text: String
+    @_spi(PryPro) public var language: ContentLanguage = .text
 
     @State private var searchQuery = ""
     @State private var isSearching = false
     @State private var isAllCollapsed = false
+
+    @_spi(PryPro) public init(text: String, language: ContentLanguage = .text) {
+        self.text = text
+        self.language = language
+    }
 
     private var resolvedLanguage: ContentLanguage {
         if language != .text && language != .plain {
@@ -39,7 +44,7 @@ struct CodeBlockView: View {
         return effectiveLanguage.displayName.uppercased()
     }
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
 

@@ -220,9 +220,11 @@ final class NetworkLogger: @unchecked Sendable {
             return "[Truncated: \(data.count) bytes]"
         }
 
-        // Try raw protobuf decode (display only — Replay skips this placeholder)
-        if let decoded = ProtobufDecoder.decodeRaw(data) {
-            return "[Protobuf: \(data.count) bytes]\n\(decoded)"
+        // Try the binary decoder hook installed by PryPro (e.g. raw protobuf).
+        // Free builds without PryPro have no decoder, so unknown binary bodies
+        // fall through to the placeholder.
+        if let decoder = PryHooks.binaryBodyDecoder, let decoded = decoder(data) {
+            return "[Binary: \(data.count) bytes]\n\(decoded)"
         }
 
         return "[Binary data: \(data.count) bytes]"

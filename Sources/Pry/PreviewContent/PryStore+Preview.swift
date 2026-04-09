@@ -4,7 +4,7 @@ import Foundation
 extension PryStore {
 
     /// Store with realistic mixed data across all tabs.
-    static var preview: PryStore {
+    @_spi(PryPro) public static var preview: PryStore {
         let store = PryStore()
 
         // Network: variety of methods, statuses, and states
@@ -22,10 +22,6 @@ extension PryStore {
         store.addNetworkEntry(.mockGraphQLQuery)
         store.addNetworkEntry(.mockGraphQLMutation)
         store.addNetworkEntry(.mockGraphQLError)
-
-        // Mock rules
-        store.addMockRule(.mockUsersSuccess)
-        store.addMockRule(.mockCartError)
 
         // Console: one of each type
         store.addLogEntry(.mockInfo)

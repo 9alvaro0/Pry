@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Renders text with search matches highlighted using AttributedString (preserves word wrap).
-struct HighlightedText: View {
-    let text: String
-    let query: String
-    let baseColor: Color
+@_spi(PryPro) public struct HighlightedText: View {
+    @_spi(PryPro) public let text: String
+    @_spi(PryPro) public let query: String
+    @_spi(PryPro) public let baseColor: Color
 
-    var body: some View {
+    @_spi(PryPro) public var body: some View {
         if query.isEmpty || !text.lowercased().contains(query.lowercased()) {
             Text(text)
                 .foregroundStyle(baseColor)
