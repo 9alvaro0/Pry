@@ -2,10 +2,20 @@ import SwiftUI
 import UIKit
 
 /// Hub view with cards differentiated by type: Monitor (live), Storage, Diagnostics, Config.
-struct AppHubView: View {
-    @Bindable var store: PryStore
+///
+/// The generic `Extras` parameter lets PryPro inject additional sections
+/// (Performance, Throttle, Share Session) between Diagnostics and
+/// Settings without duplicating the hub layout.
+package struct AppHubView<Extras: View>: View {
+    @Bindable package var store: PryStore
+    @ViewBuilder package let extras: () -> Extras
 
-    var body: some View {
+    package init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
+        self.store = store
+        self.extras = extras
+    }
+
+    package var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // MONITOR
@@ -21,6 +31,10 @@ struct AppHubView: View {
                 // DIAGNOSTICS
                 sectionHeader("Diagnostics")
                 diagnosticsSection
+                    .padding(.bottom, PryTheme.Spacing.xl)
+
+                // Extra sections injected by PryPro
+                extras()
                     .padding(.bottom, PryTheme.Spacing.xxl)
 
                 // SETTINGS
@@ -307,6 +321,14 @@ struct AppHubView: View {
         Divider()
             .overlay(PryTheme.Colors.border)
             .padding(.leading, PryTheme.Size.methodColumn + PryTheme.Spacing.pip)
+    }
+}
+
+// MARK: - Convenience Free Init
+
+extension AppHubView where Extras == EmptyView {
+    package init(store: PryStore) {
+        self.init(store: store) { EmptyView() }
     }
 }
 

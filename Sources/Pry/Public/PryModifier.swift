@@ -4,7 +4,7 @@ import SwiftUI
 
 extension View {
 
-    /// Attaches the Pry to this view.
+    /// Attaches the Pry inspector overlay to this view.
     ///
     /// This single modifier does everything:
     /// - Registers the URLProtocol interceptor
@@ -24,7 +24,9 @@ extension View {
         store: PryStore,
         trigger: PryTrigger = .default
     ) -> some View {
-        modifier(PryOverlayModifier(store: store, trigger: trigger))
+        modifier(PryOverlayModifier(store: store, trigger: trigger) { store in
+            PryRootView(store: store)
+        })
     }
 
     /// Injects the inspector store into the environment without any UI.
@@ -61,13 +63,27 @@ struct PryEnvironmentModifier: ViewModifier {
 
 // MARK: - Overlay Modifier (includes environment)
 
-struct PryOverlayModifier: ViewModifier {
-    @Bindable var store: PryStore
-    let trigger: PryTrigger
+/// Generic overlay modifier. Parameterized by the root view type so PryPro
+/// can present its own root while reusing the FAB, shake and lifecycle
+/// plumbing.
+package struct PryOverlayModifier<Root: View>: ViewModifier {
+    @Bindable package var store: PryStore
+    package let trigger: PryTrigger
+    package let rootViewBuilder: (PryStore) -> Root
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
+
+    package init(
+        store: PryStore,
+        trigger: PryTrigger,
+        @ViewBuilder rootViewBuilder: @escaping (PryStore) -> Root
+    ) {
+        self.store = store
+        self.trigger = trigger
+        self.rootViewBuilder = rootViewBuilder
+    }
 
     private var activeTrigger: PryTrigger {
         store.triggerOverride ?? trigger
@@ -79,7 +95,7 @@ struct PryOverlayModifier: ViewModifier {
         }.count
     }
 
-    func body(content: Content) -> some View {
+    package func body(content: Content) -> some View {
         content
             .environment(\.pryStore, store)
             .onOpenURL { url in
@@ -114,7 +130,7 @@ struct PryOverlayModifier: ViewModifier {
                 isPresented = true
             }
             .sheet(isPresented: $isPresented) {
-                PryRootView(store: store)
+                rootViewBuilder(store)
                     .environment(\.pryStore, store)
             }
     }
@@ -166,4 +182,3 @@ struct PryOverlayModifier: ViewModifier {
             }
     }
 }
-

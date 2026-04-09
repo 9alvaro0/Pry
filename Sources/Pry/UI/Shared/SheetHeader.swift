@@ -6,6 +6,12 @@ package struct SheetHeader: View {
     package var leadingAction: HeaderAction?
     package var trailingAction: HeaderAction
 
+    package init(title: String, leadingAction: HeaderAction? = nil, trailingAction: HeaderAction) {
+        self.title = title
+        self.leadingAction = leadingAction
+        self.trailingAction = trailingAction
+    }
+
     package struct HeaderAction {
         package let icon: String
         package let color: Color
