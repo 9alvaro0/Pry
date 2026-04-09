@@ -221,8 +221,8 @@ struct PermissionsView: View {
     // MARK: - Async
 
     private func fetchNotificationStatus() async {
-        let settings = await UNUserNotificationCenter.current().notificationSettings()
-        await MainActor.run { notificationStatus = settings.authorizationStatus }
+        let status = await UNUserNotificationCenter.current().currentAuthorizationStatus()
+        await MainActor.run { notificationStatus = status }
     }
 }
 
