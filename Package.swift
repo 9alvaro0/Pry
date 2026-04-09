@@ -12,22 +12,14 @@ let package = Package(
             name: "Pry",
             targets: ["Pry"]
         ),
-        .library(
-            name: "PryPro",
-            targets: ["PryPro"]
-        ),
     ],
     targets: [
         .target(
             name: "Pry"
         ),
-        .target(
-            name: "PryPro",
-            dependencies: ["Pry"]
-        ),
         .testTarget(
             name: "PryTests",
-            dependencies: ["Pry", "PryPro"]
+            dependencies: ["Pry"]
         ),
     ]
 )

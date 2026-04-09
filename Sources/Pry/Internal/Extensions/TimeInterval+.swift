@@ -1,7 +1,7 @@
 import Foundation
 
-package extension TimeInterval {
-    package var formattedDuration: String {
+@_spi(PryPro) public extension TimeInterval {
+    @_spi(PryPro) public var formattedDuration: String {
         if self < 1 {
             return String(format: "%.0fms", self * 1000)
         } else {
@@ -10,8 +10,8 @@ package extension TimeInterval {
     }
 }
 
-package extension Optional where Wrapped == TimeInterval {
-    package var formattedDuration: String {
+@_spi(PryPro) public extension Optional where Wrapped == TimeInterval {
+    @_spi(PryPro) public var formattedDuration: String {
         guard let value = self else { return "-" }
         return value.formattedDuration
     }

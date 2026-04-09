@@ -153,7 +153,7 @@ import Foundation
 
     // MARK: - Network (internal - fed by NetworkLogger)
 
-    package func addNetworkEntry(_ entry: NetworkEntry) {
+    @_spi(PryPro) public func addNetworkEntry(_ entry: NetworkEntry) {
         networkEntries.insert(entry, at: 0)
         if networkEntries.count > maxNetworkEntries {
             networkEntries.removeLast(networkEntries.count - maxNetworkEntries)
@@ -194,7 +194,7 @@ import Foundation
         }
     }
 
-    package func addLogEntry(_ entry: LogEntry) {
+    @_spi(PryPro) public func addLogEntry(_ entry: LogEntry) {
         logEntries.insert(entry, at: 0)
         if logEntries.count > maxLogEntries {
             logEntries.removeLast(logEntries.count - maxLogEntries)
@@ -230,7 +230,7 @@ import Foundation
         }
     }
 
-    package func addDeeplinkEntry(_ entry: DeeplinkEntry) {
+    @_spi(PryPro) public func addDeeplinkEntry(_ entry: DeeplinkEntry) {
         deeplinkEntries.insert(entry, at: 0)
         if deeplinkEntries.count > maxDeeplinkEntries {
             deeplinkEntries.removeLast(deeplinkEntries.count - maxDeeplinkEntries)
@@ -293,7 +293,7 @@ import Foundation
         }
     }
 
-    package func addPushNotification(_ entry: PushNotificationEntry) {
+    @_spi(PryPro) public func addPushNotification(_ entry: PushNotificationEntry) {
         pushNotificationEntries.insert(entry, at: 0)
         if pushNotificationEntries.count > maxPushEntries {
             pushNotificationEntries.removeLast(pushNotificationEntries.count - maxPushEntries)

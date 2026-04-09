@@ -4,7 +4,7 @@ import Foundation
 extension PryStore {
 
     /// Store with realistic mixed data across all tabs.
-    package static var preview: PryStore {
+    @_spi(PryPro) public static var preview: PryStore {
         let store = PryStore()
 
         // Network: variety of methods, statuses, and states

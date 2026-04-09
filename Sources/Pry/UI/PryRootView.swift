@@ -1,16 +1,16 @@
 import SwiftUI
 
-package struct PryRootView: View {
-    @Bindable package var store: PryStore
+@_spi(PryPro) public struct PryRootView: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
 
     @SwiftUI.Environment(\.dismiss) private var dismiss
     @State private var selectedTab: Int = 0
 
-    package init(store: PryStore) {
+    @_spi(PryPro) public init(store: PryStore) {
         self.store = store
     }
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         TabView(selection: $selectedTab) {
             Tab("Network", systemImage: "network", value: 0) {
                 networkTab

@@ -66,16 +66,16 @@ struct PryEnvironmentModifier: ViewModifier {
 /// Generic overlay modifier. Parameterized by the root view type so PryPro
 /// can present its own root while reusing the FAB, shake and lifecycle
 /// plumbing.
-package struct PryOverlayModifier<Root: View>: ViewModifier {
-    @Bindable package var store: PryStore
-    package let trigger: PryTrigger
-    package let rootViewBuilder: (PryStore) -> Root
+@_spi(PryPro) public struct PryOverlayModifier<Root: View>: ViewModifier {
+    @Bindable @_spi(PryPro) public var store: PryStore
+    @_spi(PryPro) public let trigger: PryTrigger
+    @_spi(PryPro) public let rootViewBuilder: (PryStore) -> Root
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
 
-    package init(
+    @_spi(PryPro) public init(
         store: PryStore,
         trigger: PryTrigger,
         @ViewBuilder rootViewBuilder: @escaping (PryStore) -> Root
@@ -95,7 +95,7 @@ package struct PryOverlayModifier<Root: View>: ViewModifier {
         }.count
     }
 
-    package func body(content: Content) -> some View {
+    @_spi(PryPro) public func body(content: Content) -> some View {
         content
             .environment(\.pryStore, store)
             .onOpenURL { url in

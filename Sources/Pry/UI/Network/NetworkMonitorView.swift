@@ -1,9 +1,9 @@
 import SwiftUI
 
-package struct NetworkMonitorView: View {
-    @Bindable package var store: PryStore
+@_spi(PryPro) public struct NetworkMonitorView: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
 
-    package init(store: PryStore) {
+    @_spi(PryPro) public init(store: PryStore) {
         self.store = store
     }
 
@@ -159,7 +159,7 @@ package struct NetworkMonitorView: View {
 
     // MARK: - Body
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         Group {
             if store.networkEntries.isEmpty {
                 EmptyStateView(

@@ -6,16 +6,16 @@ import UIKit
 /// The generic `Extras` parameter lets PryPro inject additional sections
 /// (Performance, Throttle, Share Session) between Diagnostics and
 /// Settings without duplicating the hub layout.
-package struct AppHubView<Extras: View>: View {
-    @Bindable package var store: PryStore
-    @ViewBuilder package let extras: () -> Extras
+@_spi(PryPro) public struct AppHubView<Extras: View>: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
+    @ViewBuilder @_spi(PryPro) public let extras: () -> Extras
 
-    package init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
+    @_spi(PryPro) public init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
         self.store = store
         self.extras = extras
     }
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 // MONITOR
@@ -327,7 +327,7 @@ package struct AppHubView<Extras: View>: View {
 // MARK: - Convenience Free Init
 
 extension AppHubView where Extras == EmptyView {
-    package init(store: PryStore) {
+    @_spi(PryPro) public init(store: PryStore) {
         self.init(store: store) { EmptyView() }
     }
 }

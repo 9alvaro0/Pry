@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
 
-package struct ConsoleMonitorView: View {
-    @Bindable package var store: PryStore
+@_spi(PryPro) public struct ConsoleMonitorView: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
 
-    package init(store: PryStore) {
+    @_spi(PryPro) public init(store: PryStore) {
         self.store = store
     }
 
@@ -41,7 +41,7 @@ package struct ConsoleMonitorView: View {
         return counts
     }
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         Group {
             if store.logEntries.isEmpty {
                 EmptyStateView(

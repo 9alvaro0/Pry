@@ -1,18 +1,18 @@
 import SwiftUI
 import UIKit
 
-package struct NetworkRequestDetailView: View {
-    package let entry: NetworkEntry
+@_spi(PryPro) public struct NetworkRequestDetailView: View {
+    @_spi(PryPro) public let entry: NetworkEntry
 
     @Environment(\.pryStore) private var store
     @Environment(\.dismiss) private var dismiss
     @State private var showCopied = false
 
-    package init(entry: NetworkEntry) {
+    @_spi(PryPro) public init(entry: NetworkEntry) {
         self.entry = entry
     }
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 summaryHeader

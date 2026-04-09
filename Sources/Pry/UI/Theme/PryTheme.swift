@@ -3,59 +3,59 @@ import SwiftUI
 /// Single source of truth for all design tokens in Pry.
 ///
 /// Dark developer aesthetic inspired by Xcode and Charles Proxy.
-package enum PryTheme {
+@_spi(PryPro) public enum PryTheme {
 
     // MARK: - Colors
 
-    package enum Colors {
+    @_spi(PryPro) public enum Colors {
         // Backgrounds
-        package static let background      = Color(hex: "#1C1C1E")
-        package static let surface         = Color(hex: "#2C2C2E")
-        package static let surfaceElevated = Color(hex: "#3A3A3C")
-        package static let border          = Color.white.opacity(Opacity.border)
-        package static let overlay         = Color.black.opacity(Opacity.overlay)
+        @_spi(PryPro) public static let background      = Color(hex: "#1C1C1E")
+        @_spi(PryPro) public static let surface         = Color(hex: "#2C2C2E")
+        @_spi(PryPro) public static let surfaceElevated = Color(hex: "#3A3A3C")
+        @_spi(PryPro) public static let border          = Color.white.opacity(Opacity.border)
+        @_spi(PryPro) public static let overlay         = Color.black.opacity(Opacity.overlay)
 
         // Text
-        package static let textPrimary   = Color.white
-        package static let textSecondary = Color.white.opacity(Opacity.textSecondary)
-        package static let textTertiary  = Color.white.opacity(Opacity.textTertiary)
+        @_spi(PryPro) public static let textPrimary   = Color.white
+        @_spi(PryPro) public static let textSecondary = Color.white.opacity(Opacity.textSecondary)
+        @_spi(PryPro) public static let textTertiary  = Color.white.opacity(Opacity.textTertiary)
 
         // Status
-        package static let success = Color.green
-        package static let error   = Color.red
-        package static let warning = Color.orange
-        package static let pending = Color.yellow
-        package static let info    = Color(hex: "#41A1F5")
+        @_spi(PryPro) public static let success = Color.green
+        @_spi(PryPro) public static let error   = Color.red
+        @_spi(PryPro) public static let warning = Color.orange
+        @_spi(PryPro) public static let pending = Color.yellow
+        @_spi(PryPro) public static let info    = Color(hex: "#41A1F5")
 
         // Syntax highlighting (Xcode-inspired)
-        package static let syntaxKey    = Color(hex: "#FF7AB2")
-        package static let syntaxString = Color(hex: "#FC6A5D")
-        package static let syntaxNumber = Color(hex: "#D0BF69")
-        package static let syntaxBool   = Color(hex: "#B281EB")
-        package static let syntaxNull   = Color.gray
+        @_spi(PryPro) public static let syntaxKey    = Color(hex: "#FF7AB2")
+        @_spi(PryPro) public static let syntaxString = Color(hex: "#FC6A5D")
+        @_spi(PryPro) public static let syntaxNumber = Color(hex: "#D0BF69")
+        @_spi(PryPro) public static let syntaxBool   = Color(hex: "#B281EB")
+        @_spi(PryPro) public static let syntaxNull   = Color.gray
 
         // HTTP Methods
-        package static let methodGet    = Color(hex: "#41A1F5")
-        package static let methodPost   = Color.green
-        package static let methodPut    = Color.orange
-        package static let methodDelete = Color.red
-        package static let methodPatch  = Color(hex: "#B281EB")
+        @_spi(PryPro) public static let methodGet    = Color(hex: "#41A1F5")
+        @_spi(PryPro) public static let methodPost   = Color.green
+        @_spi(PryPro) public static let methodPut    = Color.orange
+        @_spi(PryPro) public static let methodDelete = Color.red
+        @_spi(PryPro) public static let methodPatch  = Color(hex: "#B281EB")
 
         // Feature accents
-        package static let network   = Color(hex: "#41A1F5")
-        package static let console   = Color.green
-        package static let deeplinks = Color.indigo
+        @_spi(PryPro) public static let network   = Color(hex: "#41A1F5")
+        @_spi(PryPro) public static let console   = Color.green
+        @_spi(PryPro) public static let deeplinks = Color.indigo
 
         // Interactive
-        package static let accent     = Color(hex: "#41A1F5")
-        package static let accentMild = Color(hex: "#41A1F5").opacity(Opacity.badge)
+        @_spi(PryPro) public static let accent     = Color(hex: "#41A1F5")
+        @_spi(PryPro) public static let accentMild = Color(hex: "#41A1F5").opacity(Opacity.badge)
 
         // FAB
-        package static let fab           = Color.red
-        package static let fabForeground = Color.white
+        @_spi(PryPro) public static let fab           = Color.red
+        @_spi(PryPro) public static let fabForeground = Color.white
 
         // Badges
-        package static func statusBackground(_ code: Int) -> Color {
+        @_spi(PryPro) public static func statusBackground(_ code: Int) -> Color {
             switch code {
             case 200..<300: return success.opacity(Opacity.badge)
             case 300..<400: return warning.opacity(Opacity.badge)
@@ -64,7 +64,7 @@ package enum PryTheme {
             }
         }
 
-        package static func statusForeground(_ code: Int) -> Color {
+        @_spi(PryPro) public static func statusForeground(_ code: Int) -> Color {
             switch code {
             case 200..<300: return success
             case 300..<400: return warning
@@ -73,7 +73,7 @@ package enum PryTheme {
             }
         }
 
-        package static func methodColor(_ method: String) -> Color {
+        @_spi(PryPro) public static func methodColor(_ method: String) -> Color {
             switch method.uppercased() {
             case "GET":    return methodGet
             case "POST":   return methodPost
@@ -87,114 +87,114 @@ package enum PryTheme {
 
     // MARK: - Typography
 
-    package enum Typography {
-        package static let heading    = Font.headline
-        package static let subheading = Font.subheadline.weight(.medium)
-        package static let body       = Font.caption
-        package static let detail     = Font.caption2
-        package static let code       = Font.system(.caption, design: .monospaced)
-        package static let codeSmall  = Font.system(.caption2, design: .monospaced)
+    @_spi(PryPro) public enum Typography {
+        @_spi(PryPro) public static let heading    = Font.headline
+        @_spi(PryPro) public static let subheading = Font.subheadline.weight(.medium)
+        @_spi(PryPro) public static let body       = Font.caption
+        @_spi(PryPro) public static let detail     = Font.caption2
+        @_spi(PryPro) public static let code       = Font.system(.caption, design: .monospaced)
+        @_spi(PryPro) public static let codeSmall  = Font.system(.caption2, design: .monospaced)
 
         // Explicit size fonts (for cases where semantic fonts don't fit)
-        package static let sectionLabel = Font.system(size: FontSize.sectionLabel, weight: .semibold)
-        package static let badgeText    = Font.system(size: FontSize.badge, weight: .bold)
-        package static let smallIcon    = Font.system(size: FontSize.smallIcon)
-        package static let largeMetric  = Font.system(size: FontSize.largeMetric, weight: .medium, design: .monospaced)
-        package static let chartLabel   = Font.system(size: FontSize.chartLabel)
+        @_spi(PryPro) public static let sectionLabel = Font.system(size: FontSize.sectionLabel, weight: .semibold)
+        @_spi(PryPro) public static let badgeText    = Font.system(size: FontSize.badge, weight: .bold)
+        @_spi(PryPro) public static let smallIcon    = Font.system(size: FontSize.smallIcon)
+        @_spi(PryPro) public static let largeMetric  = Font.system(size: FontSize.largeMetric, weight: .medium, design: .monospaced)
+        @_spi(PryPro) public static let chartLabel   = Font.system(size: FontSize.chartLabel)
     }
 
     // MARK: - Font Sizes (raw values for Typography)
 
-    package enum FontSize {
-        package static let chartLabel:   CGFloat = 8
-        package static let badge:        CGFloat = 9
-        package static let smallIcon:    CGFloat = 10
-        package static let sectionLabel: CGFloat = 11
-        package static let largeMetric:  CGFloat = 18
-        package static let emptyState:   CGFloat = 28
+    @_spi(PryPro) public enum FontSize {
+        @_spi(PryPro) public static let chartLabel:   CGFloat = 8
+        @_spi(PryPro) public static let badge:        CGFloat = 9
+        @_spi(PryPro) public static let smallIcon:    CGFloat = 10
+        @_spi(PryPro) public static let sectionLabel: CGFloat = 11
+        @_spi(PryPro) public static let largeMetric:  CGFloat = 18
+        @_spi(PryPro) public static let emptyState:   CGFloat = 28
     }
 
     // MARK: - Spacing (4pt grid)
 
-    package enum Spacing {
-        package static let xxs: CGFloat = 2
-        package static let xs:  CGFloat = 4
-        package static let pip: CGFloat = 6
-        package static let sm:  CGFloat = 8
-        package static let md:  CGFloat = 12
-        package static let lg:  CGFloat = 16
-        package static let xl:  CGFloat = 20
-        package static let xxl: CGFloat = 24
+    @_spi(PryPro) public enum Spacing {
+        @_spi(PryPro) public static let xxs: CGFloat = 2
+        @_spi(PryPro) public static let xs:  CGFloat = 4
+        @_spi(PryPro) public static let pip: CGFloat = 6
+        @_spi(PryPro) public static let sm:  CGFloat = 8
+        @_spi(PryPro) public static let md:  CGFloat = 12
+        @_spi(PryPro) public static let lg:  CGFloat = 16
+        @_spi(PryPro) public static let xl:  CGFloat = 20
+        @_spi(PryPro) public static let xxl: CGFloat = 24
     }
 
     // MARK: - Radius
 
-    package enum Radius {
-        package static let sm:  CGFloat = 4
-        package static let md:  CGFloat = 8
-        package static let lg:  CGFloat = 12
+    @_spi(PryPro) public enum Radius {
+        @_spi(PryPro) public static let sm:  CGFloat = 4
+        @_spi(PryPro) public static let md:  CGFloat = 8
+        @_spi(PryPro) public static let lg:  CGFloat = 12
     }
 
     // MARK: - Sizes
 
-    package enum Size {
-        package static let statusDot:     CGFloat = 8
-        package static let toggleIcon:    CGFloat = 16
-        package static let diffLabelSmall: CGFloat = 18
-        package static let iconSmall:     CGFloat = 20
-        package static let diffLabel:     CGFloat = 22
-        package static let formKeyWidth:  CGFloat = 24
-        package static let iconMedium:    CGFloat = 28
-        package static let iconLarge:     CGFloat = 36
-        package static let methodColumn:  CGFloat = 52
-        package static let fab:           CGFloat = 56
-        package static let metadataLabel: CGFloat = 70
-        package static let rowMinHeight:  CGFloat = 72
-        package static let chartHeight:   CGFloat = 100
-        package static let editorMinHeight: CGFloat = 200
-        package static let imageMaxHeight: CGFloat = 300
+    @_spi(PryPro) public enum Size {
+        @_spi(PryPro) public static let statusDot:     CGFloat = 8
+        @_spi(PryPro) public static let toggleIcon:    CGFloat = 16
+        @_spi(PryPro) public static let diffLabelSmall: CGFloat = 18
+        @_spi(PryPro) public static let iconSmall:     CGFloat = 20
+        @_spi(PryPro) public static let diffLabel:     CGFloat = 22
+        @_spi(PryPro) public static let formKeyWidth:  CGFloat = 24
+        @_spi(PryPro) public static let iconMedium:    CGFloat = 28
+        @_spi(PryPro) public static let iconLarge:     CGFloat = 36
+        @_spi(PryPro) public static let methodColumn:  CGFloat = 52
+        @_spi(PryPro) public static let fab:           CGFloat = 56
+        @_spi(PryPro) public static let metadataLabel: CGFloat = 70
+        @_spi(PryPro) public static let rowMinHeight:  CGFloat = 72
+        @_spi(PryPro) public static let chartHeight:   CGFloat = 100
+        @_spi(PryPro) public static let editorMinHeight: CGFloat = 200
+        @_spi(PryPro) public static let imageMaxHeight: CGFloat = 300
     }
 
     // MARK: - Opacity
 
-    package enum Opacity {
-        package static let subtle:        Double = 0.05
-        package static let faint:         Double = 0.08
-        package static let border:        Double = 0.1
-        package static let tint:          Double = 0.12
-        package static let badge:         Double = 0.15
-        package static let medium:        Double = 0.2
-        package static let moderate:      Double = 0.3
-        package static let textTertiary:  Double = 0.45
-        package static let overlay:       Double = 0.5
-        package static let textSecondary: Double = 0.7
+    @_spi(PryPro) public enum Opacity {
+        @_spi(PryPro) public static let subtle:        Double = 0.05
+        @_spi(PryPro) public static let faint:         Double = 0.08
+        @_spi(PryPro) public static let border:        Double = 0.1
+        @_spi(PryPro) public static let tint:          Double = 0.12
+        @_spi(PryPro) public static let badge:         Double = 0.15
+        @_spi(PryPro) public static let medium:        Double = 0.2
+        @_spi(PryPro) public static let moderate:      Double = 0.3
+        @_spi(PryPro) public static let textTertiary:  Double = 0.45
+        @_spi(PryPro) public static let overlay:       Double = 0.5
+        @_spi(PryPro) public static let textSecondary: Double = 0.7
     }
 
     // MARK: - Animation
 
-    package enum Animation {
-        package static let quick:    Double = 0.15
-        package static let standard: Double = 0.2
-        package static let toastDismiss: Duration = .seconds(1.5)
-        package static let toastLong:   Duration = .seconds(3)
-        package static let feedbackDelay: Duration = .seconds(1)
-        package static let replayDismiss: Duration = .seconds(2)
+    @_spi(PryPro) public enum Animation {
+        @_spi(PryPro) public static let quick:    Double = 0.15
+        @_spi(PryPro) public static let standard: Double = 0.2
+        @_spi(PryPro) public static let toastDismiss: Duration = .seconds(1.5)
+        @_spi(PryPro) public static let toastLong:   Duration = .seconds(3)
+        @_spi(PryPro) public static let feedbackDelay: Duration = .seconds(1)
+        @_spi(PryPro) public static let replayDismiss: Duration = .seconds(2)
     }
 
     // MARK: - Text
 
-    package enum Text {
-        package static let tracking: CGFloat = 0.5
-        package static let truncateLength: Int = 30
-        package static let cellTruncateLength: Int = 200
+    @_spi(PryPro) public enum Text {
+        @_spi(PryPro) public static let tracking: CGFloat = 0.5
+        @_spi(PryPro) public static let truncateLength: Int = 30
+        @_spi(PryPro) public static let cellTruncateLength: Int = 200
     }
 
     // MARK: - Shadow
 
-    package enum Shadow {
-        package static let radius:  CGFloat = 6
-        package static let offsetX: CGFloat = 0
-        package static let offsetY: CGFloat = 3
-        package static let opacity: Double  = 0.2
+    @_spi(PryPro) public enum Shadow {
+        @_spi(PryPro) public static let radius:  CGFloat = 6
+        @_spi(PryPro) public static let offsetX: CGFloat = 0
+        @_spi(PryPro) public static let offsetY: CGFloat = 3
+        @_spi(PryPro) public static let opacity: Double  = 0.2
     }
 }

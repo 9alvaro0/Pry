@@ -1,7 +1,7 @@
 import Foundation
 
 /// Content type detection for code block rendering.
-package enum ContentLanguage: String, CaseIterable {
+@_spi(PryPro) public enum ContentLanguage: String, CaseIterable {
     case json = "json"
     case text = "text"
     case http = "http"
@@ -10,7 +10,7 @@ package enum ContentLanguage: String, CaseIterable {
     case javascript = "javascript"
     case plain = "plain"
 
-    package var displayName: String {
+    @_spi(PryPro) public var displayName: String {
         switch self {
         case .json: return "JSON"
         case .text, .plain: return "Text"
@@ -21,11 +21,11 @@ package enum ContentLanguage: String, CaseIterable {
         }
     }
 
-    package var uppercased: String {
+    @_spi(PryPro) public var uppercased: String {
         return displayName.uppercased()
     }
 
-    package static func detect(from content: String) -> ContentLanguage {
+    @_spi(PryPro) public static func detect(from content: String) -> ContentLanguage {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmed.contains("HTTP/") || (trimmed.contains("GET ") || trimmed.contains("POST ") ||

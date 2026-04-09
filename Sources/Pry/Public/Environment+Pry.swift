@@ -10,5 +10,5 @@ extension EnvironmentValues {
     @Entry public var pryStore: PryStore = PryStore()
 
     /// When true, the inspector is displaying an imported session in read-only mode.
-    @Entry package var pryReadOnly: Bool = false
+    @Entry @_spi(PryPro) public var pryReadOnly: Bool = false
 }

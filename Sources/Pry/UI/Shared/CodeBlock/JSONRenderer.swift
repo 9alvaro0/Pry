@@ -1,17 +1,17 @@
 import SwiftUI
 
 /// Renders JSON with syntax highlighting, collapsible nodes, search, line numbers, and expand/collapse all.
-package struct JSONRenderer: View {
-    package let jsonText: String
-    package var searchQuery: String = ""
-    package var collapseAll: Bool = false
+@_spi(PryPro) public struct JSONRenderer: View {
+    @_spi(PryPro) public let jsonText: String
+    @_spi(PryPro) public var searchQuery: String = ""
+    @_spi(PryPro) public var collapseAll: Bool = false
 
     @State private var collapsedPaths: Set<String>
 
     private let parsed: ParsedJSON
     private let allCollapsiblePaths: Set<String>
 
-    package init(jsonText: String, searchQuery: String = "", collapseAll: Bool = false, initialCollapsed: Set<String> = []) {
+    @_spi(PryPro) public init(jsonText: String, searchQuery: String = "", collapseAll: Bool = false, initialCollapsed: Set<String> = []) {
         self.jsonText = jsonText
         self.searchQuery = searchQuery
         self.collapseAll = collapseAll
@@ -84,7 +84,7 @@ package struct JSONRenderer: View {
         return CGFloat(max(digits, 2)) * 8 + 4
     }
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         if parsed.value != nil {
             let lines = visibleLines
 

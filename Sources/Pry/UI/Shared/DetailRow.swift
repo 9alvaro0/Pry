@@ -1,10 +1,10 @@
 import SwiftUI
 
-package struct DetailRowView: View {
-    package let label: String
-    package var value: String
+@_spi(PryPro) public struct DetailRowView: View {
+    @_spi(PryPro) public let label: String
+    @_spi(PryPro) public var value: String
 
-    package var body: some View {
+    @_spi(PryPro) public var body: some View {
         HStack(alignment: .top) {
             Text(label)
                 .font(PryTheme.Typography.body)
