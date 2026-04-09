@@ -10,33 +10,34 @@ final class PushNotificationInterceptor: NSObject, @unchecked Sendable {
 
     nonisolated(unsafe) private static var isInstalled = false
 
-    /// Installs the swizzle and ensures a delegate is always set so that
+    /// Installs the interceptor and ensures a delegate is always set so that
     /// foreground notifications are displayed.
     static func install() {
         guard !isInstalled else { return }
         isInstalled = true
 
         let center = UNUserNotificationCenter.current()
-        let existingDelegate = center.delegate
 
-        // Swizzle setDelegate: so future delegates set by the host app get wrapped
-        swizzleDelegateSetup()
-
-        if let existingDelegate {
-            // Re-set to trigger wrapping through the swizzled setter
-            center.delegate = existingDelegate
+        // Set our delegate BEFORE swizzling. Use the normal setter (no tricks).
+        if let existing = center.delegate {
+            // Host app already has a delegate — wrap it
+            let proxy = NotificationDelegateProxy(original: existing)
+            objc_setAssociatedObject(center, &NotificationDelegateProxy.proxyKey, proxy, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            center.delegate = proxy
         } else {
-            // Install fallback directly via ORIGINAL setter (avoid wrapping it in a proxy).
-            // After swizzle, center.pry_setDelegate(_:) IS the original implementation.
-            center.pry_setDelegate(FallbackNotificationDelegate.shared)
-            // Keep strong ref since center.delegate is weak
+            // No delegate — install our fallback
             objc_setAssociatedObject(
                 center,
                 &NotificationDelegateProxy.proxyKey,
                 FallbackNotificationDelegate.shared,
                 .OBJC_ASSOCIATION_RETAIN_NONATOMIC
             )
+            center.delegate = FallbackNotificationDelegate.shared
         }
+
+        // Swizzle AFTER installing, so any future setDelegate: by the host
+        // app gets wrapped automatically.
+        swizzleDelegateSetup()
     }
 
     // MARK: - Swizzle
@@ -142,10 +143,12 @@ final class NotificationDelegateProxy: NSObject, UNUserNotificationCenterDelegat
     ) {
         PushNotificationInterceptor.logNotification(notification)
 
-        if original.responds(to: #selector(userNotificationCenter(_:willPresent:withCompletionHandler:))) {
+        let selector = #selector(userNotificationCenter(_:willPresent:withCompletionHandler:))
+        if original.responds(to: selector) {
             original.userNotificationCenter?(center, willPresent: notification, withCompletionHandler: completionHandler)
         } else {
-            completionHandler([.banner, .sound, .badge])
+            // Default: show banner in foreground
+            completionHandler([.banner, .list, .sound, .badge])
         }
     }
 
