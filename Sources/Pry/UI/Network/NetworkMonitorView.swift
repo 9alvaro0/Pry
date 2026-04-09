@@ -173,7 +173,7 @@ struct NetworkMonitorView: View {
                     // Stats as first list section
                     if showStats {
                         Section {
-                            NetworkStatsView(entries: store.networkEntries)
+                            NetworkStatsView(entries: baseFilteredEntries)
                                 .listRowInsets(EdgeInsets())
                                 .listRowBackground(Color.clear)
                         }
