@@ -5,7 +5,7 @@ import Foundation
 
 extension NetworkEntry {
 
-    static var mockSuccess: NetworkEntry {
+    package static var mockSuccess: NetworkEntry {
         NetworkEntry(
             timestamp: Date(),
             type: .network,
@@ -60,7 +60,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockError: NetworkEntry {
+    package static var mockError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-60),
             type: .network,
@@ -92,7 +92,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockServerError: NetworkEntry {
+    package static var mockServerError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-45),
             type: .network,
@@ -129,7 +129,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockNotification: NetworkEntry {
+    package static var mockNotification: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-120),
             type: .network,
@@ -160,7 +160,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockNoAuth: NetworkEntry {
+    package static var mockNoAuth: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-30),
             type: .network,
@@ -189,7 +189,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockPending: NetworkEntry {
+    package static var mockPending: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-2),
             type: .network,
@@ -214,7 +214,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockDelete: NetworkEntry {
+    package static var mockDelete: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-90),
             type: .network,
@@ -239,7 +239,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockPatch: NetworkEntry {
+    package static var mockPatch: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-15),
             type: .network,
@@ -280,7 +280,7 @@ extension NetworkEntry {
 
 extension LogEntry {
 
-    static var mockInfo: LogEntry {
+    package static var mockInfo: LogEntry {
         LogEntry(
             timestamp: Date(),
             type: .info,
@@ -292,7 +292,7 @@ extension LogEntry {
         )
     }
 
-    static var mockSuccess: LogEntry {
+    package static var mockSuccess: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-5),
             type: .success,
@@ -304,7 +304,7 @@ extension LogEntry {
         )
     }
 
-    static var mockWarning: LogEntry {
+    package static var mockWarning: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-10),
             type: .warning,
@@ -316,7 +316,7 @@ extension LogEntry {
         )
     }
 
-    static var mockError: LogEntry {
+    package static var mockError: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-15),
             type: .error,
@@ -328,7 +328,7 @@ extension LogEntry {
         )
     }
 
-    static var mockDebug: LogEntry {
+    package static var mockDebug: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-20),
             type: .debug,
@@ -340,7 +340,7 @@ extension LogEntry {
         )
     }
 
-    static var mockNetwork: LogEntry {
+    package static var mockNetwork: LogEntry {
         LogEntry(
             timestamp: Date().addingTimeInterval(-3),
             type: .network,
@@ -357,7 +357,7 @@ extension LogEntry {
 
 extension DeeplinkEntry {
 
-    static var mockCustomScheme: DeeplinkEntry {
+    package static var mockCustomScheme: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date(),
             url: "myapp://rooms/open?roomId=42&floor=3",
@@ -373,7 +373,7 @@ extension DeeplinkEntry {
         )
     }
 
-    static var mockUniversalLink: DeeplinkEntry {
+    package static var mockUniversalLink: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date().addingTimeInterval(-30),
             url: "https://app.example.com/booking/confirm/789?ref=push&source=notification",
@@ -389,7 +389,7 @@ extension DeeplinkEntry {
         )
     }
 
-    static var mockWidgetLink: DeeplinkEntry {
+    package static var mockWidgetLink: DeeplinkEntry {
         DeeplinkEntry(
             timestamp: Date().addingTimeInterval(-60),
             url: "myapp://widget/quick-action?action=newTask",
@@ -541,7 +541,7 @@ enum MockForm {
 
 extension NetworkEntry {
 
-    static var mockRedirect: NetworkEntry {
+    package static var mockRedirect: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-7),
             type: .network,
@@ -589,7 +589,7 @@ extension NetworkEntry {
         return entry
     }
 
-    static var mockFormPost: NetworkEntry {
+    package static var mockFormPost: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-10),
             type: .network,
@@ -625,7 +625,7 @@ extension NetworkEntry {
 
 extension PushNotificationEntry {
 
-    static var mockPromo: PushNotificationEntry {
+    package static var mockPromo: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date(),
             title: "Flash Sale!",
@@ -656,7 +656,7 @@ extension PushNotificationEntry {
         )
     }
 
-    static var mockChat: PushNotificationEntry {
+    package static var mockChat: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date().addingTimeInterval(-120),
             title: "New Message",
@@ -684,7 +684,7 @@ extension PushNotificationEntry {
         )
     }
 
-    static var mockSilent: PushNotificationEntry {
+    package static var mockSilent: PushNotificationEntry {
         PushNotificationEntry(
             timestamp: Date().addingTimeInterval(-300),
             title: nil,
@@ -711,7 +711,7 @@ extension PushNotificationEntry {
 
 extension MockRule {
 
-    static var mockUsersSuccess: MockRule {
+    package static var mockUsersSuccess: MockRule {
         MockRule(
             name: "Users - Success",
             urlPattern: "/api/users",
@@ -723,7 +723,7 @@ extension MockRule {
         )
     }
 
-    static var mockCartError: MockRule {
+    package static var mockCartError: MockRule {
         MockRule(
             name: "Cart - Server Error",
             urlPattern: "/api/cart",
@@ -740,7 +740,7 @@ extension MockRule {
 
 extension NetworkEntry {
 
-    static var mockMocked: NetworkEntry {
+    package static var mockMocked: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-5),
             type: .network,
@@ -772,7 +772,7 @@ extension NetworkEntry {
 
 extension NetworkEntry {
 
-    static var mockReplay: NetworkEntry {
+    package static var mockReplay: NetworkEntry {
         var entry = NetworkEntry(
             timestamp: Date().addingTimeInterval(-2),
             type: .network,
@@ -804,7 +804,7 @@ extension NetworkEntry {
 
 extension NetworkEntry {
 
-    static var mockGraphQLQuery: NetworkEntry {
+    package static var mockGraphQLQuery: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-8),
             type: .network,
@@ -829,7 +829,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockGraphQLMutation: NetworkEntry {
+    package static var mockGraphQLMutation: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-3),
             type: .network,
@@ -854,7 +854,7 @@ extension NetworkEntry {
         )
     }
 
-    static var mockGraphQLError: NetworkEntry {
+    package static var mockGraphQLError: NetworkEntry {
         NetworkEntry(
             timestamp: Date().addingTimeInterval(-1),
             type: .network,

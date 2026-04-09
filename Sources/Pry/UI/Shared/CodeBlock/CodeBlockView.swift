@@ -10,6 +10,11 @@ package struct CodeBlockView: View {
     @State private var isSearching = false
     @State private var isAllCollapsed = false
 
+    package init(text: String, language: ContentLanguage = .text) {
+        self.text = text
+        self.language = language
+    }
+
     private var resolvedLanguage: ContentLanguage {
         if language != .text && language != .plain {
             return language
