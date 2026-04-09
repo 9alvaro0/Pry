@@ -12,10 +12,10 @@ extension View {
 // MARK: - Modifier
 
 private struct ShakeDetectorModifier: ViewModifier {
-    let enabled: Bool
-    let action: () -> Void
+    package let enabled: Bool
+    package let action: () -> Void
 
-    func body(content: Content) -> some View {
+    package func body(content: Content) -> some View {
         if enabled {
             content
                 .background(ShakeDetectorView(action: action))
@@ -28,7 +28,7 @@ private struct ShakeDetectorModifier: ViewModifier {
 // MARK: - UIKit Bridge
 
 private struct ShakeDetectorView: UIViewControllerRepresentable {
-    let action: () -> Void
+    package let action: () -> Void
 
     func makeUIViewController(context: Context) -> ShakeDetectorController {
         ShakeDetectorController(action: action)
@@ -38,9 +38,9 @@ private struct ShakeDetectorView: UIViewControllerRepresentable {
 }
 
 final class ShakeDetectorController: UIViewController {
-    let action: () -> Void
+    package let action: () -> Void
 
-    init(action: @escaping () -> Void) {
+    package init(action: @escaping () -> Void) {
         self.action = action
         super.init(nibName: nil, bundle: nil)
     }

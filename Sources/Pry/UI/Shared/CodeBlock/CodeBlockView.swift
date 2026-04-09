@@ -2,9 +2,9 @@ import SwiftUI
 import UIKit
 
 /// Unified code block component with language detection, syntax highlighting, and copy support.
-struct CodeBlockView: View {
-    let text: String
-    var language: ContentLanguage = .text
+package struct CodeBlockView: View {
+    package let text: String
+    package var language: ContentLanguage = .text
 
     @State private var searchQuery = ""
     @State private var isSearching = false
@@ -39,7 +39,7 @@ struct CodeBlockView: View {
         return effectiveLanguage.displayName.uppercased()
     }
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
 

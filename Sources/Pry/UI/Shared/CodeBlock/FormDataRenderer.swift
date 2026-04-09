@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Renders URL-encoded form data (key=value&key2=value2) as a key-value table.
-struct FormDataRenderer: View {
-    let text: String
-    var searchQuery: String = ""
+package struct FormDataRenderer: View {
+    package let text: String
+    package var searchQuery: String = ""
 
     private var parameters: [(key: String, value: String)] {
         text.components(separatedBy: "&").compactMap { pair in
@@ -18,7 +18,7 @@ struct FormDataRenderer: View {
 
     private var isSearching: Bool { !searchQuery.isEmpty }
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
             ForEach(Array(parameters.enumerated()), id: \.offset) { index, param in
                 HStack(alignment: .top, spacing: 0) {

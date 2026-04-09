@@ -6,19 +6,19 @@ import UIKit
 /// Two styles:
 /// - `.iconOnly` (default) — just the icon, 36x36 tap target, for toolbars/headers
 /// - `.labeled` — icon + text, for inline use
-struct CopyButtonView: View {
+package struct CopyButtonView: View {
 
-    enum Style {
+    package enum Style {
         case iconOnly
         case labeled(String, copiedLabel: String)
     }
 
-    let valueToCopy: String
-    var style: Style = .iconOnly
+    package let valueToCopy: String
+    package var style: Style = .iconOnly
 
     @State private var isCopied = false
 
-    var body: some View {
+    package var body: some View {
         Button {
             Task { await copy() }
         } label: {

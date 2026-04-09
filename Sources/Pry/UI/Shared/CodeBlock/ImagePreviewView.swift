@@ -2,8 +2,8 @@ import SwiftUI
 import UIKit
 
 /// Renders a preview of image data encoded as [IMAGE:size:base64].
-struct ImagePreviewView: View {
-    let encodedText: String
+package struct ImagePreviewView: View {
+    package let encodedText: String
 
     private var imageData: (size: Int, image: UIImage?)? {
         // Parse "[IMAGE:size:base64data]"
@@ -16,7 +16,7 @@ struct ImagePreviewView: View {
         return (size, UIImage(data: data))
     }
 
-    var body: some View {
+    package var body: some View {
         if let parsed = imageData, let uiImage = parsed.image {
             Image(uiImage: uiImage)
                 .resizable()

@@ -1,20 +1,20 @@
 import Foundation
 
-extension Date {
+package extension Date {
 
-    func formatFullTimestamp() -> String {
+    package func formatFullTimestamp() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss.SSS"
         return formatter.string(from: self)
     }
 
-    var formattedTimestamp: String {
+    package var formattedTimestamp: String {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss.SSS"
         return formatter.string(from: self)
     }
 
-    var relativeTimestamp: String {
+    package var relativeTimestamp: String {
         let seconds = -timeIntervalSinceNow
         switch seconds {
         case ..<2:    return "just now"

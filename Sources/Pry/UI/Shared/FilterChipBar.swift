@@ -2,23 +2,23 @@ import SwiftUI
 
 // MARK: - Chip Model
 
-struct ChipItem: Identifiable {
-    let id = UUID()
-    let title: String
-    let count: Int
-    var icon: String?
-    var color: Color = PryTheme.Colors.textSecondary
-    let isSelected: Bool
-    let action: () -> Void
+package struct ChipItem: Identifiable {
+    package let id = UUID()
+    package let title: String
+    package let count: Int
+    package var icon: String?
+    package var color: Color = PryTheme.Colors.textSecondary
+    package let isSelected: Bool
+    package let action: () -> Void
 }
 
 // MARK: - Chip Bar
 
-struct FilterChipBarView<TrailingContent: View>: View {
-    let chips: [ChipItem]
+package struct FilterChipBarView<TrailingContent: View>: View {
+    package let chips: [ChipItem]
     @ViewBuilder var trailing: () -> TrailingContent
 
-    var body: some View {
+    package var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: PryTheme.Spacing.sm) {
                 ForEach(chips) { chip in
@@ -42,7 +42,7 @@ struct FilterChipBarView<TrailingContent: View>: View {
 }
 
 extension FilterChipBarView where TrailingContent == EmptyView {
-    init(chips: [ChipItem]) {
+    package init(chips: [ChipItem]) {
         self.chips = chips
         self.trailing = { EmptyView() }
     }
@@ -50,15 +50,15 @@ extension FilterChipBarView where TrailingContent == EmptyView {
 
 // MARK: - Chip View
 
-struct FilterChipView: View {
-    let title: String
-    let count: Int
-    var icon: String?
-    var color: Color = PryTheme.Colors.textSecondary
-    let isSelected: Bool
-    let action: () -> Void
+package struct FilterChipView: View {
+    package let title: String
+    package let count: Int
+    package var icon: String?
+    package var color: Color = PryTheme.Colors.textSecondary
+    package let isSelected: Bool
+    package let action: () -> Void
 
-    var body: some View {
+    package var body: some View {
         Button(action: action) {
             HStack(spacing: PryTheme.Spacing.xs) {
                 if let icon {

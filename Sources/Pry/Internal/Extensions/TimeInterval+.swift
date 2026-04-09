@@ -1,7 +1,7 @@
 import Foundation
 
-extension TimeInterval {
-    var formattedDuration: String {
+package extension TimeInterval {
+    package var formattedDuration: String {
         if self < 1 {
             return String(format: "%.0fms", self * 1000)
         } else {
@@ -10,8 +10,8 @@ extension TimeInterval {
     }
 }
 
-extension Optional where Wrapped == TimeInterval {
-    var formattedDuration: String {
+package extension Optional where Wrapped == TimeInterval {
+    package var formattedDuration: String {
         guard let value = self else { return "-" }
         return value.formattedDuration
     }

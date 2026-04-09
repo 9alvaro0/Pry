@@ -1,13 +1,13 @@
 import SwiftUI
 
-struct FloatingActionButtonView: View {
-    let icon: String
-    let backgroundColor: Color
-    let foregroundColor: Color
-    let size: CGFloat
-    let action: () -> Void
+package struct FloatingActionButtonView: View {
+    package let icon: String
+    package let backgroundColor: Color
+    package let foregroundColor: Color
+    package let size: CGFloat
+    package let action: () -> Void
 
-    var body: some View {
+    package var body: some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.title2)

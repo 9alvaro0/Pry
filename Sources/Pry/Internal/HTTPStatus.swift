@@ -1,9 +1,9 @@
 import Foundation
 
 /// Human-readable descriptions for HTTP status codes.
-enum HTTPStatus {
+package enum HTTPStatus {
 
-    static func description(for code: Int) -> String {
+    package static func description(for code: Int) -> String {
         switch code {
         // 1xx Informational
         case 100: return "Continue"

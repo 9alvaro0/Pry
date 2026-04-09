@@ -1,30 +1,30 @@
 import SwiftUI
 
 /// Standardized sheet header with title and optional leading/trailing actions.
-struct SheetHeader: View {
-    let title: String
-    var leadingAction: HeaderAction?
-    var trailingAction: HeaderAction
+package struct SheetHeader: View {
+    package let title: String
+    package var leadingAction: HeaderAction?
+    package var trailingAction: HeaderAction
 
-    struct HeaderAction {
-        let icon: String
-        let color: Color
-        let action: () -> Void
+    package struct HeaderAction {
+        package let icon: String
+        package let color: Color
+        package let action: () -> Void
 
-        static func close(_ action: @escaping () -> Void) -> HeaderAction {
+        package static func close(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "xmark", color: PryTheme.Colors.textSecondary, action: action)
         }
 
-        static func done(_ action: @escaping () -> Void) -> HeaderAction {
+        package static func done(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "checkmark", color: PryTheme.Colors.accent, action: action)
         }
 
-        static func reset(_ action: @escaping () -> Void) -> HeaderAction {
+        package static func reset(_ action: @escaping () -> Void) -> HeaderAction {
             HeaderAction(icon: "arrow.counterclockwise", color: PryTheme.Colors.error, action: action)
         }
     }
 
-    var body: some View {
+    package var body: some View {
         VStack(spacing: 0) {
             HStack {
                 if let leading = leadingAction {

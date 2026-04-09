@@ -1,11 +1,11 @@
 import SwiftUI
 
-struct EmptyStateView: View {
-    let title: String
-    let systemImage: String
-    let description: String
+package struct EmptyStateView: View {
+    package let title: String
+    package let systemImage: String
+    package let description: String
 
-    var body: some View {
+    package var body: some View {
         ContentUnavailableView {
             Label(title, systemImage: systemImage)
         } description: {

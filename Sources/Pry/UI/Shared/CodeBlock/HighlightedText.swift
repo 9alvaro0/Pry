@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Renders text with search matches highlighted using AttributedString (preserves word wrap).
-struct HighlightedText: View {
-    let text: String
-    let query: String
-    let baseColor: Color
+package struct HighlightedText: View {
+    package let text: String
+    package let query: String
+    package let baseColor: Color
 
-    var body: some View {
+    package var body: some View {
         if query.isEmpty || !text.lowercased().contains(query.lowercased()) {
             Text(text)
                 .foregroundStyle(baseColor)

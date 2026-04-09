@@ -1,14 +1,14 @@
 import SwiftUI
 
-struct DetailSectionView<Content: View>: View {
-    let title: String
-    var collapsible: Bool = false
-    var startCollapsed: Bool = false
+package struct DetailSectionView<Content: View>: View {
+    package let title: String
+    package var collapsible: Bool = false
+    package var startCollapsed: Bool = false
     @ViewBuilder let content: () -> Content
 
     @State private var isExpanded: Bool
 
-    init(title: String, collapsible: Bool = false, startCollapsed: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+    package init(title: String, collapsible: Bool = false, startCollapsed: Bool = false, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
         self.collapsible = collapsible
         self.startCollapsed = startCollapsed
@@ -16,7 +16,7 @@ struct DetailSectionView<Content: View>: View {
         self._isExpanded = State(initialValue: !startCollapsed)
     }
 
-    var body: some View {
+    package var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
             if collapsible {

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Content type detection for code block rendering.
-enum ContentLanguage: String, CaseIterable {
+package enum ContentLanguage: String, CaseIterable {
     case json = "json"
     case text = "text"
     case http = "http"
@@ -10,7 +10,7 @@ enum ContentLanguage: String, CaseIterable {
     case javascript = "javascript"
     case plain = "plain"
 
-    var displayName: String {
+    package var displayName: String {
         switch self {
         case .json: return "JSON"
         case .text, .plain: return "Text"
@@ -21,11 +21,11 @@ enum ContentLanguage: String, CaseIterable {
         }
     }
 
-    var uppercased: String {
+    package var uppercased: String {
         return displayName.uppercased()
     }
 
-    static func detect(from content: String) -> ContentLanguage {
+    package static func detect(from content: String) -> ContentLanguage {
         let trimmed = content.trimmingCharacters(in: .whitespacesAndNewlines)
 
         if trimmed.contains("HTTP/") || (trimmed.contains("GET ") || trimmed.contains("POST ") ||

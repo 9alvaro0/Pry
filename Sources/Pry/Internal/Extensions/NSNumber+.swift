@@ -1,7 +1,7 @@
 import Foundation
 
-extension NSNumber {
-    var isBool: Bool {
+package extension NSNumber {
+    package var isBool: Bool {
         return CFBooleanGetTypeID() == CFGetTypeID(self)
     }
 }

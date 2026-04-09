@@ -1,28 +1,28 @@
 import Foundation
 import SwiftUI
 
-extension String {
+package extension String {
 
     // MARK: - URL parts
 
     private var parsedURL: URL? { URL(string: self) }
 
-    func extractProtocol() -> String {
+    package func extractProtocol() -> String {
         components(separatedBy: "://").first ?? ""
     }
 
-    func extractHost() -> String {
+    package func extractHost() -> String {
         guard let url = parsedURL else { return self }
         return url.host ?? self
     }
 
-    func extractPath() -> String {
+    package func extractPath() -> String {
         guard let url = parsedURL else { return "/" }
         let path = url.path
         return path.isEmpty ? "/" : path
     }
 
-    func extractQuery() -> String? {
+    package func extractQuery() -> String? {
         guard let query = parsedURL?.query,
               !query.isEmpty else { return nil }
         return query
@@ -30,11 +30,11 @@ extension String {
 
     // MARK: - HTTP
 
-    func methodColor() -> Color {
+    package func methodColor() -> Color {
         PryTheme.Colors.methodColor(self)
     }
 
-    func sanitizedURL() -> String {
+    package func sanitizedURL() -> String {
         guard let urlComponents = URLComponents(string: self) else { return self }
 
         var sanitized = urlComponents
@@ -50,7 +50,7 @@ extension String {
         return sanitized.url?.absoluteString ?? self
     }
 
-    func sanitizedError() -> String {
+    package func sanitizedError() -> String {
         var sanitized = self
 
         sanitized = sanitized.replacingOccurrences(
