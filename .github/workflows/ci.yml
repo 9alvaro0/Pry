@@ -17,44 +17,34 @@ jobs:
     name: Build & Test (iOS)
     runs-on: macos-15
     timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        destination:
-          - 'platform=iOS Simulator,name=iPhone 16 Pro,OS=latest'
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_16.app
 
       - name: Show build environment
         run: |
           xcodebuild -version
           swift --version
 
-      - name: Resolve package dependencies
-        run: xcodebuild -resolvePackageDependencies -scheme Pry
-
       - name: Build
         run: |
           set -o pipefail
           xcodebuild build \
             -scheme Pry \
-            -destination "${{ matrix.destination }}" \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
-            | tail -50
+            | tail -80
 
       - name: Test
         run: |
           set -o pipefail
           xcodebuild test \
             -scheme Pry \
-            -destination "${{ matrix.destination }}" \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             CODE_SIGNING_ALLOWED=NO \
-            -resultBundlePath TestResults.xcresult
+            -resultBundlePath TestResults.xcresult \
+            | tail -100
 
       - name: Upload test results
         if: failure()
