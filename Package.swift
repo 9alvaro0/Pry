@@ -17,5 +17,9 @@ let package = Package(
         .target(
             name: "Pry"
         ),
+        .testTarget(
+            name: "PryTests",
+            dependencies: ["Pry"]
+        ),
     ]
 )

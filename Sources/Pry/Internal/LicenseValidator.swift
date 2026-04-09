@@ -101,8 +101,16 @@ enum LicenseValidator {
             return nil
         }
 
-        let expiresAt: Date? = (json["exp"] as? String).flatMap {
-            ISO8601DateFormatter().date(from: $0)
+        // Accept both `2027-01-01` (date only) and `2027-01-01T00:00:00Z` (full timestamp).
+        let expiresAt: Date? = (json["exp"] as? String).flatMap { raw -> Date? in
+            let fullFormatter = ISO8601DateFormatter()
+            fullFormatter.formatOptions = [.withInternetDateTime]
+            if let date = fullFormatter.date(from: raw) {
+                return date
+            }
+            let dateOnlyFormatter = ISO8601DateFormatter()
+            dateOnlyFormatter.formatOptions = [.withFullDate]
+            return dateOnlyFormatter.date(from: raw)
         }
 
         return License(email: email, plan: plan, expiresAt: expiresAt)

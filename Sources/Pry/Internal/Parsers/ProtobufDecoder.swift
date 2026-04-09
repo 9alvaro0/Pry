@@ -137,14 +137,16 @@ private struct Reader {
 
     mutating func readFixed32() -> UInt32? {
         guard offset + 4 <= data.count else { return nil }
-        let value = data[offset..<offset+4].withUnsafeBytes { $0.load(as: UInt32.self) }
+        // Use loadUnaligned because protobuf fields can land on any byte offset,
+        // and `load(as:)` traps on misaligned pointers on ARM64 (iPhone, iPad simulator).
+        let value = data[offset..<offset+4].withUnsafeBytes { $0.loadUnaligned(as: UInt32.self) }
         offset += 4
         return value
     }
 
     mutating func readFixed64() -> UInt64? {
         guard offset + 8 <= data.count else { return nil }
-        let value = data[offset..<offset+8].withUnsafeBytes { $0.load(as: UInt64.self) }
+        let value = data[offset..<offset+8].withUnsafeBytes { $0.loadUnaligned(as: UInt64.self) }
         offset += 8
         return value
     }
@@ -160,8 +162,27 @@ private struct Reader {
 // MARK: - Character Extension
 
 private extension Character {
+    /// Whether this character is printable (letters, digits, punctuation, symbols,
+    /// or common whitespace). Rejects C0/C1 control codes so binary payloads that
+    /// happen to be valid UTF-8 aren't misclassified as strings.
     var isPrintable: Bool {
-        // Allow common printable characters including unicode
-        !self.isNewline || self == "\n" || self == "\r"
+        unicodeScalars.allSatisfy { scalar in
+            // Explicitly allow the whitespace we care about.
+            if scalar == "\n" || scalar == "\r" || scalar == "\t" || scalar == " " {
+                return true
+            }
+            switch scalar.properties.generalCategory {
+            case .control,
+                 .format,
+                 .privateUse,
+                 .surrogate,
+                 .unassigned,
+                 .lineSeparator,
+                 .paragraphSeparator:
+                return false
+            default:
+                return true
+            }
+        }
     }
 }

@@ -157,7 +157,7 @@ struct JSONRenderer: View {
                     .foregroundStyle(PryTheme.Colors.textTertiary)
 
             case .string(let value):
-                highlightable("\"\(value)\"", color: PryTheme.Colors.syntaxString)
+                highlightable("\"\(Self.escapeJSONString(value))\"", color: PryTheme.Colors.syntaxString)
 
             case .number(let value):
                 highlightable(value, color: PryTheme.Colors.syntaxNumber)
@@ -332,6 +332,34 @@ struct JSONRenderer: View {
             lines.append(JSONLine(lineNumber: lineNum, level: level, key: key, content: .null, hasComma: !isLast, path: path))
             lineNum += 1
         }
+    }
+
+    // MARK: - String Escaping
+
+    /// Escapes control characters and quotes so JSON string values render on a single line.
+    /// JSONSerialization decodes `\n`, `\t`, etc. into actual control characters, which
+    /// would otherwise break line numbering and indentation when rendered by SwiftUI's Text.
+    private static func escapeJSONString(_ s: String) -> String {
+        var result = ""
+        result.reserveCapacity(s.count)
+        for scalar in s.unicodeScalars {
+            switch scalar {
+            case "\\": result += "\\\\"
+            case "\"": result += "\\\""
+            case "\n": result += "\\n"
+            case "\r": result += "\\r"
+            case "\t": result += "\\t"
+            case "\u{08}": result += "\\b"
+            case "\u{0C}": result += "\\f"
+            default:
+                if scalar.value < 0x20 {
+                    result += String(format: "\\u%04x", scalar.value)
+                } else {
+                    result.unicodeScalars.append(scalar)
+                }
+            }
+        }
+        return result
     }
 
     // MARK: - Parsing
