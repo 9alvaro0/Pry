@@ -8,9 +8,23 @@ final class PushNotificationInterceptor: NSObject, @unchecked Sendable {
 
     nonisolated(unsafe) static var store: PryStore?
 
-    /// Installs the swizzle. Call once at inspector start.
+    /// Installs the swizzle and ensures a delegate is always set so that
+    /// foreground notifications are displayed.
     static func install() {
         swizzleDelegateSetup()
+
+        // If the app has no delegate, install our own so foreground notifications appear
+        if UNUserNotificationCenter.current().delegate == nil {
+            let fallback = FallbackNotificationDelegate()
+            // Keep a strong reference
+            objc_setAssociatedObject(
+                UNUserNotificationCenter.current(),
+                &FallbackNotificationDelegate.fallbackKey,
+                fallback,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
+            UNUserNotificationCenter.current().delegate = fallback
+        }
     }
 
     // MARK: - Swizzle
@@ -145,5 +159,31 @@ private class NotificationDelegateProxy: NSObject, UNUserNotificationCenterDeleg
     override func forwardingTarget(for aSelector: Selector!) -> Any? {
         if original.responds(to: aSelector) { return original }
         return super.forwardingTarget(for: aSelector)
+    }
+}
+
+// MARK: - Fallback Delegate
+
+/// Minimal delegate that displays notifications in foreground.
+/// Used when the host app has no delegate of its own.
+private class FallbackNotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+    nonisolated(unsafe) static var fallbackKey = 0
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        PushNotificationInterceptor.logNotification(notification)
+        completionHandler([.banner, .sound, .badge, .list])
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        PushNotificationInterceptor.logNotification(response.notification)
+        completionHandler()
     }
 }

@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct DeeplinkSimulatorView: View {
     @Bindable var store: PryStore
@@ -8,127 +9,30 @@ struct DeeplinkSimulatorView: View {
     @State private var urlInput: String = ""
     @State private var history: [String] = []
     @State private var validationError: String?
+    @State private var sent = false
 
     private let maxHistory = 5
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 0) {
-                // Input section
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-                    Text("URL")
-                        .font(PryTheme.Typography.detail)
-                        .fontWeight(.semibold)
-                        .textCase(.uppercase)
-                        .tracking(PryTheme.Text.tracking)
-                        .foregroundStyle(PryTheme.Colors.textSecondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: PryTheme.Spacing.lg) {
+                    urlSection
 
-                    TextField("myapp://rooms/open?roomId=42", text: $urlInput)
-                        .font(PryTheme.Typography.code)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .keyboardType(.URL)
-                        .padding(PryTheme.Spacing.md)
-                        .background(PryTheme.Colors.surface)
-                        .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: PryTheme.Radius.md)
-                                .stroke(
-                                    validationError != nil
-                                        ? PryTheme.Colors.error.opacity(PryTheme.Opacity.overlay)
-                                        : PryTheme.Colors.border,
-                                    lineWidth: 1
-                                )
-                        )
-                        .onChange(of: urlInput) {
-                            validationError = nil
-                        }
-
-                    if let error = validationError {
-                        Text(error)
-                            .font(PryTheme.Typography.detail)
-                            .foregroundStyle(PryTheme.Colors.error)
+                    if !history.isEmpty {
+                        historySection
                     }
 
-                    Button {
-                        simulateURL()
-                    } label: {
-                        HStack {
-                            Image(systemName: "play.fill")
-                                .font(PryTheme.Typography.detail)
-                            Text("Simulate")
-                                .font(PryTheme.Typography.subheading)
-                        }
-                        .foregroundStyle(PryTheme.Colors.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, PryTheme.Spacing.md)
-                        .background(PryTheme.Colors.deeplinks)
-                        .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-                    }
-                    .disabled(urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                    .opacity(urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? PryTheme.Opacity.overlay : 1)
+                    sendButton
                 }
                 .padding(PryTheme.Spacing.lg)
-
-                // History section
-                if !history.isEmpty {
-                    VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-                        Text("Recent")
-                            .font(PryTheme.Typography.detail)
-                            .fontWeight(.semibold)
-                            .textCase(.uppercase)
-                            .tracking(PryTheme.Text.tracking)
-                            .foregroundStyle(PryTheme.Colors.textSecondary)
-                            .padding(.horizontal, PryTheme.Spacing.lg)
-
-                        ScrollView {
-                            VStack(spacing: 1) {
-                                ForEach(history, id: \.self) { url in
-                                    Button {
-                                        urlInput = url
-                                        simulateURL()
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "arrow.counterclockwise")
-                                                .font(PryTheme.Typography.detail)
-                                                .foregroundStyle(PryTheme.Colors.textTertiary)
-
-                                            Text(url)
-                                                .font(PryTheme.Typography.codeSmall)
-                                                .foregroundStyle(PryTheme.Colors.textPrimary)
-                                                .lineLimit(1)
-                                                .truncationMode(.middle)
-
-                                            Spacer()
-
-                                            Image(systemName: "play.circle")
-                                                .font(PryTheme.Typography.body)
-                                                .foregroundStyle(PryTheme.Colors.deeplinks)
-                                        }
-                                        .padding(.horizontal, PryTheme.Spacing.lg)
-                                        .padding(.vertical, PryTheme.Spacing.md)
-                                        .background(PryTheme.Colors.surface)
-                                        .contentShape(.rect)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
-                            }
-                            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-                            .padding(.horizontal, PryTheme.Spacing.lg)
-                        }
-                    }
-                }
-
-                Spacer()
             }
             .pryBackground()
             .navigationTitle("Simulate Deeplink")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
+                    Button { dismiss() } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(PryTheme.Typography.body)
                             .foregroundStyle(PryTheme.Colors.textSecondary)
@@ -136,6 +40,122 @@ struct DeeplinkSimulatorView: View {
                 }
             }
         }
+    }
+
+    // MARK: - URL Section
+
+    private var urlSection: some View {
+        VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
+            fieldLabel("URL")
+
+            TextField("myapp://rooms/open?roomId=42", text: $urlInput)
+                .font(PryTheme.Typography.code)
+                .foregroundStyle(PryTheme.Colors.textPrimary)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .keyboardType(.URL)
+                .padding(PryTheme.Spacing.md)
+                .background(PryTheme.Colors.surface)
+                .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+                .overlay(
+                    RoundedRectangle(cornerRadius: PryTheme.Radius.md)
+                        .stroke(
+                            validationError != nil ? PryTheme.Colors.error : PryTheme.Colors.border,
+                            lineWidth: 1
+                        )
+                )
+                .onChange(of: urlInput) {
+                    validationError = nil
+                }
+
+            if let error = validationError {
+                Text(error)
+                    .font(PryTheme.Typography.detail)
+                    .foregroundStyle(PryTheme.Colors.error)
+            }
+
+            Text("Use any scheme registered by your app, or a Universal Link.")
+                .font(PryTheme.Typography.detail)
+                .foregroundStyle(PryTheme.Colors.textTertiary)
+        }
+    }
+
+    // MARK: - History Section
+
+    private var historySection: some View {
+        VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
+            fieldLabel("Recent")
+
+            VStack(spacing: 1) {
+                ForEach(history, id: \.self) { url in
+                    Button {
+                        urlInput = url
+                        simulateURL()
+                    } label: {
+                        HStack(spacing: PryTheme.Spacing.sm) {
+                            Image(systemName: "arrow.counterclockwise")
+                                .font(PryTheme.Typography.detail)
+                                .foregroundStyle(PryTheme.Colors.textTertiary)
+
+                            Text(url)
+                                .font(PryTheme.Typography.codeSmall)
+                                .foregroundStyle(PryTheme.Colors.textPrimary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+
+                            Spacer()
+
+                            Image(systemName: "play.circle")
+                                .font(PryTheme.Typography.body)
+                                .foregroundStyle(PryTheme.Colors.deeplinks)
+                        }
+                        .padding(.horizontal, PryTheme.Spacing.md)
+                        .padding(.vertical, PryTheme.Spacing.md)
+                        .background(PryTheme.Colors.surface)
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+        }
+    }
+
+    // MARK: - Send Button
+
+    private var sendButton: some View {
+        Button {
+            simulateURL()
+        } label: {
+            HStack {
+                Image(systemName: sent ? "checkmark.circle.fill" : "link")
+                    .font(PryTheme.Typography.body)
+                Text(sent ? "Sent!" : "Open Deeplink")
+                    .font(PryTheme.Typography.subheading)
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, PryTheme.Spacing.md)
+            .background(sent ? PryTheme.Colors.success : PryTheme.Colors.deeplinks)
+            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+        }
+        .disabled(isSendDisabled)
+        .opacity(isSendDisabled ? PryTheme.Opacity.overlay : 1)
+    }
+
+    // MARK: - Components
+
+    private func fieldLabel(_ text: String) -> some View {
+        Text(text)
+            .font(PryTheme.Typography.detail)
+            .fontWeight(.semibold)
+            .textCase(.uppercase)
+            .tracking(PryTheme.Text.tracking)
+            .foregroundStyle(PryTheme.Colors.textSecondary)
+    }
+
+    private var isSendDisabled: Bool {
+        urlInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     // MARK: - Actions
@@ -151,6 +171,13 @@ struct DeeplinkSimulatorView: View {
 
         store.logDeeplink(url: url)
 
+        // Open the URL so the app actually receives it
+        Task { @MainActor in
+            if UIApplication.shared.canOpenURL(url) {
+                await UIApplication.shared.open(url)
+            }
+        }
+
         // Update history
         history.removeAll { $0 == trimmed }
         history.insert(trimmed, at: 0)
@@ -158,8 +185,14 @@ struct DeeplinkSimulatorView: View {
             history = Array(history.prefix(maxHistory))
         }
 
-        urlInput = ""
         validationError = nil
+
+        // Visual feedback
+        withAnimation { sent = true }
+        Task {
+            try? await Task.sleep(for: PryTheme.Animation.toastDismiss)
+            withAnimation { sent = false }
+        }
     }
 }
 

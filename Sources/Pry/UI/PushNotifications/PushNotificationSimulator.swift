@@ -314,24 +314,7 @@ struct PushNotificationSimulatorView: View {
     }
 
     private func scheduleAndLog(content: UNMutableNotificationContent, extraUserInfo: [String: Any]) {
-        // Request permissions if needed
-        if !permissionGranted {
-            Task {
-                let granted = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
-                await MainActor.run { permissionGranted = granted ?? false }
-            }
-        }
-
-        // Schedule real notification
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 0.5, repeats: false)
-        let request = UNNotificationRequest(
-            identifier: "pry-\(UUID().uuidString)",
-            content: content,
-            trigger: trigger
-        )
-        UNUserNotificationCenter.current().add(request)
-
-        // Log in store
+        // Always log to the store first (so it shows up even if permissions fail)
         store.logPushNotification(
             title: content.title.isEmpty ? nil : content.title,
             body: content.body.isEmpty ? nil : content.body,
@@ -342,6 +325,25 @@ struct PushNotificationSimulatorView: View {
             threadIdentifier: content.threadIdentifier.isEmpty ? nil : content.threadIdentifier,
             userInfo: content.userInfo as? [String: Any] ?? [:]
         )
+
+        // Schedule real notification (request permissions first if needed)
+        Task {
+            let center = UNUserNotificationCenter.current()
+
+            if !permissionGranted {
+                let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+                await MainActor.run { permissionGranted = granted }
+                guard granted else { return }
+            }
+
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+            let request = UNNotificationRequest(
+                identifier: "pry-\(UUID().uuidString)",
+                content: content,
+                trigger: trigger
+            )
+            try? await center.add(request)
+        }
     }
 }
 
