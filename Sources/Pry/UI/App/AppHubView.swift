@@ -226,25 +226,6 @@ struct AppHubView: View {
 
             rowDivider
 
-            // Breakpoints
-            NavigationLink {
-                BreakpointsView(store: store)
-                    .navigationTitle("Breakpoints")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                toolRow(
-                    icon: "pause.circle",
-                    title: "Breakpoints",
-                    color: PryTheme.Colors.warning,
-                    detail: store.breakpointRules.isEmpty ? nil : "\(store.breakpointRules.filter(\.isEnabled).count) active",
-                    showChevron: true,
-                    proFeature: .breakpoints
-                )
-            }
-            .disabled(!FeatureGate.isAvailable(.breakpoints))
-
-            rowDivider
-
             // Export session
             if FeatureGate.isAvailable(.shareSession), let url = SessionFileManager.export(store: store) {
                 ShareLink(item: url) {
