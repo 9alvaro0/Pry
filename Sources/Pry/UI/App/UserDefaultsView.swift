@@ -61,7 +61,7 @@ struct UserDefaultsView: View {
             }
         }
         .pryBackground()
-        .searchable(text: $searchText, prompt: "Key, value...")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Key, value...")
         .onAppear { loadDefaults() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {

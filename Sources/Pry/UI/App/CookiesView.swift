@@ -51,7 +51,7 @@ struct CookiesView: View {
             }
         }
         .pryBackground()
-        .searchable(text: $searchText, prompt: "Name, domain, value...")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Name, domain, value...")
         .onAppear { loadCookies() }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
