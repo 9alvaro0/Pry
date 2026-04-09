@@ -314,26 +314,20 @@ struct PushNotificationSimulatorView: View {
     }
 
     private func scheduleAndLog(content: UNMutableNotificationContent, extraUserInfo: [String: Any]) {
-        // Always log to the store first (so it shows up even if permissions fail)
-        store.logPushNotification(
-            title: content.title.isEmpty ? nil : content.title,
-            body: content.body.isEmpty ? nil : content.body,
-            subtitle: content.subtitle.isEmpty ? nil : content.subtitle,
-            badge: content.badge?.intValue,
-            sound: content.sound != nil ? "default" : nil,
-            categoryIdentifier: content.categoryIdentifier.isEmpty ? nil : content.categoryIdentifier,
-            threadIdentifier: content.threadIdentifier.isEmpty ? nil : content.threadIdentifier,
-            userInfo: content.userInfo as? [String: Any] ?? [:]
-        )
-
-        // Schedule real notification (request permissions first if needed)
+        // Note: we don't log directly. The notification will fire and the
+        // delegate (proxy or fallback) will log it via willPresent.
+        // This avoids duplicate logs.
         Task {
             let center = UNUserNotificationCenter.current()
 
             if !permissionGranted {
                 let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
                 await MainActor.run { permissionGranted = granted }
-                guard granted else { return }
+                guard granted else {
+                    // Permission denied — log directly as fallback so user sees something
+                    await logDirectly(content: content)
+                    return
+                }
             }
 
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
@@ -344,6 +338,20 @@ struct PushNotificationSimulatorView: View {
             )
             try? await center.add(request)
         }
+    }
+
+    @MainActor
+    private func logDirectly(content: UNMutableNotificationContent) {
+        store.logPushNotification(
+            title: content.title.isEmpty ? nil : content.title,
+            body: content.body.isEmpty ? nil : content.body,
+            subtitle: content.subtitle.isEmpty ? nil : content.subtitle,
+            badge: content.badge?.intValue,
+            sound: content.sound != nil ? "default" : nil,
+            categoryIdentifier: content.categoryIdentifier.isEmpty ? nil : content.categoryIdentifier,
+            threadIdentifier: content.threadIdentifier.isEmpty ? nil : content.threadIdentifier,
+            userInfo: content.userInfo as? [String: Any] ?? [:]
+        )
     }
 }
 

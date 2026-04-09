@@ -22,12 +22,20 @@ final class PushNotificationInterceptor: NSObject, @unchecked Sendable {
         // Swizzle setDelegate: so future delegates set by the host app get wrapped
         swizzleDelegateSetup()
 
-        // Set our delegate (wrapping any existing one)
-        // This goes through the swizzled setter, which wraps in NotificationDelegateProxy
         if let existingDelegate {
-            center.delegate = existingDelegate  // re-set to trigger wrapping
+            // Re-set to trigger wrapping through the swizzled setter
+            center.delegate = existingDelegate
         } else {
-            center.delegate = FallbackNotificationDelegate.shared
+            // Install fallback directly via ORIGINAL setter (avoid wrapping it in a proxy).
+            // After swizzle, center.pry_setDelegate(_:) IS the original implementation.
+            center.pry_setDelegate(FallbackNotificationDelegate.shared)
+            // Keep strong ref since center.delegate is weak
+            objc_setAssociatedObject(
+                center,
+                &NotificationDelegateProxy.proxyKey,
+                FallbackNotificationDelegate.shared,
+                .OBJC_ASSOCIATION_RETAIN_NONATOMIC
+            )
         }
     }
 
@@ -92,22 +100,22 @@ extension UNUserNotificationCenter {
 
     /// Swizzled `setDelegate:` — wraps the real delegate in a proxy.
     @objc func pry_setDelegate(_ delegate: UNUserNotificationCenterDelegate?) {
-        let proxy: UNUserNotificationCenterDelegate?
+        let final: UNUserNotificationCenterDelegate?
         if let delegate {
-            // Avoid double-wrapping
-            if delegate is NotificationDelegateProxy {
-                proxy = delegate
+            // Don't wrap our own delegates
+            if delegate is NotificationDelegateProxy || delegate is FallbackNotificationDelegate {
+                final = delegate
             } else {
-                proxy = NotificationDelegateProxy(original: delegate)
-                // Keep a strong ref to the proxy (delegate is weak in UNUserNotificationCenter)
+                let proxy = NotificationDelegateProxy(original: delegate)
                 objc_setAssociatedObject(self, &NotificationDelegateProxy.proxyKey, proxy, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                final = proxy
             }
         } else {
-            proxy = nil
             objc_setAssociatedObject(self, &NotificationDelegateProxy.proxyKey, nil, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+            final = nil
         }
         // After swizzle, calling pry_setDelegate runs the ORIGINAL implementation
-        self.pry_setDelegate(proxy)
+        self.pry_setDelegate(final)
     }
 }
 
@@ -169,7 +177,7 @@ final class NotificationDelegateProxy: NSObject, UNUserNotificationCenterDelegat
 
 // MARK: - Fallback Delegate
 
-/// Minimal delegate that displays notifications in foreground.
+/// Minimal delegate that logs notifications and displays them in foreground.
 /// Used when the host app has no delegate of its own.
 final class FallbackNotificationDelegate: NSObject, UNUserNotificationCenterDelegate, @unchecked Sendable {
     nonisolated(unsafe) static let shared = FallbackNotificationDelegate()
@@ -181,6 +189,7 @@ final class FallbackNotificationDelegate: NSObject, UNUserNotificationCenterDele
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
+        PushNotificationInterceptor.logNotification(notification)
         completionHandler([.banner, .sound, .badge, .list])
     }
 
@@ -189,6 +198,7 @@ final class FallbackNotificationDelegate: NSObject, UNUserNotificationCenterDele
         didReceive response: UNNotificationResponse,
         withCompletionHandler completionHandler: @escaping () -> Void
     ) {
+        PushNotificationInterceptor.logNotification(response.notification)
         completionHandler()
     }
 }
