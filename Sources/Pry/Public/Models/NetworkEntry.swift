@@ -73,6 +73,9 @@ public struct NetworkEntry: Identifiable, Codable, Sendable {
     /// Number of HTTP redirects that occurred.
     public var redirectCount: Int = 0
 
+    /// Each HTTP redirect hop captured along the request chain.
+    public var redirects: [RedirectHop] = []
+
     /// Whether this entry was served by a mock rule.
     public var isMocked: Bool = false
 

@@ -67,6 +67,8 @@ struct NetworkRequestDetailView: View {
 
                 timingSection
 
+                redirectChainSection
+
                 // Auth / JWT
                 jwtSection
 
@@ -336,6 +338,60 @@ struct NetworkRequestDetailView: View {
             Text(value.map { String(format: "%.1fms", $0 * 1000) } ?? "-")
                 .font(PryTheme.Typography.code)
                 .foregroundStyle(PryTheme.Colors.textPrimary)
+        }
+    }
+
+    // MARK: - Redirect Chain
+
+    @ViewBuilder
+    private var redirectChainSection: some View {
+        if !entry.redirects.isEmpty {
+            DetailSectionView(title: "Redirect Chain", collapsible: true) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(entry.redirects.enumerated()), id: \.element.id) { index, hop in
+                        redirectHopRow(statusCode: hop.statusCode, url: hop.fromURL)
+                        redirectConnector
+                        if index == entry.redirects.count - 1 {
+                            // Final destination — use the actual response status
+                            redirectHopRow(
+                                statusCode: entry.responseStatusCode ?? 0,
+                                url: hop.toURL,
+                                isFinal: true
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func redirectHopRow(statusCode: Int, url: String, isFinal: Bool = false) -> some View {
+        HStack(alignment: .center, spacing: PryTheme.Spacing.sm) {
+            Text("\(statusCode)")
+                .pryStatusBadge(statusCode)
+
+            Text(url)
+                .font(PryTheme.Typography.codeSmall)
+                .foregroundStyle(isFinal ? PryTheme.Colors.textPrimary : PryTheme.Colors.textSecondary)
+                .lineLimit(2)
+                .truncationMode(.middle)
+                .textSelection(.enabled)
+
+            Spacer(minLength: 0)
+
+            CopyButtonView(valueToCopy: url)
+        }
+        .padding(.vertical, PryTheme.Spacing.xs)
+    }
+
+    private var redirectConnector: some View {
+        HStack(spacing: 0) {
+            // Roughly centered under the status badge
+            Rectangle()
+                .fill(PryTheme.Colors.border)
+                .frame(width: 1, height: 14)
+                .padding(.leading, 18)
+            Spacer()
         }
     }
 

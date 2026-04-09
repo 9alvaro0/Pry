@@ -65,7 +65,8 @@ final class NetworkLogger: @unchecked Sendable {
         error: Error?,
         duration: TimeInterval,
         taskMetrics: URLSessionTaskMetrics?,
-        redirectCount: Int = 0
+        redirectCount: Int = 0,
+        redirects: [RedirectHop] = []
     ) {
         // Skip cancelled requests
         if let nsError = error as NSError?,
@@ -137,6 +138,7 @@ final class NetworkLogger: @unchecked Sendable {
                 metrics: metrics,
                 redirectCount: redirectCount
             )
+            entry.redirects = redirects
             entry.isReplay = pending?.isReplay ?? false
 
             Task { @MainActor in

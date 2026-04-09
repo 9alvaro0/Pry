@@ -14,6 +14,7 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
     private var requestID: UUID?
     private var taskMetrics: URLSessionTaskMetrics?
     private var redirectCount = 0
+    private var redirects: [RedirectHop] = []
     private var hasResponseBreakpoint = false
     private var matchedBreakpointRule: BreakpointRule?
 
@@ -55,13 +56,24 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
         // Strip internal replay header before forwarding to real server
         mutableRequest.setValue(nil, forHTTPHeaderField: "X-Pry-Replay")
 
+        // Recover the request body from the body stream if needed, then reinject it
+        // as httpBody so every downstream consumer (logger, URLSession, breakpoint
+        // editor, replay) sees the same bytes. URLSession strips httpBody → httpBodyStream
+        // before handing the request to URLProtocol, so reading the stream is the only
+        // way to recover the payload — and we read from the mutable copy to make sure
+        // the stream we consume is the same one that would otherwise be sent.
+        let bodyData = Self.extractBody(from: mutableRequest as URLRequest)
+        if let bodyData {
+            mutableRequest.httpBody = bodyData
+        }
+
         // Log request start
         if let url = request.url {
             requestID = Self.config.logger?.logRequest(
                 url: url.absoluteString,
                 method: request.httpMethod ?? "UNKNOWN",
                 headers: request.allHTTPHeaderFields ?? [:],
-                body: request.httpBody
+                body: bodyData
             )
         }
 
@@ -138,6 +150,38 @@ final class PryURLProtocol: URLProtocol, @unchecked Sendable {
     override public func stopLoading() {
         dataTask?.cancel()
         dataTask = nil
+    }
+
+    // MARK: - Body Extraction
+
+    /// Extracts the request body, reading from `httpBodyStream` when `httpBody` is nil.
+    ///
+    /// URLSession converts `httpBody` to `httpBodyStream` before passing the request
+    /// to URLProtocol, so `request.httpBody` is always nil in `startLoading()` for
+    /// requests created with `httpBody`. Reading the stream recovers the bytes.
+    private static func extractBody(from request: URLRequest) -> Data? {
+        if let body = request.httpBody {
+            return body
+        }
+        guard let stream = request.httpBodyStream else { return nil }
+
+        stream.open()
+        defer { stream.close() }
+
+        let bufferSize = 4096
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate() }
+
+        var data = Data()
+        while stream.hasBytesAvailable {
+            let read = stream.read(buffer, maxLength: bufferSize)
+            if read > 0 {
+                data.append(buffer, count: read)
+            } else {
+                break
+            }
+        }
+        return data.isEmpty ? nil : data
     }
 
     // MARK: - Mock Response
@@ -327,6 +371,13 @@ extension PryURLProtocol: URLSessionDataDelegate {
         completionHandler: @escaping (URLRequest?) -> Void
     ) {
         redirectCount += 1
+        if let from = response.url?.absoluteString, let to = request.url?.absoluteString {
+            redirects.append(RedirectHop(
+                fromURL: from,
+                statusCode: response.statusCode,
+                toURL: to
+            ))
+        }
         completionHandler(request)
     }
 
@@ -363,7 +414,8 @@ extension PryURLProtocol: URLSessionDataDelegate {
                 error: error,
                 duration: duration,
                 taskMetrics: taskMetrics,
-                redirectCount: redirectCount
+                redirectCount: redirectCount,
+                redirects: redirects
             )
         }
 

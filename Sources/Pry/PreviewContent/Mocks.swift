@@ -574,6 +574,18 @@ extension NetworkEntry {
             )
         )
         entry.redirectCount = 2
+        entry.redirects = [
+            RedirectHop(
+                fromURL: "https://api.example.com/v1/legacy/users",
+                statusCode: 301,
+                toURL: "https://api.example.com/v2/legacy/users"
+            ),
+            RedirectHop(
+                fromURL: "https://api.example.com/v2/legacy/users",
+                statusCode: 302,
+                toURL: "https://api.example.com/v2/users"
+            )
+        ]
         return entry
     }
 
