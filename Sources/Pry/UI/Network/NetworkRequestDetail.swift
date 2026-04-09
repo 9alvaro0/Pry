@@ -601,9 +601,8 @@ struct NetworkRequestDetailView: View {
         // Tag as replay so the logger can mark the new entry
         request.setValue("true", forHTTPHeaderField: "X-Pry-Replay")
 
-        // Restore body (skip special encoded bodies like [IMAGE:...] or [Binary data:...])
-        if let body = entry.requestBody, !body.isEmpty,
-           !body.hasPrefix("[IMAGE:"), !body.hasPrefix("[Binary data:") {
+        // Restore body (skip placeholder bodies that can't be reconstructed)
+        if let body = entry.requestBody, !body.isEmpty, !body.hasPrefix("[") {
             request.httpBody = body.data(using: .utf8)
         }
 

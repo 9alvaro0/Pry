@@ -206,25 +206,21 @@ final class NetworkLogger: @unchecked Sendable {
         }
 
         let maxSize = 1_000_000
-        let limitedData = data.count > maxSize ? data.prefix(maxSize) : data
 
-        if let jsonObject = try? JSONSerialization.jsonObject(with: limitedData, options: []),
-           let prettyData = try? JSONSerialization.data(withJSONObject: jsonObject, options: .prettyPrinted),
-           let prettyString = String(data: prettyData, encoding: .utf8) {
-            return data.count > maxSize
-                ? prettyString + "\n\n[Truncated... Total size: \(data.count) bytes]"
-                : prettyString
+        // Store raw UTF-8 string when possible — CodeBlockView handles pretty-printing for display.
+        // This preserves the original bytes so Replay can reconstruct the exact request.
+        if data.count <= maxSize, let rawString = String(data: data, encoding: .utf8) {
+            return rawString
         }
 
-        if let rawString = String(data: limitedData, encoding: .utf8) {
-            return data.count > maxSize
-                ? rawString + "\n\n[Truncated... Total size: \(data.count) bytes]"
-                : rawString
+        // For oversized text bodies, use placeholder so Replay knows to skip
+        if let _ = String(data: data.prefix(maxSize), encoding: .utf8) {
+            return "[Truncated: \(data.count) bytes]"
         }
 
-        // Try raw protobuf decode
+        // Try raw protobuf decode (display only — Replay skips this placeholder)
         if let decoded = ProtobufDecoder.decodeRaw(data) {
-            return decoded
+            return "[Protobuf: \(data.count) bytes]\n\(decoded)"
         }
 
         return "[Binary data: \(data.count) bytes]"
