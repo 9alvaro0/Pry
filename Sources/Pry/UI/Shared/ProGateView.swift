@@ -76,7 +76,6 @@ extension FeatureGate.Feature {
         case .shareSession: "Share Session"
         case .networkThrottle: "Network Throttle"
         case .protobufDecoder: "Protobuf Decoder"
-        case .sqliteViewer: "SQLite Viewer"
         case .performanceMetrics: "Performance Metrics"
         }
     }

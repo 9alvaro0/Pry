@@ -30,8 +30,6 @@ public enum FeatureGate {
         case networkThrottle
         /// Decode Protocol Buffer payloads.
         case protobufDecoder
-        /// Browse local SQLite databases.
-        case sqliteViewer
         /// View CPU, memory, and frame rate metrics.
         case performanceMetrics
     }

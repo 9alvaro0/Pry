@@ -119,36 +119,6 @@ struct AppHubView: View {
                     detail: "\(UserDefaults.standard.dictionaryRepresentation().count) keys"
                 )
             }
-
-            rowDivider
-
-            NavigationLink {
-                KeychainView()
-                    .navigationTitle("Keychain")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                storageRow(
-                    icon: "key",
-                    title: "Keychain",
-                    color: PryTheme.Colors.accent,
-                    detail: ""
-                )
-            }
-
-            rowDivider
-
-            NavigationLink {
-                FileBrowserView()
-                    .navigationTitle("Sandbox")
-                    .navigationBarTitleDisplayMode(.inline)
-            } label: {
-                storageRow(
-                    icon: "folder",
-                    title: "File Browser",
-                    color: PryTheme.Colors.syntaxNumber,
-                    detail: ""
-                )
-            }
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))

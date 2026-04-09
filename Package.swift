@@ -15,10 +15,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Pry",
-            linkerSettings: [
-                .linkedLibrary("sqlite3"),
-            ]
+            name: "Pry"
         ),
     ]
 )

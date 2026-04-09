@@ -41,8 +41,7 @@ Pry intercepts all `URLSession` traffic and gives you a full debugging suite —
 **App Hub**
 - Deeplinks monitor with simulator
 - Push Notifications with automatic capture and simulator
-- Cookies, UserDefaults editor, Keychain browser
-- File Browser with SQLite table viewer *(Pro)*
+- Cookies, UserDefaults editor
 - Device & App info, Permissions dashboard
 - Performance metrics with live charts *(Pro)*
 
