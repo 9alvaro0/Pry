@@ -270,9 +270,9 @@ struct PushNotificationSimulatorView: View {
 
     private func checkPermissions() {
         Task {
-            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            let status = await UNUserNotificationCenter.current().currentAuthorizationStatus()
             await MainActor.run {
-                permissionGranted = settings.authorizationStatus == .authorized
+                permissionGranted = status == .authorized
             }
         }
     }

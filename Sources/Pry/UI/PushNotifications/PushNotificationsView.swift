@@ -147,8 +147,8 @@ struct PushNotificationsView: View {
         )
         Task {
             let center = UNUserNotificationCenter.current()
-            let settings = await center.notificationSettings()
-            if settings.authorizationStatus != .authorized {
+            let status = await center.currentAuthorizationStatus()
+            if status != .authorized {
                 _ = try? await center.requestAuthorization(options: [.alert, .sound, .badge])
             }
             try? await center.add(request)
