@@ -49,6 +49,7 @@ import UIKit
         .pryBackground()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
+        .modifier(ProDetailSheetModifier())
         .overlay(alignment: .top) {
             if showCopied {
                 copiedToast
@@ -416,6 +417,18 @@ import UIKit
                 Button { copyToClipboard(generateCurlCommand()) } label: {
                     Label("Copy cURL", systemImage: "terminal.fill")
                 }
+
+                if let actions = PryHooks.proDetailActions?(entry), !actions.isEmpty {
+                    Section {
+                        ForEach(actions) { action in
+                            Button {
+                                PryHooks.proDetailActionHandler?(action.id, entry)
+                            } label: {
+                                Label(action.title, systemImage: action.icon)
+                            }
+                        }
+                    }
+                }
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(PryTheme.Typography.body)
@@ -578,6 +591,24 @@ import UIKit
     private var curlHeaders: [String: String] {
         entry.requestHeaders.filter { key, _ in
             !key.hasPrefix("X-Debug-") && !Self.internalHeaders.contains(key) && !Self.curlExtraSkip.contains(key)
+        }
+    }
+}
+
+// MARK: - Pro Detail Sheet Modifier
+
+/// Bridges the ``PryHooks/proDetailSheet`` hook into a `.sheet` modifier.
+/// When PryPro is not linked the hook is nil and no sheet is ever presented.
+private struct ProDetailSheetModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        if let sheetHook = PryHooks.proDetailSheet {
+            let sheet = sheetHook()
+            content
+                .sheet(isPresented: sheet.isPresented) {
+                    sheet.content()
+                }
+        } else {
+            content
         }
     }
 }
