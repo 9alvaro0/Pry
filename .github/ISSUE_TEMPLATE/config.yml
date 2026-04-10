@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Pry Pro (commercial extension)
+    url: https://pry.dev/pro
+    about: Questions about the paid PryPro extension, licensing, or billing.
+  - name: Discussions
+    url: https://github.com/9alvaro0/Pry/discussions
+    about: Ask questions, share use cases, and talk to other users.

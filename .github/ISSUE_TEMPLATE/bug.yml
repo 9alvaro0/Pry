@@ -1,0 +1,85 @@
+name: Bug report
+description: Report something that is broken in Pry
+title: "[bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. The more detail you can give, the faster it can be fixed.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: Minimal steps that reliably reproduce the issue.
+      placeholder: |
+        1. Attach `.pry(store:)` to a view
+        2. Perform a GET to …
+        3. Open the inspector
+        4. See …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: input
+    id: pry_version
+    attributes:
+      label: Pry version
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: ios_version
+    attributes:
+      label: iOS version
+      placeholder: "iOS 18.2"
+    validations:
+      required: true
+
+  - type: input
+    id: xcode_version
+    attributes:
+      label: Xcode version
+      placeholder: "Xcode 16.2 (16C5031c)"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device_type
+    attributes:
+      label: Device type
+      options:
+        - Simulator
+        - Physical device
+        - Both
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Logs, screenshots, stack traces, anything that might help.

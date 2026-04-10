@@ -1,0 +1,48 @@
+name: Feature request
+description: Suggest a new feature or improvement for Pry
+title: "[feature]: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the suggestion! Describe the *problem* you are trying to solve first, then propose a solution.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What problem are you trying to solve? Who does it affect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like Pry to solve this?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about and why you did not pick them.
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Do you think this belongs in the free Pry SDK, or in the paid PryPro extension?
+      options:
+        - Free (Pry)
+        - Pro (PryPro)
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
