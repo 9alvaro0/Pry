@@ -1,12 +1,16 @@
 import SwiftUI
 
 /// Settings for the inspector: presentation, behavior, blacklist, data.
-struct PrySettingsView: View {
-    @Bindable var store: PryStore
+@_spi(PryPro) public struct PrySettingsView: View {
+    @Bindable @_spi(PryPro) public var store: PryStore
 
     @State private var newBlacklistHost = ""
 
-    var body: some View {
+    @_spi(PryPro) public init(store: PryStore) {
+        self.store = store
+    }
+
+    @_spi(PryPro) public var body: some View {
         List {
             // Presentation
             Section {

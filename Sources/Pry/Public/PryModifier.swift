@@ -6,19 +6,28 @@ extension View {
 
     /// Attaches the Pry inspector overlay to this view.
     ///
-    /// This single modifier does everything:
-    /// - Registers the URLProtocol interceptor
-    /// - Injects the store into the environment
-    /// - Captures deeplinks via `.onOpenURL`
-    /// - Shows the trigger UI (floating button, shake, or both)
-    ///
+    /// One line is all you need:
     /// ```swift
-    /// @State private var store = PryStore()
+    /// ContentView()
+    ///     .pry()
+    /// ```
+    ///
+    /// The store is created automatically. Access it from any child
+    /// view via `@Environment(\.pryStore)` for manual logging.
+    public func pry(
+        trigger: PryTrigger = .default
+    ) -> some View {
+        modifier(PryAutoStoreModifier(trigger: trigger))
+    }
+
+    /// Attaches the Pry inspector with a custom store.
+    ///
+    /// Use this overload when you need to configure entry limits:
+    /// ```swift
+    /// @State private var store = PryStore(maxNetworkEntries: 500)
     ///
     /// ContentView()
     ///     .pry(store: store)
-    ///     .pry(store: store, trigger: .shake)
-    ///     .pry(store: store, trigger: [.floatingButton, .shake])
     /// ```
     public func pry(
         store: PryStore,
@@ -70,6 +79,10 @@ struct PryEnvironmentModifier: ViewModifier {
     @Bindable @_spi(PryPro) public var store: PryStore
     @_spi(PryPro) public let trigger: PryTrigger
     @_spi(PryPro) public let rootViewBuilder: (PryStore) -> Root
+
+    @SwiftUI.Environment(\.pryAccentOverride) private var accentOverride
+    @SwiftUI.Environment(\.pryFabColorOverride) private var fabColorOverride
+    @SwiftUI.Environment(\.pryFabForegroundOverride) private var fabForegroundOverride
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
@@ -132,6 +145,9 @@ struct PryEnvironmentModifier: ViewModifier {
             .sheet(isPresented: $isPresented) {
                 rootViewBuilder(store)
                     .environment(\.pryStore, store)
+                    .environment(\.pryAccentOverride, accentOverride)
+                    .environment(\.pryFabColorOverride, fabColorOverride)
+                    .environment(\.pryFabForegroundOverride, fabForegroundOverride)
             }
     }
 
@@ -140,8 +156,8 @@ struct PryEnvironmentModifier: ViewModifier {
     private var fabView: some View {
         FloatingActionButtonView(
             icon: "ladybug.fill",
-            backgroundColor: PryTheme.Colors.fab,
-            foregroundColor: PryTheme.Colors.fabForeground,
+            backgroundColor: fabColorOverride ?? PryTheme.Colors.fab,
+            foregroundColor: fabForegroundOverride ?? PryTheme.Colors.fabForeground,
             size: PryTheme.Size.fab
         ) {
             guard !isDragging else { return }
@@ -180,5 +196,18 @@ struct PryEnvironmentModifier: ViewModifier {
                     isDragging = false
                 }
             }
+    }
+}
+
+// MARK: - Auto Store Modifier
+
+/// Creates and owns a `PryStore` internally so the caller only needs `.pry()`.
+private struct PryAutoStoreModifier: ViewModifier {
+    @State private var store = PryStore()
+    let trigger: PryTrigger
+
+    func body(content: Content) -> some View {
+        content
+            .pry(store: store, trigger: trigger)
     }
 }

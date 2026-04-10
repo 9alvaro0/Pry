@@ -27,6 +27,7 @@ import SwiftUI
             }
             .badge(store.deeplinkEntries.count + store.pushNotificationEntries.count)
         }
+        .tint(PryTheme.Colors.accent)
         .pryBackground()
     }
 
@@ -55,7 +56,10 @@ import SwiftUI
             AppHubView(store: store)
                 .navigationTitle("App")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { dismissButton }
+                .toolbar {
+                    dismissButton
+                    settingsButton
+                }
         }
     }
 
@@ -70,6 +74,21 @@ import SwiftUI
                 Image(systemName: "xmark")
                     .font(PryTheme.Typography.body)
                     .fontWeight(.semibold)
+                    .foregroundStyle(PryTheme.Colors.textSecondary)
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var settingsButton: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            NavigationLink {
+                PrySettingsView(store: store)
+                    .navigationTitle("Settings")
+                    .navigationBarTitleDisplayMode(.inline)
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(PryTheme.Typography.body)
                     .foregroundStyle(PryTheme.Colors.textSecondary)
             }
         }

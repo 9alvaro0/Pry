@@ -9,23 +9,23 @@ import SwiftUI
 
     @_spi(PryPro) public enum Colors {
         // Backgrounds
-        @_spi(PryPro) public static let background      = Color(hex: "#1C1C1E")
-        @_spi(PryPro) public static let surface         = Color(hex: "#2C2C2E")
-        @_spi(PryPro) public static let surfaceElevated = Color(hex: "#3A3A3C")
-        @_spi(PryPro) public static let border          = Color.white.opacity(Opacity.border)
+        @_spi(PryPro) public static let background      = Color(hex: "#0D1017")
+        @_spi(PryPro) public static let surface         = Color(hex: "#141820")
+        @_spi(PryPro) public static let surfaceElevated = Color(hex: "#1C2230")
+        @_spi(PryPro) public static let border          = Color(hex: "#1E2530")
         @_spi(PryPro) public static let overlay         = Color.black.opacity(Opacity.overlay)
 
         // Text
-        @_spi(PryPro) public static let textPrimary   = Color.white
-        @_spi(PryPro) public static let textSecondary = Color.white.opacity(Opacity.textSecondary)
-        @_spi(PryPro) public static let textTertiary  = Color.white.opacity(Opacity.textTertiary)
+        @_spi(PryPro) public static let textPrimary   = Color(hex: "#E7ECF0")
+        @_spi(PryPro) public static let textSecondary = Color(hex: "#9099A6")
+        @_spi(PryPro) public static let textTertiary  = Color(hex: "#5A6370")
 
         // Status
-        @_spi(PryPro) public static let success = Color.green
-        @_spi(PryPro) public static let error   = Color.red
-        @_spi(PryPro) public static let warning = Color.orange
-        @_spi(PryPro) public static let pending = Color.yellow
-        @_spi(PryPro) public static let info    = Color(hex: "#41A1F5")
+        @_spi(PryPro) public static let success = Color(hex: "#22C55E")
+        @_spi(PryPro) public static let error   = Color(hex: "#EF4444")
+        @_spi(PryPro) public static let warning = Color(hex: "#F59E0B")
+        @_spi(PryPro) public static let pending = Color(hex: "#EAB308")
+        @_spi(PryPro) public static let info    = Color(hex: "#3B82F6")
 
         // Syntax highlighting (Xcode-inspired)
         @_spi(PryPro) public static let syntaxKey    = Color(hex: "#FF7AB2")
@@ -35,23 +35,28 @@ import SwiftUI
         @_spi(PryPro) public static let syntaxNull   = Color.gray
 
         // HTTP Methods
-        @_spi(PryPro) public static let methodGet    = Color(hex: "#41A1F5")
-        @_spi(PryPro) public static let methodPost   = Color.green
-        @_spi(PryPro) public static let methodPut    = Color.orange
-        @_spi(PryPro) public static let methodDelete = Color.red
-        @_spi(PryPro) public static let methodPatch  = Color(hex: "#B281EB")
+        @_spi(PryPro) public static let methodGet    = Color(hex: "#3B82F6")
+        @_spi(PryPro) public static let methodPost   = Color(hex: "#22C55E")
+        @_spi(PryPro) public static let methodPut    = Color(hex: "#F59E0B")
+        @_spi(PryPro) public static let methodDelete = Color(hex: "#EF4444")
+        @_spi(PryPro) public static let methodPatch  = Color(hex: "#8B5CF6")
 
         // Feature accents
-        @_spi(PryPro) public static let network   = Color(hex: "#41A1F5")
-        @_spi(PryPro) public static let console   = Color.green
-        @_spi(PryPro) public static let deeplinks = Color.indigo
+        @_spi(PryPro) public static let network      = Color(hex: "#3B82F6")
+        @_spi(PryPro) public static let console       = Color(hex: "#22C55E")
+        @_spi(PryPro) public static let deeplinks     = Color(hex: "#8B5CF6")
+        @_spi(PryPro) public static let push          = Color(hex: "#F59E0B")
+        @_spi(PryPro) public static let cookies       = Color(hex: "#C9A84C")
+        @_spi(PryPro) public static let userDefaults  = Color(hex: "#22C55E")
+        @_spi(PryPro) public static let device        = Color(hex: "#EF4444")
+        @_spi(PryPro) public static let permissions   = Color(hex: "#3B82F6")
 
         // Interactive
-        @_spi(PryPro) public static let accent     = Color(hex: "#41A1F5")
-        @_spi(PryPro) public static let accentMild = Color(hex: "#41A1F5").opacity(Opacity.badge)
+        @_spi(PryPro) public static let accent     = Color(hex: "#FF4B5C")
+        @_spi(PryPro) public static let accentMild = Color(hex: "#FF4B5C").opacity(Opacity.badge)
 
         // FAB
-        @_spi(PryPro) public static let fab           = Color.red
+        @_spi(PryPro) public static let fab           = Color(hex: "#FF4B5C")
         @_spi(PryPro) public static let fabForeground = Color.white
 
         // Badges

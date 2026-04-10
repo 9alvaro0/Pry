@@ -4,11 +4,14 @@ import UIKit
 /// Hub view with cards differentiated by type: Monitor (live), Storage, Diagnostics, Config.
 ///
 /// The generic `Extras` parameter lets PryPro inject additional sections
-/// (Performance, Throttle, Share Session) between Diagnostics and
-/// Settings without duplicating the hub layout.
+/// (Performance, Throttle, Share Session) after Diagnostics without
+/// duplicating the hub layout.
 @_spi(PryPro) public struct AppHubView<Extras: View>: View {
     @Bindable @_spi(PryPro) public var store: PryStore
     @ViewBuilder @_spi(PryPro) public let extras: () -> Extras
+    @Environment(\.pryAccentOverride) private var accentOverride
+
+    private var accent: Color { accentOverride ?? PryTheme.Colors.accent }
 
     @_spi(PryPro) public init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
         self.store = store
@@ -35,12 +38,6 @@ import UIKit
 
                 // Extra sections injected by PryPro
                 extras()
-                    .padding(.bottom, PryTheme.Spacing.xxl)
-
-                // SETTINGS
-                Divider().overlay(PryTheme.Colors.border)
-                    .padding(.bottom, PryTheme.Spacing.md)
-                settingsRow
             }
             .padding(.horizontal, PryTheme.Spacing.lg)
             .padding(.top, PryTheme.Spacing.sm)
@@ -52,7 +49,7 @@ import UIKit
     // MARK: - Monitor Section (live data with context)
 
     private var monitorSection: some View {
-        VStack(spacing: 1) {
+        VStack(spacing: 0) {
             NavigationLink {
                 DeeplinkMonitorView(store: store)
                     .navigationTitle("Deeplinks")
@@ -61,11 +58,12 @@ import UIKit
                 monitorCard(
                     icon: "link",
                     title: "Deeplinks",
-                    color: PryTheme.Colors.deeplinks,
                     count: store.deeplinkEntries.count,
                     subtitle: lastDeeplinkSubtitle
                 )
             }
+
+            rowDivider
 
             NavigationLink {
                 PushNotificationsView(store: store)
@@ -75,12 +73,12 @@ import UIKit
                 monitorCard(
                     icon: "bell.badge",
                     title: "Push Notifications",
-                    color: PryTheme.Colors.warning,
                     count: store.pushNotificationEntries.count,
                     subtitle: lastPushSubtitle
                 )
             }
         }
+        .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
     }
 
@@ -103,10 +101,9 @@ import UIKit
                     .navigationTitle("Cookies")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                storageRow(
+                hubRow(
                     icon: "birthday.cake",
                     title: "Cookies",
-                    color: PryTheme.Colors.warning,
                     detail: "\(HTTPCookieStorage.shared.cookies?.count ?? 0) cookies"
                 )
             }
@@ -118,10 +115,9 @@ import UIKit
                     .navigationTitle("UserDefaults")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                storageRow(
+                hubRow(
                     icon: "tray.full",
                     title: "UserDefaults",
-                    color: PryTheme.Colors.success,
                     detail: "\(UserDefaults.standard.dictionaryRepresentation().count) keys"
                 )
             }
@@ -139,7 +135,11 @@ import UIKit
                     .navigationTitle("Device & App")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                diagnosticsCard
+                hubRow(
+                    icon: "iphone",
+                    title: "Device & App",
+                    detail: "iOS \(UIDevice.current.systemVersion)"
+                )
             }
 
             rowDivider
@@ -149,10 +149,9 @@ import UIKit
                     .navigationTitle("Permissions")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                storageRow(
+                hubRow(
                     icon: "lock.shield",
                     title: "Permissions",
-                    color: PryTheme.Colors.success,
                     detail: ""
                 )
             }
@@ -160,68 +159,6 @@ import UIKit
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
-    }
-
-    private var diagnosticsCard: some View {
-        HStack(spacing: PryTheme.Spacing.md) {
-            Image(systemName: "iphone")
-                .font(PryTheme.Typography.body)
-                .foregroundStyle(PryTheme.Colors.accent)
-                .frame(width: PryTheme.Size.iconLarge, height: PryTheme.Size.iconLarge)
-                .background(PryTheme.Colors.accent.opacity(PryTheme.Opacity.badge))
-                .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-
-            VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                Text("Device & App")
-                    .font(PryTheme.Typography.body)
-                    .fontWeight(.medium)
-                    .foregroundStyle(PryTheme.Colors.textPrimary)
-
-                HStack(spacing: PryTheme.Spacing.xs) {
-                    infoPill("iOS \(UIDevice.current.systemVersion)")
-                    infoPill("v\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?")")
-                    infoPill(UIDevice.current.name)
-                }
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(PryTheme.Typography.detail)
-                .foregroundStyle(PryTheme.Colors.textTertiary)
-        }
-        .padding(.horizontal, PryTheme.Spacing.lg)
-        .padding(.vertical, PryTheme.Spacing.md)
-    }
-
-    // MARK: - Settings
-
-    private var settingsRow: some View {
-        NavigationLink {
-            PrySettingsView(store: store)
-                .navigationTitle("Settings")
-                .navigationBarTitleDisplayMode(.inline)
-        } label: {
-            HStack(spacing: PryTheme.Spacing.md) {
-                Image(systemName: "gearshape")
-                    .font(PryTheme.Typography.body)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-                    .frame(width: PryTheme.Size.iconMedium, height: PryTheme.Size.iconMedium)
-                    .background(PryTheme.Colors.surfaceElevated)
-                    .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-
-                Text("Settings")
-                    .font(PryTheme.Typography.body)
-                    .foregroundStyle(PryTheme.Colors.textSecondary)
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-            }
-            .padding(.vertical, PryTheme.Spacing.sm)
-        }
     }
 
     // MARK: - Components
@@ -234,15 +171,9 @@ import UIKit
             .padding(.bottom, PryTheme.Spacing.sm)
     }
 
-    private func monitorCard(icon: String, title: String, color: Color, count: Int, subtitle: String) -> some View {
+    private func monitorCard(icon: String, title: String, count: Int, subtitle: String) -> some View {
         HStack(spacing: PryTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(PryTheme.Typography.body)
-                .fontWeight(.semibold)
-                .foregroundStyle(color)
-                .frame(width: PryTheme.Size.iconLarge, height: PryTheme.Size.iconLarge)
-                .background(color.opacity(PryTheme.Opacity.badge))
-                .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
+            iconPill(systemName: icon)
 
             VStack(alignment: .leading, spacing: PryTheme.Spacing.xxs) {
                 Text(title)
@@ -264,8 +195,8 @@ import UIKit
                     .fontWeight(.bold)
                     .padding(.horizontal, PryTheme.Spacing.sm)
                     .padding(.vertical, PryTheme.Spacing.xxs)
-                    .background(color.opacity(PryTheme.Opacity.medium))
-                    .foregroundStyle(color)
+                    .background(accent.opacity(PryTheme.Opacity.badge))
+                    .foregroundStyle(accent)
                     .clipShape(.capsule)
             }
 
@@ -275,18 +206,11 @@ import UIKit
         }
         .padding(.horizontal, PryTheme.Spacing.lg)
         .padding(.vertical, PryTheme.Spacing.md)
-        .frame(minHeight: PryTheme.Size.rowMinHeight)
-        .background(PryTheme.Colors.surface)
     }
 
-    private func storageRow(icon: String, title: String, color: Color, detail: String) -> some View {
+    private func hubRow(icon: String, title: String, detail: String, showChevron: Bool = true) -> some View {
         HStack(spacing: PryTheme.Spacing.md) {
-            Image(systemName: icon)
-                .font(PryTheme.Typography.body)
-                .foregroundStyle(color)
-                .frame(width: PryTheme.Size.iconMedium, height: PryTheme.Size.iconMedium)
-                .background(color.opacity(PryTheme.Opacity.tint))
-                .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
+            iconPill(systemName: icon)
 
             Text(title)
                 .font(PryTheme.Typography.body)
@@ -295,26 +219,30 @@ import UIKit
 
             Spacer()
 
-            Text(detail)
-                .font(PryTheme.Typography.detail)
-                .foregroundStyle(PryTheme.Colors.textTertiary)
+            if !detail.isEmpty {
+                Text(detail)
+                    .font(PryTheme.Typography.detail)
+                    .foregroundStyle(PryTheme.Colors.textTertiary)
+            }
 
-            Image(systemName: "chevron.right")
-                .font(PryTheme.Typography.detail)
-                .foregroundStyle(PryTheme.Colors.textTertiary)
+            if showChevron {
+                Image(systemName: "chevron.right")
+                    .font(PryTheme.Typography.detail)
+                    .foregroundStyle(PryTheme.Colors.textTertiary)
+            }
         }
         .padding(.horizontal, PryTheme.Spacing.lg)
         .padding(.vertical, PryTheme.Spacing.md)
     }
 
-    private func infoPill(_ text: String) -> some View {
-        Text(text)
-            .font(PryTheme.Typography.detail)
-            .foregroundStyle(PryTheme.Colors.textTertiary)
-            .padding(.horizontal, PryTheme.Spacing.xs)
-            .padding(.vertical, PryTheme.Spacing.xxs)
-            .background(PryTheme.Colors.surfaceElevated)
-            .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
+    private func iconPill(systemName: String) -> some View {
+        Image(systemName: systemName)
+            .font(PryTheme.Typography.body)
+            .fontWeight(.medium)
+            .foregroundStyle(accent)
+            .frame(width: PryTheme.Size.iconLarge, height: PryTheme.Size.iconLarge)
+            .background(accent.opacity(PryTheme.Opacity.badge))
+            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
     }
 
     private var rowDivider: some View {

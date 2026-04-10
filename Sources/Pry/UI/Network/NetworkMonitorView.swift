@@ -8,8 +8,11 @@ import SwiftUI
     }
 
     @Environment(\.pryReadOnly) private var isReadOnly
+    @Environment(\.pryAccentOverride) private var accentOverride
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
+
+    private var resolvedAccent: Color { accentOverride ?? PryTheme.Colors.accent }
 
     private var selectedFilter: NetworkFilter? {
         get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
@@ -229,7 +232,7 @@ import SwiftUI
                         .font(PryTheme.Typography.body)
                         .foregroundStyle(
                             hasActiveFilters
-                                ? PryTheme.Colors.accent
+                                ? resolvedAccent
                                 : PryTheme.Colors.textSecondary
                         )
                         .overlay(alignment: .topTrailing) {
@@ -238,7 +241,7 @@ import SwiftUI
                                     .font(PryTheme.Typography.badgeText)
                                     .foregroundStyle(.white)
                                     .frame(minWidth: 14, minHeight: 14)
-                                    .background(PryTheme.Colors.accent)
+                                    .background(resolvedAccent)
                                     .clipShape(.circle)
                                     .offset(x: 8, y: -8)
                             }
@@ -305,10 +308,10 @@ import SwiftUI
                                     Text(order.rawValue)
                                         .font(PryTheme.Typography.body)
                                         .fontWeight(sortOrder == order ? .semibold : .regular)
-                                        .foregroundStyle(sortOrder == order ? PryTheme.Colors.accent : PryTheme.Colors.textSecondary)
+                                        .foregroundStyle(sortOrder == order ? resolvedAccent : PryTheme.Colors.textSecondary)
                                         .padding(.horizontal, PryTheme.Spacing.md)
                                         .padding(.vertical, PryTheme.Spacing.sm)
-                                        .background(sortOrder == order ? PryTheme.Colors.accent.opacity(PryTheme.Opacity.badge) : PryTheme.Colors.surface)
+                                        .background(sortOrder == order ? resolvedAccent.opacity(PryTheme.Opacity.badge) : PryTheme.Colors.surface)
                                         .clipShape(.capsule)
                                 }
                             }
@@ -342,7 +345,7 @@ import SwiftUI
                             .foregroundStyle(PryTheme.Colors.textPrimary)
                         Spacer()
                         Toggle("", isOn: Binding(get: { showStats }, set: { showStats = $0 }))
-                            .tint(PryTheme.Colors.accent)
+                            .tint(resolvedAccent)
                             .labelsHidden()
                     }
                     .padding(PryTheme.Spacing.md)
@@ -376,7 +379,7 @@ import SwiftUI
                     Image(systemName: "checkmark")
                         .font(PryTheme.Typography.detail)
                         .fontWeight(.semibold)
-                        .foregroundStyle(PryTheme.Colors.accent)
+                        .foregroundStyle(resolvedAccent)
                 }
             }
             .padding(.horizontal, PryTheme.Spacing.md)
