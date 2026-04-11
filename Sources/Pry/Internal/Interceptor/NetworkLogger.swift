@@ -202,7 +202,10 @@ final class NetworkLogger: @unchecked Sendable {
                           bytes.starts(with: [0x47, 0x49, 0x46]) ||        // GIF
                           bytes.starts(with: [0x52, 0x49, 0x46, 0x46])     // WebP (RIFF)
             if isImage {
-                let base64 = data.prefix(500_000).base64EncodedString() // Max 500KB for images
+                // Keep full data up to 2MB so UIImage can decode it completely.
+                // Truncated image data produces a nil UIImage.
+                let imageData = data.prefix(2_000_000)
+                let base64 = imageData.base64EncodedString()
                 return "[IMAGE:\(data.count):\(base64)]"
             }
         }
