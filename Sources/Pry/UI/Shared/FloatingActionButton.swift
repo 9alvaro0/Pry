@@ -10,9 +10,12 @@ import SwiftUI
 
     @_spi(PryPro) public var body: some View {
         Button(action: action) {
-            Image(systemName: icon)
-                .font(.title2)
+            Image("pry-icon", bundle: .module)
+                .renderingMode(.template)
+                .resizable()
+                .scaledToFit()
                 .foregroundStyle(foregroundColor)
+                .frame(width: size * 0.85, height: size * 0.85)
                 .frame(width: size, height: size)
                 .background(backgroundColor)
                 .clipShape(.circle)
@@ -36,19 +39,12 @@ import SwiftUI
         Color(PryTheme.Colors.background)
             .ignoresSafeArea()
 
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                FloatingActionButtonView(
-                    icon: "ladybug.fill",
-                    backgroundColor: PryTheme.Colors.fab,
-                    foregroundColor: PryTheme.Colors.fabForeground,
-                    size: PryTheme.Size.fab
-                ) {}
-                .padding()
-            }
-        }
+        FloatingActionButtonView(
+            icon: "",
+            backgroundColor: PryTheme.Colors.fab,
+            foregroundColor: PryTheme.Colors.fabForeground,
+            size: PryTheme.Size.fab
+        ) {}
     }
 }
 #endif

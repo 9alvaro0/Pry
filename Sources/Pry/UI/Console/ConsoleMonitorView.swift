@@ -32,7 +32,7 @@ import UIKit
             }
         }
 
-        return logs
+        return logs.sorted { $0.timestamp > $1.timestamp }
     }
 
     private var typeCounts: [LogType: Int] {
@@ -55,14 +55,16 @@ import UIKit
                     description: "Logs will appear here as the app runs"
                 )
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 0) {
-                        ForEach(filteredLogs) { log in
-                            logRow(log)
-                            Divider().overlay(PryTheme.Colors.border.opacity(0.5))
-                        }
+                List {
+                    ForEach(filteredLogs) { log in
+                        logRow(log)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                            .listRowBackground(PryTheme.Colors.background)
+                            .listRowSeparatorTint(PryTheme.Colors.border.opacity(0.5))
                     }
                 }
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
         .pryBackground()
@@ -96,23 +98,18 @@ import UIKit
         let isExpanded = expandedLogID == log.id
 
         return VStack(alignment: .leading, spacing: 0) {
-            // Compact row
             Button {
-                withAnimation(.easeInOut(duration: PryTheme.Animation.standard)) {
-                    expandedLogID = isExpanded ? nil : log.id
-                }
+                expandedLogID = isExpanded ? nil : log.id
             } label: {
                 ConsoleLogRowView(log: log)
                     .padding(.horizontal, PryTheme.Spacing.lg)
             }
             .buttonStyle(.plain)
 
-            // Expanded detail
             if isExpanded {
                 expandedDetail(log)
                     .padding(.horizontal, PryTheme.Spacing.lg)
                     .padding(.bottom, PryTheme.Spacing.sm)
-                    .transition(.opacity)
             }
         }
     }
@@ -275,17 +272,20 @@ import UIKit
     // MARK: - Copy All
 
     private func copyAllLogs() {
-        let text = filteredLogs.map { log in
-            var line = "[\(log.type.rawValue.uppercased())] \(log.message)"
-            if let location = log.location { line += "  (\(location))" }
-            return line
-        }.joined(separator: "\n")
+        let logs = filteredLogs
+        Task.detached(priority: .userInitiated) {
+            let text = logs.map { log in
+                var line = "[\(log.type.rawValue.uppercased())] \(log.message)"
+                if let location = log.location { line += "  (\(location))" }
+                return line
+            }.joined(separator: "\n")
 
-        UIPasteboard.general.string = text
-        showCopiedAll = true
-        Task {
+            await MainActor.run {
+                UIPasteboard.general.string = text
+                showCopiedAll = true
+            }
             try? await Task.sleep(for: PryTheme.Animation.toastDismiss)
-            showCopiedAll = false
+            await MainActor.run { showCopiedAll = false }
         }
     }
 }

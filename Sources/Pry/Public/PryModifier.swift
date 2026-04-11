@@ -84,6 +84,7 @@ struct PryEnvironmentModifier: ViewModifier {
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
+    @State private var dragResetTask: Task<Void, Never>?
 
     @_spi(PryPro) public init(
         store: PryStore,
@@ -189,8 +190,10 @@ struct PryEnvironmentModifier: ViewModifier {
                 )
                 dragOffset = .zero
                 // Delay reset so the Button's tap gesture doesn't fire after drag ends
-                Task {
+                dragResetTask?.cancel()
+                dragResetTask = Task {
                     try? await Task.sleep(for: .milliseconds(300))
+                    guard !Task.isCancelled else { return }
                     isDragging = false
                 }
             }

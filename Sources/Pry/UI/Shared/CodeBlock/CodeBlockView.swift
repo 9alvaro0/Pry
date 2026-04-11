@@ -10,20 +10,21 @@ import UIKit
     @State private var isSearching = false
     @State private var isAllCollapsed = false
 
+    private let resolvedEffectiveLanguage: ContentLanguage
+
     @_spi(PryPro) public init(text: String, language: ContentLanguage = .text) {
         self.text = text
         self.language = language
+        self.resolvedEffectiveLanguage = Self.resolveLanguage(text: text, language: language)
     }
 
-    private var resolvedLanguage: ContentLanguage {
+    private static func resolveLanguage(text: String, language: ContentLanguage) -> ContentLanguage {
+        let lang: ContentLanguage
         if language != .text && language != .plain {
-            return language
+            lang = language
+        } else {
+            lang = ContentLanguage.detect(from: text)
         }
-        return ContentLanguage.detect(from: text)
-    }
-
-    private var effectiveLanguage: ContentLanguage {
-        let lang = resolvedLanguage
         if lang == .json {
             let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
             if let data = trimmed.data(using: .utf8),
@@ -34,6 +35,8 @@ import UIKit
         }
         return lang
     }
+
+    private var effectiveLanguage: ContentLanguage { resolvedEffectiveLanguage }
 
     private var isJSON: Bool { effectiveLanguage == .json && !isImage && !isFormEncoded(text) }
     private var isImage: Bool { text.hasPrefix("[IMAGE:") }

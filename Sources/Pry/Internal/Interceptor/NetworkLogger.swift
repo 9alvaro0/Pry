@@ -6,9 +6,25 @@ final class NetworkLogger: @unchecked Sendable {
     private weak var store: PryStore?
     private var pendingRequests: [UUID: NetworkEntry] = [:]
     private let queue = DispatchQueue(label: "Pry.NetworkLogger", qos: .utility)
+    private var lastCleanup = Date()
 
     init(store: PryStore) {
         self.store = store
+        startCleanupTimer()
+    }
+
+    private func startCleanupTimer() {
+        queue.asyncAfter(deadline: .now() + 60) { [weak self] in
+            self?.cleanupOrphaned()
+            self?.startCleanupTimer()
+        }
+    }
+
+    private func cleanupOrphaned() {
+        let cutoff = Date().addingTimeInterval(-300)
+        for (id, entry) in pendingRequests where entry.timestamp <= cutoff {
+            pendingRequests.removeValue(forKey: id)
+        }
     }
 
     // MARK: - Logging
@@ -80,6 +96,14 @@ final class NetworkLogger: @unchecked Sendable {
 
         queue.async { [weak self] in
             guard let self else { return }
+
+            // Evict orphaned requests older than 5 minutes (checked every 60s)
+            let now = Date()
+            if now.timeIntervalSince(self.lastCleanup) > 60 {
+                self.lastCleanup = now
+                let cutoff = now.addingTimeInterval(-300)
+                self.pendingRequests = self.pendingRequests.filter { $0.value.timestamp > cutoff }
+            }
 
             let pending = self.pendingRequests.removeValue(forKey: requestID)
 
@@ -196,17 +220,22 @@ final class NetworkLogger: @unchecked Sendable {
 
         // Check for image data (PNG, JPEG, GIF, WebP magic bytes)
         if data.count >= 4 {
-            let bytes = [UInt8](data.prefix(4))
-            let isImage = bytes.starts(with: [0x89, 0x50, 0x4E, 0x47]) || // PNG
-                          bytes.starts(with: [0xFF, 0xD8, 0xFF]) ||        // JPEG
-                          bytes.starts(with: [0x47, 0x49, 0x46]) ||        // GIF
-                          bytes.starts(with: [0x52, 0x49, 0x46, 0x46])     // WebP (RIFF)
+            let isImage = data.withUnsafeBytes { ptr -> Bool in
+                guard let base = ptr.baseAddress?.assumingMemoryBound(to: UInt8.self) else { return false }
+                let b0 = base[0], b1 = base[1], b2 = base[2], b3 = base[3]
+                return (b0 == 0x89 && b1 == 0x50 && b2 == 0x4E && b3 == 0x47) || // PNG
+                       (b0 == 0xFF && b1 == 0xD8 && b2 == 0xFF) ||               // JPEG
+                       (b0 == 0x47 && b1 == 0x49 && b2 == 0x46) ||               // GIF
+                       (b0 == 0x52 && b1 == 0x49 && b2 == 0x46 && b3 == 0x46)    // WebP (RIFF)
+            }
             if isImage {
-                // Keep full data up to 2MB so UIImage can decode it completely.
-                // Truncated image data produces a nil UIImage.
-                let imageData = data.prefix(2_000_000)
-                let base64 = imageData.base64EncodedString()
-                return "[IMAGE:\(data.count):\(base64)]"
+                // Cap at 512KB for preview — larger images store metadata only
+                if data.count <= 512_000 {
+                    let base64 = data.base64EncodedString()
+                    return "[IMAGE:\(data.count):\(base64)]"
+                } else {
+                    return "[IMAGE:\(data.count):]"
+                }
             }
         }
 

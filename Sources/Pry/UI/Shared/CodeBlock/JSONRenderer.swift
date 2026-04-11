@@ -10,6 +10,7 @@ import SwiftUI
 
     private let parsed: ParsedJSON
     private let allCollapsiblePaths: Set<String>
+    private let cachedAllLines: [JSONLine]
 
     @_spi(PryPro) public init(jsonText: String, searchQuery: String = "", collapseAll: Bool = false, initialCollapsed: Set<String> = []) {
         self.jsonText = jsonText
@@ -19,20 +20,21 @@ import SwiftUI
         self.parsed = result
         self._collapsedPaths = State(initialValue: initialCollapsed)
         self.allCollapsiblePaths = Self.collectCollapsiblePaths(result.value, path: "root")
-    }
 
-    /// All lines with absolute numbers (as if fully expanded).
-    private var allLines: [JSONLine] {
-        guard let value = parsed.value else { return [] }
-        var lines: [JSONLine] = []
-        var lineNum = 1
-        flattenAll(value, path: "root", key: nil, level: 0, isLast: true, lineNum: &lineNum, into: &lines)
-        return lines
+        // Pre-compute all lines once at init (doesn't depend on collapsed state)
+        if let value = result.value {
+            var lines: [JSONLine] = []
+            var lineNum = 1
+            Self.flattenAllStatic(value, path: "root", key: nil, level: 0, isLast: true, lineNum: &lineNum, into: &lines)
+            self.cachedAllLines = lines
+        } else {
+            self.cachedAllLines = []
+        }
     }
 
     /// Only the visible lines (respecting collapsed state), keeping original line numbers.
     private var visibleLines: [JSONLine] {
-        let all = allLines
+        let all = cachedAllLines
         var visible: [JSONLine] = []
         var skipPaths: Set<String> = []
 
@@ -79,7 +81,7 @@ import SwiftUI
     }
 
     private var gutterWidth: CGFloat {
-        let maxNum = allLines.last?.lineNumber ?? 1
+        let maxNum = cachedAllLines.last?.lineNumber ?? 1
         let digits = String(maxNum).count
         return CGFloat(max(digits, 2)) * 8 + 4
     }
@@ -90,7 +92,7 @@ import SwiftUI
 
             ScrollView(.horizontal, showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    ForEach(lines, id: \.lineNumber) { line in
+                    ForEach(lines.prefix(500), id: \.lineNumber) { line in
                         HStack(alignment: .top, spacing: 0) {
                             Text("\(line.lineNumber)")
                                 .font(PryTheme.Typography.codeSmall)
@@ -100,6 +102,13 @@ import SwiftUI
 
                             lineView(line)
                         }
+                    }
+
+                    if lines.count > 500 {
+                        Text("... \(lines.count - 500) more lines (collapse sections to see more)")
+                            .font(PryTheme.Typography.detail)
+                            .foregroundStyle(PryTheme.Colors.textTertiary)
+                            .padding(.vertical, PryTheme.Spacing.sm)
                     }
                 }
             }
@@ -224,7 +233,7 @@ import SwiftUI
 
     // MARK: - Flatten JSON to Lines (always fully expanded, with absolute line numbers)
 
-    private func flattenAll(
+    private static func flattenAllStatic(
         _ value: Any,
         path: String,
         key: String?,
@@ -253,7 +262,7 @@ import SwiftUI
 
             let sortedKeys = dict.keys.sorted()
             for (index, dictKey) in sortedKeys.enumerated() {
-                flattenAll(
+                flattenAllStatic(
                     dict[dictKey] ?? NSNull(),
                     path: "\(path).\(dictKey)",
                     key: dictKey, level: level + 1,
@@ -289,7 +298,7 @@ import SwiftUI
 
             let itemCount = min(array.count, maxItems)
             for index in 0..<itemCount {
-                flattenAll(
+                flattenAllStatic(
                     array[index],
                     path: "\(path)[\(index)]",
                     key: nil, level: level + 1,

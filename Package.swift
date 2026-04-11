@@ -15,7 +15,8 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "Pry"
+            name: "Pry",
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "PryTests",

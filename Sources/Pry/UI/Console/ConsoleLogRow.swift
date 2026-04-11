@@ -22,7 +22,6 @@ struct ConsoleLogRowView: View {
                 .lineLimit(3)
         }
         .frame(minHeight: 44)
-        .listRowBackground(PryTheme.Colors.background)
     }
 }
 

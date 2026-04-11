@@ -154,9 +154,9 @@ import Foundation
     // MARK: - Network (internal - fed by NetworkLogger)
 
     @_spi(PryPro) public func addNetworkEntry(_ entry: NetworkEntry) {
-        networkEntries.insert(entry, at: 0)
+        networkEntries.append(entry)
         if networkEntries.count > maxNetworkEntries {
-            networkEntries.removeLast(networkEntries.count - maxNetworkEntries)
+            networkEntries.removeFirst(networkEntries.count - maxNetworkEntries)
         }
     }
 
@@ -189,15 +189,19 @@ import Foundation
             additionalInfo: nil
         )
 
-        Task { @MainActor in
-            self.addLogEntry(entry)
+        if Thread.isMainThread {
+            addLogEntry(entry)
+        } else {
+            Task { @MainActor in
+                self.addLogEntry(entry)
+            }
         }
     }
 
     @_spi(PryPro) public func addLogEntry(_ entry: LogEntry) {
-        logEntries.insert(entry, at: 0)
+        logEntries.append(entry)
         if logEntries.count > maxLogEntries {
-            logEntries.removeLast(logEntries.count - maxLogEntries)
+            logEntries.removeFirst(logEntries.count - maxLogEntries)
         }
     }
 
@@ -225,15 +229,19 @@ import Foundation
             fragment: url.fragment
         )
 
-        Task { @MainActor in
-            self.addDeeplinkEntry(entry)
+        if Thread.isMainThread {
+            addDeeplinkEntry(entry)
+        } else {
+            Task { @MainActor in
+                self.addDeeplinkEntry(entry)
+            }
         }
     }
 
     @_spi(PryPro) public func addDeeplinkEntry(_ entry: DeeplinkEntry) {
-        deeplinkEntries.insert(entry, at: 0)
+        deeplinkEntries.append(entry)
         if deeplinkEntries.count > maxDeeplinkEntries {
-            deeplinkEntries.removeLast(deeplinkEntries.count - maxDeeplinkEntries)
+            deeplinkEntries.removeFirst(deeplinkEntries.count - maxDeeplinkEntries)
         }
     }
 
@@ -288,15 +296,19 @@ import Foundation
             rawPayload: rawPayload
         )
 
-        Task { @MainActor in
-            self.addPushNotification(entry)
+        if Thread.isMainThread {
+            addPushNotification(entry)
+        } else {
+            Task { @MainActor in
+                self.addPushNotification(entry)
+            }
         }
     }
 
     @_spi(PryPro) public func addPushNotification(_ entry: PushNotificationEntry) {
-        pushNotificationEntries.insert(entry, at: 0)
+        pushNotificationEntries.append(entry)
         if pushNotificationEntries.count > maxPushEntries {
-            pushNotificationEntries.removeLast(pushNotificationEntries.count - maxPushEntries)
+            pushNotificationEntries.removeFirst(pushNotificationEntries.count - maxPushEntries)
         }
     }
 

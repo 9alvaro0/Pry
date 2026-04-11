@@ -35,61 +35,44 @@ import UIKit
     typealias SortOrder = NetworkSortOrder
     typealias NetworkFilter = NetworkStatusFilter
 
-    // MARK: - Computed
+    // MARK: - Computed (single-pass processing)
 
-    private var uniqueHosts: [(host: String, count: Int)] {
-        var hostCounts: [String: Int] = [:]
-        for entry in store.networkEntries {
-            hostCounts[entry.requestURL.extractHost(), default: 0] += 1
-        }
-        return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
-    }
-
-    private var baseFilteredEntries: [NetworkEntry] {
-        var entries = store.networkEntries
-
-        if let host = selectedHost {
-            entries = entries.filter { $0.requestURL.extractHost() == host }
-        }
-
-        if !searchText.isEmpty {
-            let query = searchText.lowercased()
-            entries = entries.filter { entry in
-                entry.requestMethod.lowercased().contains(query) ||
-                entry.requestURL.extractPath().lowercased().contains(query) ||
-                entry.requestURL.extractHost().lowercased().contains(query) ||
-                (entry.responseStatusCode.map { String($0).contains(query) } ?? false) ||
-                (entry.responseStatusCode.map { HTTPStatus.description(for: $0).lowercased().contains(query) } ?? false) ||
-                (entry.responseError?.lowercased().contains(query) ?? false) ||
-                (entry.displayError?.lowercased().contains(query) ?? false) ||
-                (entry.graphQLInfo?.operationName?.lowercased().contains(query) ?? false)
-            }
-        }
-
-        return entries
-    }
-
-    private var filteredEntries: [NetworkEntry] {
-        var entries = baseFilteredEntries
-
-        if let filter = selectedFilter {
-            entries = entries.filter { filter.matches($0) }
-        }
-
-        switch sortOrder {
-        case .newest: entries.sort { $0.timestamp > $1.timestamp }
-        case .oldest: entries.sort { $0.timestamp < $1.timestamp }
-        case .slowest: entries.sort { ($0.duration ?? 0) > ($1.duration ?? 0) }
-        case .largest: entries.sort { ($0.responseSize ?? 0) > ($1.responseSize ?? 0) }
-        }
-
-        return entries
-    }
-
-    private var filterCounts: [NetworkFilter: Int] {
-        let entries = baseFilteredEntries
+    private struct ProcessedEntries {
+        var filtered: [NetworkEntry] = []
+        var pinned: [NetworkEntry] = []
+        var unpinned: [NetworkEntry] = []
         var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
-        for entry in entries {
+        var hosts: [(host: String, count: Int)] = []
+        var totalBase: Int = 0
+    }
+
+    private var processed: ProcessedEntries {
+        let allEntries = store.networkEntries
+        let query = searchText.isEmpty ? nil : searchText.lowercased()
+        var hostCounts: [String: Int] = [:]
+        var baseEntries: [NetworkEntry] = []
+        var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
+
+        // Single pass: host counts + base filtering + status counts
+        for entry in allEntries {
+            let host = entry.requestURL.extractHost()
+            hostCounts[host, default: 0] += 1
+
+            // Host filter
+            if let selectedHost, host != selectedHost { continue }
+
+            // Search filter
+            if let query {
+                let matches =
+                    entry.requestMethod.localizedCaseInsensitiveContains(query) ||
+                    entry.requestURL.extractPath().localizedCaseInsensitiveContains(query) ||
+                    host.localizedCaseInsensitiveContains(query) ||
+                    (entry.responseStatusCode.map { String($0).contains(query) } ?? false) ||
+                    (entry.graphQLInfo?.operationName?.localizedCaseInsensitiveContains(query) ?? false)
+                if !matches { continue }
+            }
+
+            // Count status
             if entry.isSuccess {
                 counts[.success, default: 0] += 1
             } else if entry.responseStatusCode == nil && entry.responseError == nil {
@@ -97,19 +80,42 @@ import UIKit
             } else {
                 counts[.error, default: 0] += 1
             }
+
+            baseEntries.append(entry)
         }
-        return counts
-    }
 
-    private var pinnedEntries: [NetworkEntry] {
-        filteredEntries.filter { store.isPinned($0.id) }
-    }
+        // Status filter
+        var filtered = baseEntries
+        if let filter = selectedFilter {
+            filtered = filtered.filter { filter.matches($0) }
+        }
 
-    private var mainEntries: [NetworkEntry] {
+        // Sort
+        switch sortOrder {
+        case .newest: filtered.sort { $0.timestamp > $1.timestamp }
+        case .oldest: filtered.sort { $0.timestamp < $1.timestamp }
+        case .slowest: filtered.sort { ($0.duration ?? 0) > ($1.duration ?? 0) }
+        case .largest: filtered.sort { ($0.responseSize ?? 0) > ($1.responseSize ?? 0) }
+        }
+
+        // Split pinned/unpinned
+        var pinned: [NetworkEntry] = []
+        var unpinned: [NetworkEntry] = []
         if selectedFilter == nil {
-            return filteredEntries.filter { !store.isPinned($0.id) }
+            for entry in filtered {
+                if store.isPinned(entry.id) { pinned.append(entry) }
+                else { unpinned.append(entry) }
+            }
+        } else {
+            unpinned = filtered
         }
-        return filteredEntries
+
+        let hosts = hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
+
+        return ProcessedEntries(
+            filtered: filtered, pinned: pinned, unpinned: unpinned,
+            counts: counts, hosts: hosts, totalBase: baseEntries.count
+        )
     }
 
     private var hasActiveFilters: Bool {
@@ -130,16 +136,16 @@ import UIKit
                 List {
                     if showStats {
                         Section {
-                            NetworkStatsView(entries: baseFilteredEntries)
+                            NetworkStatsView(entries: processed.filtered)
                                 .listRowInsets(EdgeInsets())
                                 .listRowBackground(Color.clear)
                         }
                     }
 
                     // Pinned section
-                    if selectedFilter == nil, !pinnedEntries.isEmpty {
+                    if !processed.pinned.isEmpty {
                         Section {
-                            ForEach(pinnedEntries) { entry in
+                            ForEach(processed.pinned) { entry in
                                 requestRow(entry)
                             }
                         } header: {
@@ -156,7 +162,7 @@ import UIKit
 
                     // Main requests
                     Section {
-                        ForEach(mainEntries) { entry in
+                        ForEach(processed.unpinned) { entry in
                             requestRow(entry)
                         }
                     }
@@ -182,8 +188,8 @@ import UIKit
                 selectedHost: Binding(get: { selectedHost }, set: { selectedHost = $0 }),
                 showStats: Binding(get: { showStats }, set: { showStats = $0 }),
                 isPresented: $showFilterSheet,
-                filterCounts: filterCounts,
-                uniqueHosts: uniqueHosts
+                filterCounts: processed.counts,
+                uniqueHosts: processed.hosts
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
@@ -195,16 +201,16 @@ import UIKit
 
     private var summaryBar: some View {
         HStack(spacing: PryTheme.Spacing.md) {
-            Text("\(baseFilteredEntries.count) requests")
+            Text("\(processed.totalBase) requests")
                 .font(PryTheme.Typography.body)
                 .fontWeight(.medium)
                 .foregroundStyle(PryTheme.Colors.textPrimary)
 
-            if let count = filterCounts[.error], count > 0 {
+            if let count = processed.counts[.error], count > 0 {
                 statusDot(count: count, color: PryTheme.Colors.error)
             }
 
-            if let count = filterCounts[.pending], count > 0 {
+            if let count = processed.counts[.pending], count > 0 {
                 statusDot(count: count, color: PryTheme.Colors.pending)
             }
 

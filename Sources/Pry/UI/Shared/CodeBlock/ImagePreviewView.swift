@@ -11,8 +11,9 @@ import UIKit
         guard let colonIndex = stripped.firstIndex(of: ":") else { return nil }
         let sizeStr = String(stripped[stripped.startIndex..<colonIndex])
         let base64 = String(stripped[stripped.index(after: colonIndex)...])
-        guard let size = Int(sizeStr),
-              let data = Data(base64Encoded: base64) else { return nil }
+        guard let size = Int(sizeStr) else { return nil }
+        if base64.isEmpty { return (size, nil) }
+        guard let data = Data(base64Encoded: base64) else { return nil }
         return (size, UIImage(data: data))
     }
 
@@ -23,8 +24,8 @@ import UIKit
                 .aspectRatio(contentMode: .fit)
                 .frame(maxHeight: PryTheme.Size.imageMaxHeight)
                 .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-        } else {
-            Text("[Image data - unable to preview]")
+        } else if let parsed = imageData {
+            Text("[Image: \(parsed.size.formatBytes()) — too large to preview]")
                 .font(PryTheme.Typography.code)
                 .foregroundStyle(PryTheme.Colors.textTertiary)
         }
