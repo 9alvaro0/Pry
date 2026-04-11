@@ -267,7 +267,7 @@ import SwiftUI
         return parts.joined(separator: " \u{00B7} ")
     }
 
-    @_spi(PryPro) public static let version = "1.1.0"
+    @_spi(PryPro) public static let version = "1.2.1"
 
     private var versionLabel: String {
         "Pry \(Self.version)"
