@@ -9,18 +9,23 @@ Zero dependencies, zero configuration. Add one modifier and you are done.
 ## Features
 
 **Network Inspector**
-- Automatic `URLSession` interception, including third-party SDKs (Alamofire, Kingfisher, Firebase, …)
-- Request / response detail with headers, body, status, timing breakdown (DNS, TLS, TTFB)
-- GraphQL awareness — detects queries/mutations, shows operation name and variables
+- Automatic `URLSession` interception, including third-party SDKs (Alamofire, Kingfisher, Firebase, ...)
+- Tabbed request detail: **Overview** (timing, redirects, GraphQL, JWT), **Request** (headers, body, query params), **Response** (headers, body, errors)
+- GraphQL awareness — detects queries/mutations, shows operation name, variables, and response errors
 - Image response preview — renders PNG / JPEG / GIF / WebP inline
 - Redirect chain visualization
 - Search by URL, method, status, host, GraphQL operation name
-- Filter chips (Success, Errors, Pending, Pinned) with contextual counts
-- Export session as cURL commands
-- Pin / blacklist hosts
+- Summary bar with request counts and error/pending indicators
+- Filter sheet with status filters, sort order, host selection, and statistics toggle
+- Swipe actions: pin, copy URL, copy cURL, delete
+- Pinned requests section at the top of the list
+- Share and cURL export from request detail
 - Per-host network stats
 
 **Console**
+- Terminal-style log stream with monospace timestamps and colored type labels (ERR, WRN, INF, OK, DBG, NET)
+- Tap to expand inline — full message, source location, copy action
+- Summary bar with error/warning counts and filter sheet
 - Structured logging with types (info, success, warning, error, debug)
 - File / function / line metadata captured automatically
 - Search and filter
@@ -51,7 +56,7 @@ dependencies: [
 ]
 ```
 
-Or in Xcode: **File → Add Package Dependencies…** and paste the URL.
+Or in Xcode: **File > Add Package Dependencies...** and paste the URL.
 
 ## Quick Start
 
@@ -61,12 +66,10 @@ import Pry
 
 @main
 struct MyApp: App {
-    @State private var store = PryStore()
-
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .pry(store: store)
+                .pry()
         }
     }
 }
@@ -74,19 +77,28 @@ struct MyApp: App {
 
 That is it. A floating ladybug button appears on top of your app. Tap it to open the inspector.
 
+For custom configuration:
+
+```swift
+@State private var store = PryStore()
+
+ContentView()
+    .pry(store: store)
+```
+
 ## Usage
 
 ### Trigger Options
 
 ```swift
 // Floating button (default)
-.pry(store: store)
+.pry()
 
 // Shake to open
-.pry(store: store, trigger: .shake)
+.pry(trigger: .shake)
 
 // Both
-.pry(store: store, trigger: [.floatingButton, .shake])
+.pry(trigger: [.floatingButton, .shake])
 ```
 
 ### Logging
@@ -107,7 +119,7 @@ Available log types: `.info`, `.success`, `.warning`, `.error`, `.debug`.
 
 ### Deeplinks
 
-Deeplinks are captured automatically — Pry installs an `.onOpenURL` handler on the view you attach `.pry(store:)` to. No extra code needed.
+Deeplinks are captured automatically — Pry installs an `.onOpenURL` handler on the view you attach `.pry()` to. No extra code needed.
 
 ### Push Notifications
 

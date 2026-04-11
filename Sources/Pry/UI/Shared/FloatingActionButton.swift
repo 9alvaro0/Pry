@@ -5,6 +5,7 @@ import SwiftUI
     @_spi(PryPro) public let backgroundColor: Color
     @_spi(PryPro) public let foregroundColor: Color
     @_spi(PryPro) public let size: CGFloat
+    @_spi(PryPro) public var glowColor: Color? = nil
     @_spi(PryPro) public let action: () -> Void
 
     @_spi(PryPro) public var body: some View {
@@ -18,6 +19,14 @@ import SwiftUI
                 .shadow(color: .black.opacity(PryTheme.Shadow.opacity), radius: PryTheme.Shadow.radius, x: PryTheme.Shadow.offsetX, y: PryTheme.Shadow.offsetY)
         }
         .buttonStyle(.plain)
+        .overlay {
+            if let glowColor {
+                Circle()
+                    .stroke(glowColor.opacity(0.5), lineWidth: 2)
+                    .frame(width: size + 4, height: size + 4)
+                    .shadow(color: glowColor.opacity(0.4), radius: 12)
+            }
+        }
     }
 }
 

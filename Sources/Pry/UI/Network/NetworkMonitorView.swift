@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @_spi(PryPro) public struct NetworkMonitorView: View {
     @Bindable @_spi(PryPro) public var store: PryStore
@@ -8,11 +9,8 @@ import SwiftUI
     }
 
     @Environment(\.pryReadOnly) private var isReadOnly
-    @Environment(\.pryAccentOverride) private var accentOverride
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
-
-    private var resolvedAccent: Color { accentOverride ?? PryTheme.Colors.accent }
 
     private var selectedFilter: NetworkFilter? {
         get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
@@ -34,46 +32,8 @@ import SwiftUI
         nonmutating set { store.networkShowStats = newValue }
     }
 
-    private enum SortOrder: String, CaseIterable {
-        case newest = "Newest"
-        case oldest = "Oldest"
-        case slowest = "Slowest"
-        case largest = "Largest"
-
-        var icon: String {
-            switch self {
-            case .newest: "clock.arrow.circlepath"
-            case .oldest: "clock"
-            case .slowest: "tortoise"
-            case .largest: "arrow.up.circle"
-            }
-        }
-    }
-
-    private enum NetworkFilter: String, CaseIterable {
-        case pinned = "Pinned"
-        case success = "Success"
-        case error = "Errors"
-        case pending = "Pending"
-
-        var color: Color {
-            switch self {
-            case .pinned: PryTheme.Colors.warning
-            case .success: PryTheme.Colors.success
-            case .error: PryTheme.Colors.error
-            case .pending: PryTheme.Colors.pending
-            }
-        }
-
-        func matches(_ entry: NetworkEntry) -> Bool {
-            switch self {
-            case .pinned: true // Handled separately
-            case .success: entry.isSuccess
-            case .error: (!entry.isSuccess && entry.responseStatusCode != nil) || entry.responseError != nil
-            case .pending: entry.responseStatusCode == nil && entry.responseError == nil
-            }
-        }
-    }
+    typealias SortOrder = NetworkSortOrder
+    typealias NetworkFilter = NetworkStatusFilter
 
     // MARK: - Computed
 
@@ -85,20 +45,6 @@ import SwiftUI
         return hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
     }
 
-    private var hasActiveFilters: Bool {
-        sortOrder != .newest || selectedHost != nil || showStats
-    }
-
-    private var activeFilterCount: Int {
-        var count = 0
-        if sortOrder != .newest { count += 1 }
-        if selectedHost != nil { count += 1 }
-        if showStats { count += 1 }
-        return count
-    }
-
-    /// Entries filtered by host + search but NOT by chip filter.
-    /// Used as the base for both the final list and chip counts.
     private var baseFilteredEntries: [NetworkEntry] {
         var entries = store.networkEntries
 
@@ -127,11 +73,7 @@ import SwiftUI
         var entries = baseFilteredEntries
 
         if let filter = selectedFilter {
-            if filter == .pinned {
-                entries = entries.filter { store.isPinned($0.id) }
-            } else {
-                entries = entries.filter { filter.matches($0) }
-            }
+            entries = entries.filter { filter.matches($0) }
         }
 
         switch sortOrder {
@@ -146,8 +88,7 @@ import SwiftUI
 
     private var filterCounts: [NetworkFilter: Int] {
         let entries = baseFilteredEntries
-        var counts: [NetworkFilter: Int] = [.pinned: 0, .success: 0, .error: 0, .pending: 0]
-        counts[.pinned] = entries.filter { store.isPinned($0.id) }.count
+        var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
         for entry in entries {
             if entry.isSuccess {
                 counts[.success, default: 0] += 1
@@ -158,6 +99,21 @@ import SwiftUI
             }
         }
         return counts
+    }
+
+    private var pinnedEntries: [NetworkEntry] {
+        filteredEntries.filter { store.isPinned($0.id) }
+    }
+
+    private var mainEntries: [NetworkEntry] {
+        if selectedFilter == nil {
+            return filteredEntries.filter { !store.isPinned($0.id) }
+        }
+        return filteredEntries
+    }
+
+    private var hasActiveFilters: Bool {
+        sortOrder != .newest || selectedHost != nil || showStats || selectedFilter != nil
     }
 
     // MARK: - Body
@@ -172,7 +128,6 @@ import SwiftUI
                 )
             } else {
                 List {
-                    // Stats as first list section
                     if showStats {
                         Section {
                             NetworkStatsView(entries: baseFilteredEntries)
@@ -181,220 +136,159 @@ import SwiftUI
                         }
                     }
 
-                    // Requests
+                    // Pinned section
+                    if selectedFilter == nil, !pinnedEntries.isEmpty {
+                        Section {
+                            ForEach(pinnedEntries) { entry in
+                                requestRow(entry)
+                            }
+                        } header: {
+                            HStack(spacing: PryTheme.Spacing.xs) {
+                                Image(systemName: "pin.fill")
+                                    .font(PryTheme.Typography.detail)
+                                Text("PINNED")
+                                    .font(PryTheme.Typography.sectionLabel)
+                                    .tracking(PryTheme.Text.tracking)
+                            }
+                            .foregroundStyle(PryTheme.Colors.warning)
+                        }
+                    }
+
+                    // Main requests
                     Section {
-                        ForEach(filteredEntries) { entry in
-                            NavigationLink(destination: NetworkRequestDetailView(entry: entry)) {
-                                NetworkRequestRowView(entry: entry, isPinned: store.isPinned(entry.id))
-                            }
-                            .listRowBackground(PryTheme.Colors.surface)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: !isReadOnly) {
-                                if !isReadOnly {
-                                    Button(role: .destructive) {
-                                        store.removeNetworkEntry(entry.id)
-                                    } label: {
-                                        Image(systemName: "trash")
-                                    }
-                                }
-                            }
-                            .swipeActions(edge: .leading, allowsFullSwipe: !isReadOnly) {
-                                if !isReadOnly {
-                                    Button {
-                                        store.togglePin(entry.id)
-                                    } label: {
-                                        Image(systemName: store.isPinned(entry.id) ? "pin.slash" : "pin")
-                                    }
-                                    .tint(PryTheme.Colors.warning)
-                                }
-                            }
+                        ForEach(mainEntries) { entry in
+                            requestRow(entry)
                         }
                     }
                 }
                 .listStyle(.insetGrouped)
                 .scrollContentBackground(.hidden)
                 .contentMargins(.vertical, PryTheme.Spacing.sm)
+                .listRowSeparatorTint(PryTheme.Colors.border)
             }
         }
         .pryBackground()
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
-                chipBar
-                Divider()
+                summaryBar
+                Divider().overlay(PryTheme.Colors.border)
             }
         }
         .searchable(text: $searchText, prompt: "URL, method, status, host...")
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showFilterSheet = true
-                } label: {
-                    Image(systemName: "line.3.horizontal.decrease")
-                        .font(PryTheme.Typography.body)
-                        .foregroundStyle(
-                            hasActiveFilters
-                                ? resolvedAccent
-                                : PryTheme.Colors.textSecondary
-                        )
-                        .overlay(alignment: .topTrailing) {
-                            if activeFilterCount > 0 {
-                                Text("\(activeFilterCount)")
-                                    .font(PryTheme.Typography.badgeText)
-                                    .foregroundStyle(.white)
-                                    .frame(minWidth: 14, minHeight: 14)
-                                    .background(resolvedAccent)
-                                    .clipShape(.circle)
-                                    .offset(x: 8, y: -8)
-                            }
-                        }
-                }
-            }
-        }
         .sheet(isPresented: $showFilterSheet) {
-            filterSheet
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
+            NetworkFilterSheet(
+                selectedFilter: Binding(get: { selectedFilter }, set: { selectedFilter = $0 }),
+                sortOrder: Binding(get: { sortOrder }, set: { sortOrder = $0 }),
+                selectedHost: Binding(get: { selectedHost }, set: { selectedHost = $0 }),
+                showStats: Binding(get: { showStats }, set: { showStats = $0 }),
+                isPresented: $showFilterSheet,
+                filterCounts: filterCounts,
+                uniqueHosts: uniqueHosts
+            )
+            .presentationDetents([.large])
+            .presentationDragIndicator(.visible)
+            .presentationBackground(PryTheme.Colors.background)
         }
     }
 
-    // MARK: - Chip Bar (clean: only status filters + 1 filter button)
+    // MARK: - Summary Bar
 
-    private var chipBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PryTheme.Spacing.sm) {
-                ForEach(NetworkFilter.allCases, id: \.self) { filter in
-                    FilterChipView(
-                        title: filter == .pinned ? "" : filter.rawValue,
-                        count: filterCounts[filter] ?? 0,
-                        icon: filter == .pinned ? "pin.fill" : nil,
-                        color: filter.color,
-                        isSelected: selectedFilter == filter
-                    ) {
-                        selectedFilter = selectedFilter == filter ? nil : filter
-                    }
-                }
+    private var summaryBar: some View {
+        HStack(spacing: PryTheme.Spacing.md) {
+            Text("\(baseFilteredEntries.count) requests")
+                .font(PryTheme.Typography.body)
+                .fontWeight(.medium)
+                .foregroundStyle(PryTheme.Colors.textPrimary)
+
+            if let count = filterCounts[.error], count > 0 {
+                statusDot(count: count, color: PryTheme.Colors.error)
             }
-            .padding(.horizontal, PryTheme.Spacing.lg)
-            .padding(.vertical, PryTheme.Spacing.sm)
+
+            if let count = filterCounts[.pending], count > 0 {
+                statusDot(count: count, color: PryTheme.Colors.pending)
+            }
+
+            Spacer()
+
+            if let filter = selectedFilter {
+                Text(filter.rawValue)
+                    .font(PryTheme.Typography.detail)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(filter.color)
+                    .padding(.horizontal, PryTheme.Spacing.pip)
+                    .padding(.vertical, PryTheme.Spacing.xxs)
+                    .background(filter.color.opacity(PryTheme.Opacity.badge))
+                    .clipShape(.capsule)
+            }
+
+            Button { showFilterSheet = true } label: {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(PryTheme.Typography.body)
+                    .foregroundStyle(hasActiveFilters ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
+            }
         }
+        .padding(.horizontal, PryTheme.Spacing.lg)
+        .padding(.vertical, PryTheme.Spacing.sm)
         .background(PryTheme.Colors.background)
     }
 
-    // MARK: - Filter Sheet
-
-    private var filterSheet: some View {
-        VStack(spacing: 0) {
-            SheetHeader(
-                title: "Filters",
-                leadingAction: hasActiveFilters ? .reset {
-                    sortOrder = .newest
-                    selectedHost = nil
-                    showStats = false
-                } : nil,
-                trailingAction: .done { showFilterSheet = false }
-            )
-
-            ScrollView {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xl) {
-                    // Sort
-                    VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-                        sheetLabel("Sort By")
-
-                        HStack(spacing: PryTheme.Spacing.sm) {
-                            ForEach(SortOrder.allCases, id: \.self) { order in
-                                Button {
-                                    sortOrder = order
-                                } label: {
-                                    Text(order.rawValue)
-                                        .font(PryTheme.Typography.body)
-                                        .fontWeight(sortOrder == order ? .semibold : .regular)
-                                        .foregroundStyle(sortOrder == order ? resolvedAccent : PryTheme.Colors.textSecondary)
-                                        .padding(.horizontal, PryTheme.Spacing.md)
-                                        .padding(.vertical, PryTheme.Spacing.sm)
-                                        .background(sortOrder == order ? resolvedAccent.opacity(PryTheme.Opacity.badge) : PryTheme.Colors.surface)
-                                        .clipShape(.capsule)
-                                }
-                            }
-                        }
-                    }
-
-                    // Host
-                    if !uniqueHosts.isEmpty {
-                        VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-                            sheetLabel("Host")
-
-                            VStack(spacing: 0) {
-                                ForEach(Array(uniqueHosts.enumerated()), id: \.element.host) { index, item in
-                                    if index > 0 {
-                                        Divider().overlay(PryTheme.Colors.border)
-                                    }
-                                    hostRow(label: item.host, count: item.count, isSelected: selectedHost == item.host) {
-                                        selectedHost = selectedHost == item.host ? nil : item.host
-                                    }
-                                }
-                            }
-                            .background(PryTheme.Colors.surface)
-                            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-                        }
-                    }
-
-                    // Stats toggle
-                    HStack {
-                        Text("Statistics")
-                            .font(PryTheme.Typography.body)
-                            .foregroundStyle(PryTheme.Colors.textPrimary)
-                        Spacer()
-                        Toggle("", isOn: Binding(get: { showStats }, set: { showStats = $0 }))
-                            .tint(resolvedAccent)
-                            .labelsHidden()
-                    }
-                    .padding(PryTheme.Spacing.md)
-                    .background(PryTheme.Colors.surface)
-                    .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
-                }
-                .padding(.horizontal, PryTheme.Spacing.lg)
-                .padding(.top, PryTheme.Spacing.lg)
-            }
-        }
-        .pryBackground()
-    }
-
-    private func hostRow(label: String, count: Int?, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack {
-                Text(label)
-                    .font(PryTheme.Typography.code)
-                    .foregroundStyle(PryTheme.Colors.textPrimary)
-                    .lineLimit(1)
-
-                Spacer()
-
-                if let count {
-                    Text("\(count)")
-                        .font(PryTheme.Typography.detail)
-                        .foregroundStyle(PryTheme.Colors.textTertiary)
-                }
-
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(PryTheme.Typography.detail)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(resolvedAccent)
-                }
-            }
-            .padding(.horizontal, PryTheme.Spacing.md)
-            .padding(.vertical, PryTheme.Spacing.md)
-            .contentShape(.rect)
+    private func statusDot(count: Int, color: Color) -> some View {
+        HStack(spacing: PryTheme.Spacing.xxs) {
+            Circle()
+                .fill(color)
+                .frame(width: PryTheme.Size.statusDot, height: PryTheme.Size.statusDot)
+            Text("\(count)")
+                .font(PryTheme.Typography.detail)
+                .fontWeight(.semibold)
+                .foregroundStyle(color)
         }
     }
 
-    private func sheetLabel(_ text: String) -> some View {
-        Text(text.uppercased())
-            .font(PryTheme.Typography.sectionLabel)
-            .tracking(PryTheme.Text.tracking)
-            .foregroundStyle(PryTheme.Colors.textTertiary)
-    }
+    // MARK: - Request Row
 
+    @ViewBuilder
+    private func requestRow(_ entry: NetworkEntry) -> some View {
+        NavigationLink(destination: NetworkRequestDetailView(entry: entry)) {
+            NetworkRequestRowView(entry: entry, isPinned: store.isPinned(entry.id))
+        }
+        .listRowBackground(PryTheme.Colors.surface)
+        .swipeActions(edge: .trailing, allowsFullSwipe: !isReadOnly) {
+            if !isReadOnly {
+                Button(role: .destructive) {
+                    store.removeNetworkEntry(entry.id)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+            }
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: !isReadOnly) {
+            if !isReadOnly {
+                Button {
+                    store.togglePin(entry.id)
+                } label: {
+                    Label(
+                        store.isPinned(entry.id) ? "Unpin" : "Pin",
+                        systemImage: store.isPinned(entry.id) ? "pin.slash.fill" : "pin.fill"
+                    )
+                }
+                .tint(PryTheme.Colors.warning)
+
+                Button {
+                    UIPasteboard.general.string = entry.requestURL
+                } label: {
+                    Label("URL", systemImage: "link")
+                }
+                .tint(PryTheme.Colors.info)
+
+                Button {
+                    UIPasteboard.general.string = NetworkCurlGenerator.generate(for: entry)
+                } label: {
+                    Label("cURL", systemImage: "terminal.fill")
+                }
+                .tint(PryTheme.Colors.syntaxBool)
+            }
+        }
+    }
 }
 
 // MARK: - Previews

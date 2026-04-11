@@ -38,7 +38,7 @@ struct DeeplinkMonitorView: View {
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(PryTheme.Colors.deeplinks)
+                    .tint(PryTheme.Colors.accent)
                 }
             } else {
                 List {
@@ -61,7 +61,7 @@ struct DeeplinkMonitorView: View {
                                 } label: {
                                     Image(systemName: "arrow.clockwise")
                                 }
-                                .tint(PryTheme.Colors.deeplinks)
+                                .tint(PryTheme.Colors.accent)
 
                                 Button {
                                     UIPasteboard.general.string = entry.url
@@ -87,7 +87,7 @@ struct DeeplinkMonitorView: View {
                 } label: {
                     Image(systemName: "play.circle")
                         .font(PryTheme.Typography.body)
-                        .foregroundStyle(PryTheme.Colors.deeplinks)
+                        .foregroundStyle(PryTheme.Colors.accent)
                 }
             }
         }

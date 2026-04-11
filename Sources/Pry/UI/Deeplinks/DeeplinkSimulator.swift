@@ -231,7 +231,7 @@ struct DeeplinkSimulatorView: View {
 
                             Image(systemName: "play.circle")
                                 .font(PryTheme.Typography.body)
-                                .foregroundStyle(PryTheme.Colors.deeplinks)
+                                .foregroundStyle(PryTheme.Colors.accent)
                         }
                         .padding(.horizontal, PryTheme.Spacing.md)
                         .padding(.vertical, PryTheme.Spacing.md)
@@ -260,7 +260,7 @@ struct DeeplinkSimulatorView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, PryTheme.Spacing.md)
-            .background(sent ? PryTheme.Colors.success : PryTheme.Colors.deeplinks)
+            .background(sent ? PryTheme.Colors.success : PryTheme.Colors.accent)
             .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
         }
         .disabled(isSendDisabled)

@@ -9,7 +9,7 @@ struct DeeplinkRowView: View {
             HStack(spacing: 0) {
                 Text(entry.schemeAndHost)
                     .font(PryTheme.Typography.code)
-                    .foregroundStyle(PryTheme.Colors.deeplinks)
+                    .foregroundStyle(PryTheme.Colors.accent)
 
                 Text(entry.path)
                     .font(PryTheme.Typography.code)
@@ -27,8 +27,8 @@ struct DeeplinkRowView: View {
                         .font(PryTheme.Typography.detail)
                         .padding(.horizontal, PryTheme.Spacing.pip)
                         .padding(.vertical, PryTheme.Spacing.xxs)
-                        .background(PryTheme.Colors.deeplinks.opacity(PryTheme.Opacity.badge))
-                        .foregroundStyle(PryTheme.Colors.deeplinks)
+                        .background(PryTheme.Colors.accent.opacity(PryTheme.Opacity.badge))
+                        .foregroundStyle(PryTheme.Colors.accent)
                         .clipShape(.capsule)
                 }
 

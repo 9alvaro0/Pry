@@ -10,110 +10,120 @@ struct NetworkRequestRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-            // Line 1: Method + Path + Pin + Duration
-            HStack(alignment: .center, spacing: PryTheme.Spacing.sm) {
-                // Method — for GraphQL show operation type badge instead
-                if let gql = entry.graphQLInfo {
-                    Text(gql.operationType.rawValue.prefix(3).uppercased())
-                        .font(PryTheme.Typography.codeSmall)
-                        .fontWeight(.bold)
-                        .foregroundStyle(gql.operationType.color)
-                        .frame(width: PryTheme.Size.methodColumn, alignment: .leading)
-                } else {
-                    Text(entry.requestMethod)
+                // Line 1: Method pill + Path + badges + pin
+                HStack(alignment: .center, spacing: PryTheme.Spacing.sm) {
+                    methodBadge
+
+                    Text(entry.displayPath)
                         .font(PryTheme.Typography.code)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(PryTheme.Colors.textSecondary)
-                        .frame(width: PryTheme.Size.methodColumn, alignment: .leading)
+                        .fontWeight(.medium)
+                        .foregroundStyle(PryTheme.Colors.textPrimary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    Spacer()
+
+                    if entry.isReplay {
+                        tagBadge("REPLAY", color: PryTheme.Colors.accent)
+                    }
+
+                    if entry.isMocked {
+                        tagBadge("MOCK", color: PryTheme.Colors.syntaxBool)
+                    }
+
+                    if let gql = entry.graphQLInfo, gql.hasErrors {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(PryTheme.Typography.smallIcon)
+                            .foregroundStyle(PryTheme.Colors.error)
+                    }
+
+                    if isPinned {
+                        Image(systemName: "pin.fill")
+                            .font(PryTheme.Typography.smallIcon)
+                            .foregroundStyle(PryTheme.Colors.warning)
+                    }
                 }
 
-                // Path — for GraphQL show operation name
-                Text(entry.displayPath)
-                    .font(PryTheme.Typography.code)
-                    .foregroundStyle(PryTheme.Colors.textPrimary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
+                // Line 2: Status badge + Host + Size + Duration + Timestamp
+                HStack(spacing: PryTheme.Spacing.sm) {
+                    if let statusCode = entry.responseStatusCode {
+                        Text("\(statusCode)")
+                            .pryStatusBadge(statusCode)
+                    } else if isPending {
+                        statusLabel("PENDING", color: PryTheme.Colors.pending)
+                    } else if entry.responseError != nil {
+                        statusLabel("ERR", color: PryTheme.Colors.error)
+                    }
 
-                Spacer()
-
-                if entry.isReplay {
-                    Text("REPLAY")
-                        .font(PryTheme.Typography.codeSmall)
-                        .fontWeight(.bold)
-                        .foregroundStyle(PryTheme.Colors.accent)
-                }
-
-                if entry.isMocked {
-                    Text("MOCK")
-                        .font(PryTheme.Typography.codeSmall)
-                        .fontWeight(.bold)
-                        .foregroundStyle(PryTheme.Colors.syntaxBool)
-                }
-
-                // GraphQL errors indicator
-                if let gql = entry.graphQLInfo, gql.hasErrors {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(PryTheme.Typography.smallIcon)
-                        .foregroundStyle(PryTheme.Colors.error)
-                }
-
-                if isPinned {
-                    Image(systemName: "pin.fill")
-                        .font(PryTheme.Typography.smallIcon)
-                        .foregroundStyle(PryTheme.Colors.warning)
-                }
-
-                if let duration = entry.duration {
-                    Text(duration.formattedDuration)
-                        .font(PryTheme.Typography.codeSmall)
+                    Text(entry.requestURL.extractHost())
+                        .font(PryTheme.Typography.detail)
                         .foregroundStyle(PryTheme.Colors.textTertiary)
-                }
-            }
+                        .lineLimit(1)
 
-            // Line 2: Status badge + Host + Size + Timestamp
-            HStack(spacing: PryTheme.Spacing.sm) {
-                if let statusCode = entry.responseStatusCode {
-                    Text("\(statusCode)")
-                        .pryStatusBadge(statusCode)
-                } else if isPending {
-                    Text("PENDING")
-                        .font(PryTheme.Typography.codeSmall)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, PryTheme.Spacing.pip)
-                        .padding(.vertical, PryTheme.Spacing.xxs)
-                        .background(PryTheme.Colors.pending.opacity(PryTheme.Opacity.badge))
-                        .foregroundStyle(PryTheme.Colors.pending)
-                        .clipShape(.capsule)
-                } else if entry.responseError != nil {
-                    Text("ERR")
-                        .font(PryTheme.Typography.codeSmall)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, PryTheme.Spacing.pip)
-                        .padding(.vertical, PryTheme.Spacing.xxs)
-                        .background(PryTheme.Colors.error.opacity(PryTheme.Opacity.badge))
-                        .foregroundStyle(PryTheme.Colors.error)
-                        .clipShape(.capsule)
-                }
+                    Spacer()
 
-                Text(entry.requestURL.extractHost())
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-                    .lineLimit(1)
+                    if let size = entry.responseSize, size > 0 {
+                        Text(size.formatBytes())
+                            .font(PryTheme.Typography.detail)
+                            .foregroundStyle(PryTheme.Colors.textTertiary)
+                    }
 
-                Spacer()
+                    if let duration = entry.duration {
+                        Text(duration.formattedDuration)
+                            .font(PryTheme.Typography.codeSmall)
+                            .foregroundStyle(PryTheme.Colors.textTertiary)
+                    }
 
-                if let size = entry.responseSize, size > 0 {
-                    Text(size.formatBytes())
+                    Text(entry.timestamp.relativeTimestamp)
                         .font(PryTheme.Typography.detail)
                         .foregroundStyle(PryTheme.Colors.textTertiary)
                 }
+            }
+        .padding(.vertical, PryTheme.Spacing.sm)
+    }
 
-                Text(entry.timestamp.relativeTimestamp)
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
+    // MARK: - Components
+
+    private var methodBadge: some View {
+        Group {
+            if let gql = entry.graphQLInfo {
+                Text(gql.operationType.rawValue.prefix(3).uppercased())
+                    .font(PryTheme.Typography.codeSmall)
+                    .fontWeight(.bold)
+                    .foregroundStyle(gql.operationType.color)
+                    .padding(.horizontal, PryTheme.Spacing.pip)
+                    .padding(.vertical, PryTheme.Spacing.xxs)
+                    .background(gql.operationType.color.opacity(PryTheme.Opacity.badge))
+                    .clipShape(.capsule)
+            } else {
+                Text(entry.requestMethod)
+                    .font(PryTheme.Typography.codeSmall)
+                    .fontWeight(.bold)
+                    .foregroundStyle(PryTheme.Colors.methodColor(entry.requestMethod))
+                    .padding(.horizontal, PryTheme.Spacing.pip)
+                    .padding(.vertical, PryTheme.Spacing.xxs)
+                    .background(PryTheme.Colors.methodColor(entry.requestMethod).opacity(PryTheme.Opacity.badge))
+                    .clipShape(.capsule)
             }
         }
-        .padding(.vertical, PryTheme.Spacing.xs)
+    }
+
+    private func tagBadge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(PryTheme.Typography.codeSmall)
+            .fontWeight(.bold)
+            .foregroundStyle(color)
+    }
+
+    private func statusLabel(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(PryTheme.Typography.codeSmall)
+            .fontWeight(.medium)
+            .padding(.horizontal, PryTheme.Spacing.pip)
+            .padding(.vertical, PryTheme.Spacing.xxs)
+            .background(color.opacity(PryTheme.Opacity.badge))
+            .foregroundStyle(color)
+            .clipShape(.capsule)
     }
 }
 

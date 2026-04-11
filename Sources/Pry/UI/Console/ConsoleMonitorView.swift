@@ -11,6 +11,8 @@ import UIKit
     @State private var selectedLogType: LogType?
     @State private var searchText: String = ""
     @State private var showCopiedAll = false
+    @State private var showFilterSheet = false
+    @State private var expandedLogID: UUID?
 
     private var filteredLogs: [LogEntry] {
         var logs = store.logEntries
@@ -30,7 +32,7 @@ import UIKit
             }
         }
 
-        return logs.reversed()
+        return logs
     }
 
     private var typeCounts: [LogType: Int] {
@@ -41,6 +43,9 @@ import UIKit
         return counts
     }
 
+    private var errorCount: Int { typeCounts[.error] ?? 0 }
+    private var warningCount: Int { typeCounts[.warning] ?? 0 }
+
     @_spi(PryPro) public var body: some View {
         Group {
             if store.logEntries.isEmpty {
@@ -50,93 +55,229 @@ import UIKit
                     description: "Logs will appear here as the app runs"
                 )
             } else {
-                List {
-                    ForEach(filteredLogs) { log in
-                        NavigationLink(destination: ConsoleLogDetailView(log: log)) {
-                            ConsoleLogRowView(log: log)
-                        }
-                        .listRowBackground(PryTheme.Colors.surface)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                store.removeLogEntry(log.id)
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                        }
-                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                            Button {
-                                UIPasteboard.general.string = log.message
-                            } label: {
-                                Image(systemName: "doc.on.doc")
-                            }
-                            .tint(PryTheme.Colors.accent)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0) {
+                        ForEach(filteredLogs) { log in
+                            logRow(log)
+                            Divider().overlay(PryTheme.Colors.border.opacity(0.5))
                         }
                     }
                 }
-                .listStyle(.insetGrouped)
-                .scrollContentBackground(.hidden)
-                .contentMargins(.vertical, PryTheme.Spacing.sm)
             }
         }
         .pryBackground()
         .safeAreaInset(edge: .top, spacing: 0) {
             VStack(spacing: 0) {
-                chipBar
-                Divider()
+                summaryBar
+                Divider().overlay(PryTheme.Colors.border)
             }
         }
         .searchable(text: $searchText, prompt: "Message, file, type...")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    copyAllLogs()
-                } label: {
+                Button { copyAllLogs() } label: {
                     Image(systemName: showCopiedAll ? "checkmark" : "doc.on.doc")
                         .font(PryTheme.Typography.body)
-                        .foregroundStyle(
-                            showCopiedAll
-                                ? PryTheme.Colors.success
-                                : PryTheme.Colors.textSecondary
-                        )
+                        .foregroundStyle(showCopiedAll ? PryTheme.Colors.success : PryTheme.Colors.textSecondary)
                 }
+            }
+        }
+        .sheet(isPresented: $showFilterSheet) {
+            consoleFilterSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .presentationBackground(PryTheme.Colors.background)
+        }
+    }
+
+    // MARK: - Log Row (tap to expand inline)
+
+    private func logRow(_ log: LogEntry) -> some View {
+        let isExpanded = expandedLogID == log.id
+
+        return VStack(alignment: .leading, spacing: 0) {
+            // Compact row
+            Button {
+                withAnimation(.easeInOut(duration: PryTheme.Animation.standard)) {
+                    expandedLogID = isExpanded ? nil : log.id
+                }
+            } label: {
+                ConsoleLogRowView(log: log)
+                    .padding(.horizontal, PryTheme.Spacing.lg)
+            }
+            .buttonStyle(.plain)
+
+            // Expanded detail
+            if isExpanded {
+                expandedDetail(log)
+                    .padding(.horizontal, PryTheme.Spacing.lg)
+                    .padding(.bottom, PryTheme.Spacing.sm)
+                    .transition(.opacity)
             }
         }
     }
 
-    // MARK: - Chip Bar
+    private func expandedDetail(_ log: LogEntry) -> some View {
+        VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
+            if let location = log.location {
+                Text(location)
+                    .font(PryTheme.Typography.codeSmall)
+                    .foregroundStyle(PryTheme.Colors.textTertiary)
+            }
 
-    private var chipBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: PryTheme.Spacing.sm) {
-                ForEach(LogType.allCases, id: \.self) { type in
-                    let count = typeCounts[type] ?? 0
-                    if count > 0 {
-                        FilterChipView(
-                            title: type.rawValue,
-                            count: count,
-                            icon: type.systemImage,
-                            color: type.color,
-                            isSelected: selectedLogType == type
-                        ) {
-                            selectedLogType = selectedLogType == type ? nil : type
+            // Actions
+            HStack(spacing: PryTheme.Spacing.md) {
+                Button {
+                    UIPasteboard.general.string = log.message
+                } label: {
+                    Label("Copy", systemImage: "doc.on.doc")
+                        .font(PryTheme.Typography.detail)
+                        .foregroundStyle(PryTheme.Colors.accent)
+                }
+
+                Spacer()
+
+            }
+        }
+        .padding(.leading, 68) // align with message text
+    }
+
+    // MARK: - Summary Bar
+
+    private var summaryBar: some View {
+        HStack(spacing: PryTheme.Spacing.md) {
+            Text("\(store.logEntries.count) logs")
+                .font(PryTheme.Typography.body)
+                .fontWeight(.medium)
+                .foregroundStyle(PryTheme.Colors.textPrimary)
+
+            if errorCount > 0 {
+                statusDot(count: errorCount, color: PryTheme.Colors.error)
+            }
+            if warningCount > 0 {
+                statusDot(count: warningCount, color: PryTheme.Colors.warning)
+            }
+
+            Spacer()
+
+            if let filter = selectedLogType {
+                Text(filter.rawValue)
+                    .font(PryTheme.Typography.detail)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(filter.color)
+                    .padding(.horizontal, PryTheme.Spacing.pip)
+                    .padding(.vertical, PryTheme.Spacing.xxs)
+                    .background(filter.color.opacity(PryTheme.Opacity.badge))
+                    .clipShape(.capsule)
+            }
+
+            Button { showFilterSheet = true } label: {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(PryTheme.Typography.body)
+                    .foregroundStyle(selectedLogType != nil ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
+            }
+        }
+        .padding(.horizontal, PryTheme.Spacing.lg)
+        .padding(.vertical, PryTheme.Spacing.sm)
+        .background(PryTheme.Colors.background)
+    }
+
+    private func statusDot(count: Int, color: Color) -> some View {
+        HStack(spacing: PryTheme.Spacing.xxs) {
+            Circle().fill(color)
+                .frame(width: PryTheme.Size.statusDot, height: PryTheme.Size.statusDot)
+            Text("\(count)")
+                .font(PryTheme.Typography.detail)
+                .fontWeight(.semibold)
+                .foregroundStyle(color)
+        }
+    }
+
+    // MARK: - Filter Sheet
+
+    private var consoleFilterSheet: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: PryTheme.Spacing.xl) {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("TYPE")
+                        .font(PryTheme.Typography.sectionLabel)
+                        .tracking(PryTheme.Text.tracking)
+                        .foregroundStyle(PryTheme.Colors.textTertiary)
+                        .padding(.bottom, PryTheme.Spacing.sm)
+
+                    VStack(spacing: 0) {
+                        ForEach(LogType.allCases, id: \.self) { type in
+                            if type != LogType.allCases.first {
+                                Divider().overlay(PryTheme.Colors.border)
+                            }
+                            Button {
+                                selectedLogType = selectedLogType == type ? nil : type
+                            } label: {
+                                HStack(spacing: PryTheme.Spacing.md) {
+                                    Circle().fill(type.color)
+                                        .frame(width: PryTheme.Size.statusDot, height: PryTheme.Size.statusDot)
+
+                                    Text(type.rawValue)
+                                        .font(PryTheme.Typography.body)
+                                        .fontWeight(.medium)
+                                        .foregroundStyle(PryTheme.Colors.textPrimary)
+
+                                    Spacer()
+
+                                    Text("\(typeCounts[type] ?? 0)")
+                                        .font(PryTheme.Typography.code)
+                                        .foregroundStyle(PryTheme.Colors.textTertiary)
+
+                                    if selectedLogType == type {
+                                        Image(systemName: "checkmark")
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(PryTheme.Colors.accent)
+                                    }
+                                }
+                                .padding(.horizontal, PryTheme.Spacing.md)
+                                .frame(minHeight: 44)
+                                .contentShape(.rect)
+                            }
                         }
+                    }
+                    .background(PryTheme.Colors.surface)
+                    .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+                }
+
+                Button { showFilterSheet = false } label: {
+                    Text("Done")
+                        .font(.body.weight(.semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .background(PryTheme.Colors.accent)
+                        .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+                }
+
+                if selectedLogType != nil {
+                    Button { selectedLogType = nil } label: {
+                        Text("Reset")
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(PryTheme.Colors.error)
+                            .frame(maxWidth: .infinity, minHeight: 44)
+                            .background(PryTheme.Colors.error.opacity(PryTheme.Opacity.badge))
+                            .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
                     }
                 }
             }
             .padding(.horizontal, PryTheme.Spacing.lg)
-            .padding(.vertical, PryTheme.Spacing.sm)
+            .padding(.top, PryTheme.Spacing.xl)
+            .padding(.bottom, PryTheme.Spacing.xxl)
         }
-        .background(PryTheme.Colors.background)
+        .contentMargins(.vertical, PryTheme.Spacing.sm)
+        .pryBackground()
     }
 
-    // MARK: - Copy All Logs
+    // MARK: - Copy All
 
     private func copyAllLogs() {
         let text = filteredLogs.map { log in
             var line = "[\(log.type.rawValue.uppercased())] \(log.message)"
-            if let location = log.location {
-                line += "  (\(location))"
-            }
+            if let location = log.location { line += "  (\(location))" }
             return line
         }.joined(separator: "\n")
 
@@ -148,8 +289,6 @@ import UIKit
         }
     }
 }
-
-// MARK: - Previews
 
 #if DEBUG
 #Preview("Console - With Logs") {

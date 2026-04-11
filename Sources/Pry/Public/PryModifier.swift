@@ -79,10 +79,7 @@ struct PryEnvironmentModifier: ViewModifier {
     @Bindable @_spi(PryPro) public var store: PryStore
     @_spi(PryPro) public let trigger: PryTrigger
     @_spi(PryPro) public let rootViewBuilder: (PryStore) -> Root
-
-    @SwiftUI.Environment(\.pryAccentOverride) private var accentOverride
-    @SwiftUI.Environment(\.pryFabColorOverride) private var fabColorOverride
-    @SwiftUI.Environment(\.pryFabForegroundOverride) private var fabForegroundOverride
+    @_spi(PryPro) public var glowColor: Color? = nil
 
     @State private var isPresented = false
     @State private var dragOffset: CGSize = .zero
@@ -91,10 +88,12 @@ struct PryEnvironmentModifier: ViewModifier {
     @_spi(PryPro) public init(
         store: PryStore,
         trigger: PryTrigger,
+        glowColor: Color? = nil,
         @ViewBuilder rootViewBuilder: @escaping (PryStore) -> Root
     ) {
         self.store = store
         self.trigger = trigger
+        self.glowColor = glowColor
         self.rootViewBuilder = rootViewBuilder
     }
 
@@ -145,9 +144,7 @@ struct PryEnvironmentModifier: ViewModifier {
             .sheet(isPresented: $isPresented) {
                 rootViewBuilder(store)
                     .environment(\.pryStore, store)
-                    .environment(\.pryAccentOverride, accentOverride)
-                    .environment(\.pryFabColorOverride, fabColorOverride)
-                    .environment(\.pryFabForegroundOverride, fabForegroundOverride)
+                    .environment(\.pryProGlow, glowColor)
             }
     }
 
@@ -156,9 +153,10 @@ struct PryEnvironmentModifier: ViewModifier {
     private var fabView: some View {
         FloatingActionButtonView(
             icon: "ladybug.fill",
-            backgroundColor: fabColorOverride ?? PryTheme.Colors.fab,
-            foregroundColor: fabForegroundOverride ?? PryTheme.Colors.fabForeground,
-            size: PryTheme.Size.fab
+            backgroundColor: PryTheme.Colors.fab,
+            foregroundColor: PryTheme.Colors.fabForeground,
+            size: PryTheme.Size.fab,
+            glowColor: glowColor
         ) {
             guard !isDragging else { return }
             isPresented = true

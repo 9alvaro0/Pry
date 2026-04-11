@@ -34,7 +34,7 @@ struct PushNotificationsView: View {
                             .fontWeight(.semibold)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(PryTheme.Colors.warning)
+                    .tint(PryTheme.Colors.accent)
                 }
             } else {
                 List {
@@ -57,7 +57,7 @@ struct PushNotificationsView: View {
                                 } label: {
                                     Image(systemName: "arrow.clockwise")
                                 }
-                                .tint(PryTheme.Colors.warning)
+                                .tint(PryTheme.Colors.accent)
 
                                 Button {
                                     UIPasteboard.general.string = apnsPayload(for: entry)
@@ -83,7 +83,7 @@ struct PushNotificationsView: View {
                 } label: {
                     Image(systemName: "play.circle")
                         .font(PryTheme.Typography.body)
-                        .foregroundStyle(PryTheme.Colors.warning)
+                        .foregroundStyle(PryTheme.Colors.accent)
                 }
             }
         }
@@ -186,8 +186,8 @@ private struct PushNotificationRowView: View {
                         .font(PryTheme.Typography.detail)
                         .padding(.horizontal, PryTheme.Spacing.pip)
                         .padding(.vertical, PryTheme.Spacing.xxs)
-                        .background(PryTheme.Colors.warning.opacity(PryTheme.Opacity.badge))
-                        .foregroundStyle(PryTheme.Colors.warning)
+                        .background(PryTheme.Colors.accent.opacity(PryTheme.Opacity.badge))
+                        .foregroundStyle(PryTheme.Colors.accent)
                         .clipShape(.capsule)
                 }
 

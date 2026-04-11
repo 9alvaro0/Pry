@@ -9,9 +9,7 @@ import UIKit
 @_spi(PryPro) public struct AppHubView<Extras: View>: View {
     @Bindable @_spi(PryPro) public var store: PryStore
     @ViewBuilder @_spi(PryPro) public let extras: () -> Extras
-    @Environment(\.pryAccentOverride) private var accentOverride
-
-    private var accent: Color { accentOverride ?? PryTheme.Colors.accent }
+    private var accent: Color { PryTheme.Colors.accent }
 
     @_spi(PryPro) public init(store: PryStore, @ViewBuilder extras: @escaping () -> Extras) {
         self.store = store
@@ -55,11 +53,11 @@ import UIKit
                     .navigationTitle("Deeplinks")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                monitorCard(
+                hubRow(
                     icon: "link",
                     title: "Deeplinks",
-                    count: store.deeplinkEntries.count,
-                    subtitle: lastDeeplinkSubtitle
+                    subtitle: lastDeeplinkSubtitle,
+                    badge: store.deeplinkEntries.count
                 )
             }
 
@@ -70,26 +68,27 @@ import UIKit
                     .navigationTitle("Push Notifications")
                     .navigationBarTitleDisplayMode(.inline)
             } label: {
-                monitorCard(
+                hubRow(
                     icon: "bell.badge",
                     title: "Push Notifications",
-                    count: store.pushNotificationEntries.count,
-                    subtitle: lastPushSubtitle
+                    subtitle: lastPushSubtitle,
+                    badge: store.pushNotificationEntries.count
                 )
             }
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
+        .pryGlowBorder()
     }
 
     private var lastDeeplinkSubtitle: String {
-        guard let last = store.deeplinkEntries.first else { return "No events yet" }
-        return "\(last.schemeAndHost)\(last.path)  \(last.timestamp.relativeTimestamp)"
+        guard let last = store.deeplinkEntries.first else { return "Waiting for deeplink events" }
+        return "\(last.schemeAndHost)\(last.path) \u{00B7} \(last.timestamp.relativeTimestamp)"
     }
 
     private var lastPushSubtitle: String {
-        guard let last = store.pushNotificationEntries.first else { return "No events yet" }
-        return "\(last.displayTitle)  \(last.timestamp.relativeTimestamp)"
+        guard let last = store.pushNotificationEntries.first else { return "Waiting for push notifications" }
+        return "\(last.displayTitle) \u{00B7} \(last.timestamp.relativeTimestamp)"
     }
 
     // MARK: - Storage Section
@@ -104,7 +103,7 @@ import UIKit
                 hubRow(
                     icon: "birthday.cake",
                     title: "Cookies",
-                    detail: "\(HTTPCookieStorage.shared.cookies?.count ?? 0) cookies"
+                    subtitle: "\(HTTPCookieStorage.shared.cookies?.count ?? 0) stored cookies"
                 )
             }
 
@@ -118,12 +117,13 @@ import UIKit
                 hubRow(
                     icon: "tray.full",
                     title: "UserDefaults",
-                    detail: "\(UserDefaults.standard.dictionaryRepresentation().count) keys"
+                    subtitle: "\(UserDefaults.standard.dictionaryRepresentation().count) keys stored"
                 )
             }
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
+        .pryGlowBorder()
     }
 
     // MARK: - Diagnostics Section
@@ -138,7 +138,7 @@ import UIKit
                 hubRow(
                     icon: "iphone",
                     title: "Device & App",
-                    detail: "iOS \(UIDevice.current.systemVersion)"
+                    subtitle: "\(UIDevice.current.name) \u{00B7} iOS \(UIDevice.current.systemVersion)"
                 )
             }
 
@@ -152,13 +152,13 @@ import UIKit
                 hubRow(
                     icon: "lock.shield",
                     title: "Permissions",
-                    detail: ""
+                    subtitle: "Camera, location, notifications..."
                 )
             }
-
         }
         .background(PryTheme.Colors.surface)
         .clipShape(.rect(cornerRadius: PryTheme.Radius.lg))
+        .pryGlowBorder()
     }
 
     // MARK: - Components
@@ -171,7 +171,7 @@ import UIKit
             .padding(.bottom, PryTheme.Spacing.sm)
     }
 
-    private func monitorCard(icon: String, title: String, count: Int, subtitle: String) -> some View {
+    private func hubRow(icon: String, title: String, subtitle: String, badge: Int? = nil) -> some View {
         HStack(spacing: PryTheme.Spacing.md) {
             iconPill(systemName: icon)
 
@@ -189,8 +189,8 @@ import UIKit
 
             Spacer()
 
-            if count > 0 {
-                Text("\(count)")
+            if let badge, badge > 0 {
+                Text("\(badge)")
                     .font(PryTheme.Typography.detail)
                     .fontWeight(.bold)
                     .padding(.horizontal, PryTheme.Spacing.sm)
@@ -205,34 +205,7 @@ import UIKit
                 .foregroundStyle(PryTheme.Colors.textTertiary)
         }
         .padding(.horizontal, PryTheme.Spacing.lg)
-        .padding(.vertical, PryTheme.Spacing.md)
-    }
-
-    private func hubRow(icon: String, title: String, detail: String, showChevron: Bool = true) -> some View {
-        HStack(spacing: PryTheme.Spacing.md) {
-            iconPill(systemName: icon)
-
-            Text(title)
-                .font(PryTheme.Typography.body)
-                .fontWeight(.medium)
-                .foregroundStyle(PryTheme.Colors.textPrimary)
-
-            Spacer()
-
-            if !detail.isEmpty {
-                Text(detail)
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-            }
-
-            if showChevron {
-                Image(systemName: "chevron.right")
-                    .font(PryTheme.Typography.detail)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
-            }
-        }
-        .padding(.horizontal, PryTheme.Spacing.lg)
-        .padding(.vertical, PryTheme.Spacing.md)
+        .frame(minHeight: 52)
     }
 
     private func iconPill(systemName: String) -> some View {

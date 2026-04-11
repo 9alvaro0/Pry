@@ -2,15 +2,17 @@ import SwiftUI
 
 // MARK: - Reusable ViewModifiers
 
-/// Code block container styling.
+/// Code block container styling. Gold border when PryPro is active.
 @_spi(PryPro) public struct PryCodeBlockModifier: ViewModifier {
+    @SwiftUI.Environment(\.pryProGlow) private var glow
+
     @_spi(PryPro) public func body(content: Content) -> some View {
         content
             .padding(PryTheme.Spacing.md)
             .background(PryTheme.Colors.background)
             .overlay(
                 RoundedRectangle(cornerRadius: PryTheme.Radius.md)
-                    .stroke(PryTheme.Colors.border, lineWidth: 1)
+                    .stroke(glow?.opacity(0.35) ?? PryTheme.Colors.border, lineWidth: 1)
             )
             .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
     }
@@ -32,6 +34,25 @@ import SwiftUI
     }
 }
 
+/// Adds a gold border glow when PryPro is active.
+@_spi(PryPro) public struct PryGlowBorderModifier: ViewModifier {
+    @SwiftUI.Environment(\.pryProGlow) private var glow
+    let cornerRadius: CGFloat
+
+    @_spi(PryPro) public func body(content: Content) -> some View {
+        if let glow {
+            content
+                .overlay(
+                    RoundedRectangle(cornerRadius: cornerRadius)
+                        .stroke(glow.opacity(0.3), lineWidth: 1)
+                )
+                .shadow(color: glow.opacity(0.15), radius: 6)
+        } else {
+            content
+        }
+    }
+}
+
 // MARK: - View Extensions
 
 extension View {
@@ -49,5 +70,10 @@ extension View {
         self
             .background(PryTheme.Colors.background)
             .preferredColorScheme(.dark)
+    }
+
+    /// Adds a subtle gold glow border when PryPro is active. No effect in Free.
+    @_spi(PryPro) public func pryGlowBorder(cornerRadius: CGFloat = PryTheme.Radius.lg) -> some View {
+        modifier(PryGlowBorderModifier(cornerRadius: cornerRadius))
     }
 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Standardized sheet header with title and optional leading/trailing actions.
+/// Standardized sheet header with title and pill action buttons.
 @_spi(PryPro) public struct SheetHeader: View {
     @_spi(PryPro) public let title: String
     @_spi(PryPro) public var leadingAction: HeaderAction?
@@ -13,20 +13,25 @@ import SwiftUI
     }
 
     @_spi(PryPro) public struct HeaderAction {
-        @_spi(PryPro) public let icon: String
+        @_spi(PryPro) public let label: String
+        @_spi(PryPro) public let icon: String?
         @_spi(PryPro) public let color: Color
+        @_spi(PryPro) public let style: Style
+
+        @_spi(PryPro) public enum Style { case filled, outline }
+
         @_spi(PryPro) public let action: () -> Void
 
         @_spi(PryPro) public static func close(_ action: @escaping () -> Void) -> HeaderAction {
-            HeaderAction(icon: "xmark", color: PryTheme.Colors.textSecondary, action: action)
+            HeaderAction(label: "Close", icon: "xmark", color: PryTheme.Colors.textSecondary, style: .outline, action: action)
         }
 
         @_spi(PryPro) public static func done(_ action: @escaping () -> Void) -> HeaderAction {
-            HeaderAction(icon: "checkmark", color: PryTheme.Colors.accent, action: action)
+            HeaderAction(label: "Done", icon: "checkmark", color: PryTheme.Colors.accent, style: .filled, action: action)
         }
 
         @_spi(PryPro) public static func reset(_ action: @escaping () -> Void) -> HeaderAction {
-            HeaderAction(icon: "arrow.counterclockwise", color: PryTheme.Colors.error, action: action)
+            HeaderAction(label: "Reset", icon: "arrow.counterclockwise", color: PryTheme.Colors.error, style: .outline, action: action)
         }
     }
 
@@ -34,38 +39,47 @@ import SwiftUI
         VStack(spacing: 0) {
             HStack {
                 if let leading = leadingAction {
-                    Button(action: leading.action) {
-                        Image(systemName: leading.icon)
-                            .font(PryTheme.Typography.body)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(leading.color)
-                    }
-                    .frame(width: PryTheme.Size.iconMedium, alignment: .leading)
+                    pillButton(leading)
                 } else {
-                    Spacer()
-                        .frame(width: PryTheme.Size.iconMedium)
+                    Color.clear.frame(width: 80)
                 }
 
                 Spacer()
 
                 Text(title)
-                    .font(PryTheme.Typography.subheading)
+                    .font(.headline)
                     .foregroundStyle(PryTheme.Colors.textPrimary)
 
                 Spacer()
 
-                Button(action: trailingAction.action) {
-                    Image(systemName: trailingAction.icon)
-                        .font(PryTheme.Typography.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(trailingAction.color)
-                }
-                .frame(width: PryTheme.Size.iconMedium, alignment: .trailing)
+                pillButton(trailingAction)
             }
             .padding(.horizontal, PryTheme.Spacing.lg)
-            .padding(.vertical, PryTheme.Spacing.md)
+            .frame(height: 56)
 
             Divider().overlay(PryTheme.Colors.border)
+        }
+    }
+
+    private func pillButton(_ action: HeaderAction) -> some View {
+        Button(action: action.action) {
+            HStack(spacing: PryTheme.Spacing.xs) {
+                if let icon = action.icon {
+                    Image(systemName: icon)
+                        .font(.caption.weight(.semibold))
+                }
+                Text(action.label)
+                    .font(.subheadline.weight(.semibold))
+            }
+            .foregroundStyle(action.style == .filled ? .white : action.color)
+            .padding(.horizontal, PryTheme.Spacing.md)
+            .padding(.vertical, PryTheme.Spacing.sm)
+            .background(
+                action.style == .filled
+                    ? AnyShapeStyle(action.color)
+                    : AnyShapeStyle(action.color.opacity(PryTheme.Opacity.badge))
+            )
+            .clipShape(.capsule)
         }
     }
 }

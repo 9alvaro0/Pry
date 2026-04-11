@@ -71,7 +71,7 @@ struct PushNotificationSimulatorView: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, PryTheme.Spacing.md)
-                        .background(sent ? PryTheme.Colors.success : PryTheme.Colors.warning)
+                        .background(sent ? PryTheme.Colors.success : PryTheme.Colors.accent)
                         .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
                     }
                     .disabled(isSendDisabled)
@@ -133,7 +133,7 @@ struct PushNotificationSimulatorView: View {
                         .foregroundStyle(PryTheme.Colors.textSecondary)
                     Spacer()
                     Toggle("", isOn: $soundEnabled)
-                        .tint(PryTheme.Colors.warning)
+                        .tint(PryTheme.Colors.accent)
                 }
 
                 inputField("Category", placeholder: "PROMO", text: $categoryInput)
@@ -155,7 +155,7 @@ struct PushNotificationSimulatorView: View {
             }
 
             Slider(value: $delaySeconds, in: 1...15, step: 1)
-                .tint(PryTheme.Colors.warning)
+                .tint(PryTheme.Colors.accent)
 
             Text("Use delays > 3s to background the app and see notifications land.")
                 .font(PryTheme.Typography.detail)

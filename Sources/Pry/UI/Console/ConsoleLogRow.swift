@@ -4,55 +4,59 @@ struct ConsoleLogRowView: View {
     let log: LogEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: PryTheme.Spacing.sm) {
-            // Type icon
-            Image(systemName: log.type.systemImage)
-                .font(PryTheme.Typography.detail)
+        HStack(alignment: .firstTextBaseline, spacing: PryTheme.Spacing.sm) {
+            Text(log.timestamp.consoleTimestamp)
+                .font(PryTheme.Typography.codeSmall)
+                .foregroundStyle(PryTheme.Colors.textTertiary)
+                .monospacedDigit()
+
+            Text(log.type.shortLabel)
+                .font(PryTheme.Typography.codeSmall)
+                .fontWeight(.bold)
                 .foregroundStyle(log.type.color)
-                .frame(width: PryTheme.Size.iconSmall)
-                .padding(.top, PryTheme.Spacing.xxs)
+                .frame(width: 28, alignment: .leading)
 
-            VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                // Message
-                Text(log.message)
-                    .font(PryTheme.Typography.code)
-                    .foregroundStyle(PryTheme.Colors.textPrimary)
-                    .textSelection(.enabled)
-
-                // Metadata: relative time + location
-                HStack(spacing: PryTheme.Spacing.sm) {
-                    Text(log.timestamp.relativeTimestamp)
-                        .font(PryTheme.Typography.detail)
-                        .foregroundStyle(PryTheme.Colors.textTertiary)
-
-                    if let location = log.location {
-                        Text(location)
-                            .font(PryTheme.Typography.detail)
-                            .foregroundStyle(PryTheme.Colors.textTertiary)
-                    }
-                }
-            }
-
-            Spacer(minLength: 0)
+            Text(log.message)
+                .font(PryTheme.Typography.code)
+                .foregroundStyle(log.type == .error ? PryTheme.Colors.error : PryTheme.Colors.textPrimary)
+                .lineLimit(3)
         }
-        .padding(.vertical, PryTheme.Spacing.xs)
-        .overlay(alignment: .leading) {
-            // Left accent bar for errors/warnings
-            if log.type == .error || log.type == .warning {
-                RoundedRectangle(cornerRadius: 2)
-                    .fill(log.type.color)
-                    .frame(width: 3)
-                    .padding(.vertical, PryTheme.Spacing.xs)
-                    .offset(x: -PryTheme.Spacing.md)
-            }
+        .frame(minHeight: 44)
+        .listRowBackground(PryTheme.Colors.background)
+    }
+}
+
+// MARK: - LogType Extension
+
+extension LogType {
+    var shortLabel: String {
+        switch self {
+        case .error: "ERR"
+        case .warning: "WRN"
+        case .info: "INF"
+        case .success: "OK"
+        case .debug: "DBG"
+        case .network: "NET"
         }
     }
 }
 
-// MARK: - Previews
+// MARK: - Timestamp Extension
+
+extension Date {
+    private static let consoleFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+
+    var consoleTimestamp: String {
+        Self.consoleFormatter.string(from: self)
+    }
+}
 
 #if DEBUG
-#Preview("Log Types") {
+#Preview("Console Rows") {
     List {
         ConsoleLogRowView(log: .mockInfo)
         ConsoleLogRowView(log: .mockSuccess)
@@ -61,7 +65,7 @@ struct ConsoleLogRowView: View {
         ConsoleLogRowView(log: .mockDebug)
         ConsoleLogRowView(log: .mockNetwork)
     }
-    .listStyle(.insetGrouped)
+    .listStyle(.plain)
     .pryBackground()
 }
 #endif

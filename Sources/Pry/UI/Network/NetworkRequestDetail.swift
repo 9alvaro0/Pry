@@ -5,80 +5,101 @@ import UIKit
     @_spi(PryPro) public let entry: NetworkEntry
 
     @Environment(\.pryStore) private var store
-    @Environment(\.dismiss) private var dismiss
-    @State private var showCopied = false
+    @State private var selectedTab = 0
+    @State private var toastMessage: String?
+    @State private var pendingConflictAction: ProToolbarAction?
+
+    private var proActions: [ProToolbarAction] {
+        PryHooks.proDetailActions?(entry) ?? []
+    }
 
     @_spi(PryPro) public init(entry: NetworkEntry) {
         self.entry = entry
     }
 
     @_spi(PryPro) public var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                summaryHeader
-                Divider().overlay(PryTheme.Colors.border)
+        VStack(spacing: 0) {
+            summaryHeader
+                .padding(.horizontal, PryTheme.Spacing.lg)
 
-                graphQLSection
-                timingSection
-                redirectChainSection
-                jwtSection
+            Divider().overlay(PryTheme.Colors.border)
 
-                requestHeadersSection
-                requestBodySection
-                queryParamsSection
-
-                if entry.responseStatusCode != nil || entry.responseError != nil {
-                    HStack(spacing: PryTheme.Spacing.sm) {
-                        VStack { Divider().overlay(PryTheme.Colors.border) }
-                        Text("RESPONSE")
-                            .font(PryTheme.Typography.detail)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(PryTheme.Colors.textTertiary)
-                            .fixedSize()
-                        VStack { Divider().overlay(PryTheme.Colors.border) }
-                    }
-                    .padding(.vertical, PryTheme.Spacing.sm)
-                }
-
-                responseHeadersSection
-                responseBodySection
-                errorSection
+            Picker("", selection: $selectedTab) {
+                Text("Overview").tag(0)
+                Text("Request").tag(1)
+                Text("Response").tag(2)
             }
+            .pickerStyle(.segmented)
             .padding(.horizontal, PryTheme.Spacing.lg)
+            .padding(.vertical, PryTheme.Spacing.sm)
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    switch selectedTab {
+                    case 0:
+                        proActionsSection(for: .overview)
+                        NetworkDetailOverview(entry: entry)
+                    case 1:
+                        tabActions(for: .request, extra: curlAction)
+                        NetworkDetailRequest(entry: entry)
+                    case 2:
+                        proActionsSection(for: .response)
+                        NetworkDetailResponse(entry: entry)
+                    default: EmptyView()
+                    }
+                }
+                .padding(.horizontal, PryTheme.Spacing.lg)
+                .padding(.bottom, PryTheme.Spacing.xl)
+            }
         }
         .pryBackground()
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarItems }
         .modifier(ProDetailSheetModifier())
         .overlay(alignment: .top) {
-            if showCopied {
-                copiedToast
+            if let message = toastMessage {
+                toastView(message)
             }
         }
-        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: showCopied)
+        .animation(.easeInOut(duration: PryTheme.Animation.standard), value: toastMessage)
+        .alert("Replace Rule?", isPresented: Binding(
+            get: { pendingConflictAction != nil },
+            set: { if !$0 { pendingConflictAction = nil } }
+        )) {
+            Button("Replace", role: .destructive) {
+                guard let action = pendingConflictAction else { return }
+                let conflicts = conflictingRules(for: action.id)
+                for rule in conflicts { PryHooks.proDeleteRule?(rule.id) }
+                executeAction(action)
+                pendingConflictAction = nil
+            }
+            Button("Cancel", role: .cancel) { pendingConflictAction = nil }
+        } message: {
+            if let action = pendingConflictAction {
+                let existing = action.id == "mock" ? "breakpoint" : "mock"
+                Text("This will replace the active \(existing) for this request.")
+            }
+        }
     }
 
     // MARK: - Summary Header
 
     private var summaryHeader: some View {
-        VStack(alignment: .leading, spacing: PryTheme.Spacing.md) {
+        VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
             HStack(spacing: PryTheme.Spacing.sm) {
                 if let statusCode = entry.responseStatusCode {
-                    HStack(spacing: PryTheme.Spacing.xs) {
-                        Text("\(statusCode)")
-                            .pryStatusBadge(statusCode)
-
-                        let desc = HTTPStatus.description(for: statusCode)
-                        if !desc.isEmpty {
-                            Text(desc)
-                                .font(PryTheme.Typography.body)
-                                .foregroundStyle(PryTheme.Colors.textSecondary)
-                        }
+                    Text("\(statusCode)")
+                        .pryStatusBadge(statusCode)
+                    let desc = HTTPStatus.description(for: statusCode)
+                    if !desc.isEmpty {
+                        Text(desc)
+                            .font(PryTheme.Typography.body)
+                            .foregroundStyle(PryTheme.Colors.textSecondary)
                     }
                 } else if entry.responseError != nil {
-                    statusLabel("ERROR", color: PryTheme.Colors.error)
+                    statusPill("ERROR", color: PryTheme.Colors.error)
                 } else {
-                    statusLabel("PENDING", color: PryTheme.Colors.pending)
+                    statusPill("PENDING", color: PryTheme.Colors.pending)
                 }
 
                 Spacer()
@@ -88,304 +109,24 @@ import UIKit
                         .font(PryTheme.Typography.code)
                         .foregroundStyle(PryTheme.Colors.textSecondary)
                 }
-
                 if let size = entry.responseSize, size > 0 {
                     Text(size.formatBytes())
                         .font(PryTheme.Typography.code)
                         .foregroundStyle(PryTheme.Colors.textSecondary)
                 }
-
-                if entry.redirectCount > 0 {
-                    Text("\(entry.redirectCount) redirect\(entry.redirectCount == 1 ? "" : "s")")
-                        .font(PryTheme.Typography.detail)
-                        .foregroundStyle(PryTheme.Colors.warning)
-                }
             }
 
             Text(entry.requestURL)
                 .font(PryTheme.Typography.codeSmall)
-                .foregroundStyle(PryTheme.Colors.textSecondary)
+                .foregroundStyle(PryTheme.Colors.textTertiary)
                 .textSelection(.enabled)
-                .lineLimit(3)
+                .lineLimit(2)
 
             Text(entry.timestamp.formatFullTimestamp())
                 .font(PryTheme.Typography.detail)
                 .foregroundStyle(PryTheme.Colors.textTertiary)
         }
-        .padding(.vertical, PryTheme.Spacing.lg)
-    }
-
-    // MARK: - GraphQL
-
-    @ViewBuilder
-    private var graphQLSection: some View {
-        if let gql = entry.graphQLInfo {
-            DetailSectionView(title: "GraphQL", collapsible: false) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.md) {
-                    HStack(spacing: PryTheme.Spacing.sm) {
-                        Text(gql.operationType.rawValue)
-                            .font(PryTheme.Typography.code)
-                            .fontWeight(.bold)
-                            .foregroundStyle(gql.operationType.color)
-                            .padding(.horizontal, PryTheme.Spacing.sm)
-                            .padding(.vertical, PryTheme.Spacing.xxs)
-                            .background(gql.operationType.color.opacity(PryTheme.Opacity.badge))
-                            .clipShape(.capsule)
-
-                        if let name = gql.operationName {
-                            Text(name)
-                                .font(PryTheme.Typography.code)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(PryTheme.Colors.textPrimary)
-                        } else {
-                            Text("Anonymous")
-                                .font(PryTheme.Typography.code)
-                                .foregroundStyle(PryTheme.Colors.textTertiary)
-                                .italic()
-                        }
-                    }
-
-                    if gql.hasErrors {
-                        VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                            ForEach(Array(gql.errors.enumerated()), id: \.offset) { _, error in
-                                HStack(alignment: .top, spacing: PryTheme.Spacing.xs) {
-                                    Image(systemName: "exclamationmark.triangle.fill")
-                                        .font(PryTheme.Typography.sectionLabel)
-                                        .foregroundStyle(PryTheme.Colors.error)
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(error.message)
-                                            .font(PryTheme.Typography.code)
-                                            .foregroundStyle(PryTheme.Colors.error)
-                                        if let path = error.path {
-                                            Text(path)
-                                                .font(PryTheme.Typography.detail)
-                                                .foregroundStyle(PryTheme.Colors.textTertiary)
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        .padding(PryTheme.Spacing.sm)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PryTheme.Colors.error.opacity(PryTheme.Opacity.faint))
-                        .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-                    }
-
-                    CodeBlockView(text: gql.query, language: .text)
-
-                    if let variables = gql.variables {
-                        VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                            Text("VARIABLES")
-                                .font(PryTheme.Typography.sectionLabel)
-                                .tracking(PryTheme.Text.tracking)
-                                .foregroundStyle(PryTheme.Colors.textTertiary)
-
-                            CodeBlockView(text: variables, language: .json)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - JWT Token
-
-    @ViewBuilder
-    private var jwtSection: some View {
-        let token = entry.authToken
-            ?? entry.requestHeaders["Authorization"]
-        if let token, JWTDecoder.decode(token) != nil {
-            DetailSectionView(title: "JWT Token", collapsible: true) {
-                JWTDetailView(token: token)
-            }
-        }
-    }
-
-    // MARK: - Timing Breakdown
-
-    @ViewBuilder
-    private var timingSection: some View {
-        if let metrics = entry.metrics {
-            DetailSectionView(title: "Timing Breakdown", collapsible: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    timingRow("DNS Lookup", value: metrics.dnsLookup)
-                    timingRow("TCP Connect", value: metrics.tcpConnect)
-                    timingRow("TLS Handshake", value: metrics.tlsHandshake)
-                    timingRow("Request Sent", value: metrics.requestSent)
-                    timingRow("Waiting (TTFB)", value: metrics.waitingForResponse)
-                    timingRow("Response Received", value: metrics.responseReceived)
-                }
-            }
-        }
-    }
-
-    private func timingRow(_ label: String, value: TimeInterval?) -> some View {
-        HStack {
-            Text(label)
-                .font(PryTheme.Typography.body)
-                .foregroundStyle(PryTheme.Colors.textSecondary)
-            Spacer()
-            Text(value.map { String(format: "%.1fms", $0 * 1000) } ?? "-")
-                .font(PryTheme.Typography.code)
-                .foregroundStyle(PryTheme.Colors.textPrimary)
-        }
-    }
-
-    // MARK: - Redirect Chain
-
-    @ViewBuilder
-    private var redirectChainSection: some View {
-        if !entry.redirects.isEmpty {
-            DetailSectionView(title: "Redirect Chain", collapsible: true) {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(Array(entry.redirects.enumerated()), id: \.element.id) { index, hop in
-                        redirectHopRow(statusCode: hop.statusCode, url: hop.fromURL)
-                        redirectConnector
-                        if index == entry.redirects.count - 1 {
-                            redirectHopRow(
-                                statusCode: entry.responseStatusCode ?? 0,
-                                url: hop.toURL,
-                                isFinal: true
-                            )
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private func redirectHopRow(statusCode: Int, url: String, isFinal: Bool = false) -> some View {
-        HStack(alignment: .center, spacing: PryTheme.Spacing.sm) {
-            Text("\(statusCode)")
-                .pryStatusBadge(statusCode)
-
-            Text(url)
-                .font(PryTheme.Typography.codeSmall)
-                .foregroundStyle(isFinal ? PryTheme.Colors.textPrimary : PryTheme.Colors.textSecondary)
-                .lineLimit(2)
-                .truncationMode(.middle)
-                .textSelection(.enabled)
-
-            Spacer(minLength: 0)
-
-            CopyButtonView(valueToCopy: url)
-        }
-        .padding(.vertical, PryTheme.Spacing.xs)
-    }
-
-    private var redirectConnector: some View {
-        HStack(spacing: 0) {
-            Rectangle()
-                .fill(PryTheme.Colors.border)
-                .frame(width: 1, height: 14)
-                .padding(.leading, 18)
-            Spacer()
-        }
-    }
-
-    // MARK: - Request Headers
-
-    @ViewBuilder
-    private var requestHeadersSection: some View {
-        let headers = displayHeaders
-        if !headers.isEmpty {
-            DetailSectionView(title: "Request Headers", collapsible: true, startCollapsed: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    ForEach(Array(headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                        if key == "Authorization", value.count > 50 {
-                            HStack(alignment: .top) {
-                                Text(key)
-                                    .font(PryTheme.Typography.body)
-                                    .foregroundStyle(PryTheme.Colors.textSecondary)
-                                Spacer(minLength: PryTheme.Spacing.sm)
-                                Text(String(value.prefix(30)) + "...")
-                                    .font(PryTheme.Typography.body)
-                                    .multilineTextAlignment(.trailing)
-                                CopyButtonView(valueToCopy: value)
-                            }
-                        } else {
-                            DetailRowView(label: key, value: value)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Request Body
-
-    @ViewBuilder
-    private var requestBodySection: some View {
-        if let body = entry.requestBody, !body.isEmpty, !body.hasPrefix("[Binary data:") {
-            DetailSectionView(title: "Request Body", collapsible: true) {
-                CodeBlockView(text: body, language: .json)
-            }
-        }
-    }
-
-    // MARK: - Query Params
-
-    @ViewBuilder
-    private var queryParamsSection: some View {
-        if let queryItems = URLComponents(string: entry.requestURL)?.queryItems, !queryItems.isEmpty {
-            DetailSectionView(title: "Query Parameters", collapsible: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    ForEach(queryItems, id: \.name) { param in
-                        DetailRowView(label: param.name, value: param.value ?? "nil")
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Response Headers
-
-    @ViewBuilder
-    private var responseHeadersSection: some View {
-        if let responseHeaders = entry.responseHeaders, !responseHeaders.isEmpty {
-            DetailSectionView(title: "Response Headers", collapsible: true, startCollapsed: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    ForEach(Array(responseHeaders.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                        DetailRowView(label: key, value: value)
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Response Body
-
-    @ViewBuilder
-    private var responseBodySection: some View {
-        if let body = entry.responseBody, !body.isEmpty, !body.hasPrefix("[Binary data:"), entry.displayError == nil {
-            DetailSectionView(title: "Response Body", collapsible: true) {
-                CodeBlockView(text: body, language: .json)
-            }
-        }
-    }
-
-    // MARK: - Error
-
-    @ViewBuilder
-    private var errorSection: some View {
-        if let error = entry.displayError {
-            DetailSectionView(title: "Error") {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
-                    Text(error)
-                        .font(PryTheme.Typography.code)
-                        .foregroundStyle(PryTheme.Colors.error)
-                        .padding(PryTheme.Spacing.sm)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(PryTheme.Colors.error.opacity(PryTheme.Opacity.border))
-                        .clipShape(.rect(cornerRadius: PryTheme.Radius.sm))
-
-                    if entry.hasErrorResponseBody, let responseBody = entry.responseBody {
-                        CodeBlockView(text: responseBody, language: .json)
-                    }
-                }
-            }
-        }
+        .padding(.vertical, PryTheme.Spacing.md)
     }
 
     // MARK: - Toolbar
@@ -400,76 +141,246 @@ import UIKit
                 .truncationMode(.middle)
         }
         ToolbarItem(placement: .topBarTrailing) {
-            Menu {
-                Button {
-                    store.togglePin(entry.id)
-                } label: {
-                    Label(
-                        store.isPinned(entry.id) ? "Unpin" : "Pin",
-                        systemImage: store.isPinned(entry.id) ? "pin.slash" : "pin"
-                    )
-                }
-
-                ShareLink(item: generateShareText()) {
-                    Label("Share", systemImage: "square.and.arrow.up")
-                }
-
-                Button { copyToClipboard(generateCurlCommand()) } label: {
-                    Label("Copy cURL", systemImage: "terminal.fill")
-                }
-
-                if let actions = PryHooks.proDetailActions?(entry), !actions.isEmpty {
-                    Section {
-                        ForEach(actions) { action in
-                            Button {
-                                PryHooks.proDetailActionHandler?(action.id, entry)
-                            } label: {
-                                Label(action.title, systemImage: action.icon)
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
+            ShareLink(item: generateShareText()) {
+                Image(systemName: "square.and.arrow.up")
                     .font(PryTheme.Typography.body)
                     .foregroundStyle(PryTheme.Colors.textSecondary)
             }
         }
     }
 
-    // MARK: - Toasts
+    // MARK: - Tab Action Buttons
 
-    private var copiedToast: some View {
-        toastView(icon: "checkmark", text: "Copied", color: PryTheme.Colors.success)
+    private var curlAction: ActionItem {
+        ActionItem(icon: "terminal.fill", title: "Copy as cURL", color: PryTheme.Colors.accent) {
+            copyToClipboard(NetworkCurlGenerator.generate(for: entry))
+        }
     }
 
-    private func toastView(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: PryTheme.Spacing.xs) {
-            Image(systemName: icon)
+    private struct ActionItem: Identifiable {
+        let id = UUID()
+        let icon: String
+        let title: String
+        let color: Color
+        let action: () -> Void
+    }
+
+    private var activeRules: [ProEntryRule] {
+        PryHooks.proRulesForEntry?(entry) ?? []
+    }
+
+    private func rulesForTab(_ placement: ProToolbarAction.Placement) -> [ProEntryRule] {
+        switch placement {
+        case .request: activeRules.filter { $0.type == .breakpoint && $0.detail == "Request" }
+        case .response: activeRules.filter { $0.type == .breakpoint && $0.detail == "Response" || $0.type == .mock }
+        case .overview: []
+        default: []
+        }
+    }
+
+    private var hasResponseBreakpoint: Bool {
+        activeRules.contains { $0.type == .breakpoint && ($0.detail == "Response" || $0.detail == "Both") }
+    }
+
+    private var hasMock: Bool {
+        activeRules.contains { $0.type == .mock }
+    }
+
+    private func shouldHideAction(_ action: ProToolbarAction) -> Bool {
+        switch action.id {
+        case "breakpoint":
+            activeRules.contains { $0.type == .breakpoint && $0.detail == "Request" }
+        case "breakpoint-response":
+            hasResponseBreakpoint
+        case "mock":
+            hasMock
+        default:
+            false
+        }
+    }
+
+    private func executeAction(_ action: ProToolbarAction) {
+        PryHooks.proDetailActionHandler?(action.id, entry)
+        switch action.id {
+        case "replay": showToast("Replayed")
+        case "breakpoint", "breakpoint-response": showToast("Breakpoint added")
+        default: break
+        }
+    }
+
+    /// Returns the conflicting rule IDs to delete if this action proceeds.
+    private func conflictingRules(for actionID: String) -> [ProEntryRule] {
+        switch actionID {
+        case "breakpoint-response" where hasMock:
+            activeRules.filter { $0.type == .mock }
+        case "mock" where hasResponseBreakpoint:
+            activeRules.filter { $0.type == .breakpoint && ($0.detail == "Response" || $0.detail == "Both") }
+        default:
+            []
+        }
+    }
+
+    @ViewBuilder
+    private func tabActions(for placement: ProToolbarAction.Placement, extra: ActionItem? = nil) -> some View {
+        let pro = proActions.filter { $0.placement == placement }
+            .filter { !shouldHideAction($0) }
+        let rules = rulesForTab(placement)
+        let hasContent = !pro.isEmpty || extra != nil || !rules.isEmpty
+
+        if hasContent {
+            VStack(spacing: PryTheme.Spacing.sm) {
+                // Active rules for this tab
+                if !rules.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(rules) { rule in
+                            if rule.id != rules.first?.id {
+                                Divider().overlay(PryTheme.Colors.border)
+                            }
+                            ruleRow(rule)
+                        }
+                    }
+                    .background(PryTheme.Colors.surface)
+                    .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+                    .pryGlowBorder(cornerRadius: PryTheme.Radius.md)
+                }
+
+                // Action buttons
+                if !pro.isEmpty || extra != nil {
+                    VStack(spacing: 0) {
+                        if let extra {
+                            actionRow(icon: extra.icon, title: extra.title, color: extra.color, action: extra.action)
+                        }
+                        ForEach(pro) { action in
+                            if extra != nil || action.id != pro.first?.id {
+                                Divider().overlay(PryTheme.Colors.border)
+                            }
+                            actionRow(icon: action.icon, title: action.title, color: PryTheme.Colors.accent) {
+                                let conflicts = conflictingRules(for: action.id)
+                                if !conflicts.isEmpty {
+                                    pendingConflictAction = action
+                                } else {
+                                    executeAction(action)
+                                }
+                            }
+                        }
+                    }
+                    .background(PryTheme.Colors.surface)
+                    .clipShape(.rect(cornerRadius: PryTheme.Radius.md))
+                    .pryGlowBorder(cornerRadius: PryTheme.Radius.md)
+                }
+            }
+            .padding(.vertical, PryTheme.Spacing.md)
+        }
+    }
+
+    @ViewBuilder
+    private func proActionsSection(for placement: ProToolbarAction.Placement) -> some View {
+        tabActions(for: placement)
+    }
+
+    private func ruleRow(_ rule: ProEntryRule) -> some View {
+        HStack(spacing: PryTheme.Spacing.sm) {
+            Image(systemName: rule.type == .breakpoint ? "pause.circle.fill" : "theatermasks.fill")
+                .font(PryTheme.Typography.body)
+                .foregroundStyle(rule.type == .breakpoint ? PryTheme.Colors.warning : PryTheme.Colors.syntaxBool)
+
+            Text(rule.title)
+                .font(PryTheme.Typography.body)
+                .fontWeight(.medium)
+                .foregroundStyle(PryTheme.Colors.textPrimary)
+
+            Text(rule.detail)
                 .font(PryTheme.Typography.detail)
-            Text(text)
+                .foregroundStyle(PryTheme.Colors.textTertiary)
+
+            Spacer()
+
+            Button { PryHooks.proToggleRule?(rule.id) } label: {
+                Image(systemName: rule.isEnabled ? "checkmark.circle.fill" : "circle")
+                    .font(.subheadline)
+                    .foregroundStyle(rule.isEnabled ? PryTheme.Colors.success : PryTheme.Colors.textTertiary)
+            }
+
+            Button { PryHooks.proDeleteRule?(rule.id) } label: {
+                Image(systemName: "trash")
+                    .font(PryTheme.Typography.detail)
+                    .foregroundStyle(PryTheme.Colors.error)
+            }
+        }
+        .padding(.horizontal, PryTheme.Spacing.md)
+        .frame(minHeight: 44)
+    }
+
+    private func actionRow(icon: String, title: String, color: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: PryTheme.Spacing.md) {
+                Image(systemName: icon)
+                    .font(.subheadline)
+                    .foregroundStyle(color)
+                    .frame(width: 24)
+
+                Text(title)
+                    .font(PryTheme.Typography.body)
+                    .fontWeight(.medium)
+                    .foregroundStyle(PryTheme.Colors.textPrimary)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(PryTheme.Typography.detail)
+                    .foregroundStyle(PryTheme.Colors.textTertiary)
+            }
+            .padding(.horizontal, PryTheme.Spacing.md)
+            .frame(minHeight: 48)
+            .contentShape(.rect)
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func statusPill(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(PryTheme.Typography.codeSmall)
+            .fontWeight(.medium)
+            .padding(.horizontal, PryTheme.Spacing.pip)
+            .padding(.vertical, PryTheme.Spacing.xxs)
+            .background(color.opacity(PryTheme.Opacity.badge))
+            .foregroundStyle(color)
+            .clipShape(.capsule)
+    }
+
+    private func toastView(_ message: String) -> some View {
+        HStack(spacing: PryTheme.Spacing.xs) {
+            Image(systemName: "checkmark")
+                .font(PryTheme.Typography.detail)
+            Text(message)
                 .font(PryTheme.Typography.detail)
                 .fontWeight(.semibold)
         }
         .foregroundStyle(.white)
         .padding(.horizontal, PryTheme.Spacing.md)
         .padding(.vertical, PryTheme.Spacing.sm)
-        .background(color)
+        .background(PryTheme.Colors.success)
         .clipShape(.capsule)
         .transition(.move(edge: .top).combined(with: .opacity))
         .padding(.top, PryTheme.Spacing.sm)
     }
 
-    // MARK: - Actions
+    private func showToast(_ message: String) {
+        toastMessage = message
+        Task {
+            try? await Task.sleep(for: PryTheme.Animation.toastDismiss)
+            toastMessage = nil
+        }
+    }
 
     private func copyToClipboard(_ value: String) {
         UIPasteboard.general.string = value
-        showToast($showCopied, duration: PryTheme.Animation.toastDismiss)
+        showToast("Copied")
     }
 
     private func generateShareText() -> String {
         var lines: [String] = []
-
         let path = entry.requestURL.extractPath()
         var summary = "\(entry.requestMethod) \(path)"
         if let statusCode = entry.responseStatusCode {
@@ -484,165 +395,42 @@ import UIKit
         }
         lines.append(summary)
         lines.append(entry.requestURL)
-
-        let reqHeaders = displayHeaders
-        if !reqHeaders.isEmpty {
-            lines.append("")
-            lines.append("\u{2500}\u{2500} Request Headers \u{2500}\u{2500}")
-            for (key, value) in reqHeaders.sorted(by: { $0.key < $1.key }) {
-                lines.append("\(key): \(value)")
-            }
-        }
-
         if let body = entry.requestBody, !body.isEmpty {
-            lines.append("")
-            lines.append("\u{2500}\u{2500} Request Body \u{2500}\u{2500}")
-            lines.append(body)
+            lines.append("\n\u{2500}\u{2500} Request Body \u{2500}\u{2500}\n\(body)")
         }
-
-        if let resHeaders = entry.responseHeaders, !resHeaders.isEmpty {
-            lines.append("")
-            lines.append("\u{2500}\u{2500} Response Headers \u{2500}\u{2500}")
-            for (key, value) in resHeaders.sorted(by: { $0.key < $1.key }) {
-                lines.append("\(key): \(value)")
-            }
-        }
-
         if let body = entry.responseBody, !body.isEmpty {
-            lines.append("")
-            lines.append("\u{2500}\u{2500} Response Body \u{2500}\u{2500}")
-            lines.append(body)
+            lines.append("\n\u{2500}\u{2500} Response Body \u{2500}\u{2500}\n\(body)")
         }
-
         if let error = entry.responseError, !error.isEmpty {
-            lines.append("")
-            lines.append("\u{2500}\u{2500} Error \u{2500}\u{2500}")
-            lines.append(error)
+            lines.append("\n\u{2500}\u{2500} Error \u{2500}\u{2500}\n\(error)")
         }
-
         return lines.joined(separator: "\n")
-    }
-
-    private func generateCurlCommand() -> String {
-        var components: [String] = ["curl", "--location", "--silent", "--show-error"]
-
-        if entry.requestMethod != "GET" {
-            components.append("--request \(entry.requestMethod)")
-        }
-
-        let realHeaders = curlHeaders
-
-        if let token = entry.authToken, !token.isEmpty {
-            let authToken = token.hasPrefix("Bearer ") ? token : "Bearer \(token)"
-            components.append("--header 'Authorization: \(escapeCurl(authToken))'")
-        } else if let authHeader = realHeaders["Authorization"] {
-            components.append("--header 'Authorization: \(escapeCurl(authHeader))'")
-        }
-
-        for (key, value) in realHeaders.sorted(by: { $0.key < $1.key }) where key != "Authorization" {
-            components.append("--header '\(escapeCurl(key)): \(escapeCurl(value))'")
-        }
-
-        if entry.requestBody != nil && !realHeaders.keys.contains("Content-Type") {
-            components.append("--header 'Content-Type: application/json'")
-        }
-
-        if let body = entry.requestBody, !body.isEmpty {
-            components.append("--data '\(escapeCurl(body))'")
-        }
-
-        components.append("'\(escapeCurl(entry.requestURL))'")
-
-        return components.joined(separator: " \\\n  ")
-    }
-
-    private func statusLabel(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(PryTheme.Typography.codeSmall)
-            .fontWeight(.medium)
-            .padding(.horizontal, PryTheme.Spacing.pip)
-            .padding(.vertical, PryTheme.Spacing.xxs)
-            .background(color.opacity(PryTheme.Opacity.badge))
-            .foregroundStyle(color)
-            .clipShape(.capsule)
-    }
-
-    private func showToast(_ flag: Binding<Bool>, duration: Duration = PryTheme.Animation.toastLong) {
-        flag.wrappedValue = true
-        Task {
-            try? await Task.sleep(for: duration)
-            flag.wrappedValue = false
-        }
-    }
-
-    private func escapeCurl(_ value: String) -> String {
-        value.replacingOccurrences(of: "'", with: "'\"'\"'")
-    }
-
-    private static let internalHeaders: Set<String> = ["Content-Length", "Accept-Encoding", "X-Pry-Replay"]
-    private static let curlExtraSkip: Set<String> = ["Host", "User-Agent"]
-
-    private var displayHeaders: [String: String] {
-        entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") && !Self.internalHeaders.contains(key)
-        }
-    }
-
-    private var curlHeaders: [String: String] {
-        entry.requestHeaders.filter { key, _ in
-            !key.hasPrefix("X-Debug-") && !Self.internalHeaders.contains(key) && !Self.curlExtraSkip.contains(key)
-        }
     }
 }
 
 // MARK: - Pro Detail Sheet Modifier
 
-/// Bridges the ``PryHooks/proDetailSheet`` hook into a `.sheet` modifier.
-/// When PryPro is not linked the hook is nil and no sheet is ever presented.
 private struct ProDetailSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         if let sheetHook = PryHooks.proDetailSheet {
             let sheet = sheetHook()
-            content
-                .sheet(isPresented: sheet.isPresented) {
-                    sheet.content()
-                }
+            content.sheet(isPresented: sheet.isPresented) { sheet.content() }
         } else {
             content
         }
     }
 }
 
-// MARK: - Previews
-
 #if DEBUG
-#Preview("Detail - Success POST") {
+#Preview("Detail - Success") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockSuccess)
     }
 }
 
-#Preview("Detail - 404 Error") {
+#Preview("Detail - Error") {
     NavigationStack {
         NetworkRequestDetailView(entry: .mockError)
-    }
-}
-
-#Preview("Detail - 500 Error") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockServerError)
-    }
-}
-
-#Preview("Detail - Pending") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockPending)
-    }
-}
-
-#Preview("Detail - Redirect + Timing") {
-    NavigationStack {
-        NetworkRequestDetailView(entry: .mockRedirect)
     }
 }
 #endif
