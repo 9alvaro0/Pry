@@ -83,6 +83,14 @@ import UIKit
                         .foregroundStyle(showCopiedAll ? PryTheme.Colors.success : PryTheme.Colors.textSecondary)
                 }
             }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button { store.clearLogs() } label: {
+                    Image(systemName: "trash")
+                        .font(PryTheme.Typography.body)
+                        .foregroundStyle(PryTheme.Colors.textSecondary)
+                }
+                .disabled(store.logEntries.isEmpty)
+            }
         }
         .sheet(isPresented: $showFilterSheet) {
             consoleFilterSheet

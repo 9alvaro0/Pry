@@ -35,7 +35,17 @@ import SwiftUI
             NetworkMonitorView(store: store)
                 .navigationTitle("Network")
                 .navigationBarTitleDisplayMode(.inline)
-                .toolbar { dismissButton }
+                .toolbar {
+                    dismissButton
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button { store.clearNetwork() } label: {
+                            Image(systemName: "trash")
+                                .font(PryTheme.Typography.body)
+                                .foregroundStyle(PryTheme.Colors.textSecondary)
+                        }
+                        .disabled(store.networkEntries.isEmpty)
+                    }
+                }
         }
     }
 
