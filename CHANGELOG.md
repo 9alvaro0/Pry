@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Vertical header layout** — key above value for better readability with long header values.
 - **JSON/Raw toggle** — switch between formatted JSON with syntax highlighting and raw text view in body viewer.
 - **FaceID/TouchID/Passcode** — optional authentication to open the inspector. Toggle in Settings.
+- **Light/Dark mode** — adaptive colors throughout. Theme picker in Settings (System, Light, Dark).
+- **Max entries settings** — configurable limits for network entries (50-1000) and console logs (100-2000) via steppers in Settings.
+- **Clear buttons** — trash icon in Network and Console toolbar with confirmation alert.
+- **Raw toggle for all content types** — JSON and Form-encoded bodies can switch to raw text view.
 - **New hooks** for Pro extensions — `pryProGlow` (visual theming), `proRulesForEntry` / `proToggleRule` / `proDeleteRule` (inline rule management), `ProToolbarAction.Placement` (contextual action positioning).
 - **Console redesign** — terminal-style layout with monospace rows (`HH:mm:ss` timestamp + type label + message), tap-to-expand inline detail, summary bar with error/warning counts, filter sheet matching Network tab design.
 - **App Hub standardized rows** — all rows now use consistent layout with title + subtitle below. Every row shows useful context (cookie count, key count, device name, last event, etc.).
