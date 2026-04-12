@@ -26,26 +26,7 @@ struct NetworkDetailRequest: View {
     private var headersSection: some View {
         let headers = displayHeaders
         if !headers.isEmpty {
-            DetailSectionView(title: "Headers", collapsible: true, startCollapsed: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    ForEach(Array(headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                        if key == "Authorization", value.count > 50 {
-                            HStack(alignment: .top) {
-                                Text(key)
-                                    .font(PryTheme.Typography.body)
-                                    .foregroundStyle(PryTheme.Colors.textSecondary)
-                                Spacer(minLength: PryTheme.Spacing.sm)
-                                Text(String(value.prefix(30)) + "...")
-                                    .font(PryTheme.Typography.body)
-                                    .multilineTextAlignment(.trailing)
-                                CopyButtonView(valueToCopy: value)
-                            }
-                        } else {
-                            DetailRowView(label: key, value: value)
-                        }
-                    }
-                }
-            }
+            HeadersView(headers: headers, title: "Headers")
         }
     }
 

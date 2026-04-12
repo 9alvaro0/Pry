@@ -17,13 +17,7 @@ struct NetworkDetailResponse: View {
     @ViewBuilder
     private var headersSection: some View {
         if let responseHeaders = entry.responseHeaders, !responseHeaders.isEmpty {
-            DetailSectionView(title: "Headers", collapsible: true, startCollapsed: true) {
-                VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
-                    ForEach(Array(responseHeaders.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                        DetailRowView(label: key, value: value)
-                    }
-                }
-            }
+            HeadersView(headers: responseHeaders, title: "Headers")
         }
     }
 
