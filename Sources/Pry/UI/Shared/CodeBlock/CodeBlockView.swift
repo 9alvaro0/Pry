@@ -9,6 +9,7 @@ import UIKit
     @State private var searchQuery = ""
     @State private var isSearching = false
     @State private var isAllCollapsed = false
+    @State private var forceRaw = false
 
     private let resolvedEffectiveLanguage: ContentLanguage
 
@@ -59,17 +60,14 @@ import UIKit
                 FormDataRenderer(text: text, searchQuery: searchQuery)
             } else if isImage {
                 ImagePreviewView(encodedText: text)
+            } else if isJSON && !forceRaw {
+                JSONRenderer(
+                    jsonText: text,
+                    searchQuery: searchQuery,
+                    collapseAll: isAllCollapsed
+                )
             } else {
-                switch effectiveLanguage {
-                case .json:
-                    JSONRenderer(
-                        jsonText: text,
-                        searchQuery: searchQuery,
-                        collapseAll: isAllCollapsed
-                    )
-                default:
-                    TextRenderer(text: text, language: effectiveLanguage, searchQuery: searchQuery)
-                }
+                TextRenderer(text: text, language: effectiveLanguage, searchQuery: searchQuery)
             }
         }
         .pryCodeBlock()
@@ -99,10 +97,31 @@ import UIKit
     private var header: some View {
         HStack {
             HStack(spacing: PryTheme.Spacing.sm) {
-                Text(displayLabel)
-                    .font(PryTheme.Typography.detail)
-                    .fontWeight(.semibold)
-                    .foregroundStyle(PryTheme.Colors.textTertiary)
+                if isJSON {
+                    // JSON/Raw toggle tabs
+                    Button {
+                        forceRaw = false
+                    } label: {
+                        Text("JSON")
+                            .font(PryTheme.Typography.detail)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(!forceRaw ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
+                    }
+
+                    Button {
+                        forceRaw = true
+                    } label: {
+                        Text("Raw")
+                            .font(PryTheme.Typography.detail)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(forceRaw ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
+                    }
+                } else {
+                    Text(displayLabel)
+                        .font(PryTheme.Typography.detail)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(PryTheme.Colors.textTertiary)
+                }
 
                 if let size = sizeLabel {
                     Text(size)
@@ -127,8 +146,8 @@ import UIKit
                     }
                 }
 
-                // Expand/Collapse toggle (JSON only)
-                if isJSON {
+                // Expand/Collapse toggle (JSON only, not in raw mode)
+                if isJSON && !forceRaw {
                     headerButton(
                         icon: isAllCollapsed
                             ? "arrow.down.right.and.arrow.up.left"
