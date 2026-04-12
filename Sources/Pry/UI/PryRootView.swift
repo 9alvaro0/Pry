@@ -5,6 +5,8 @@ import SwiftUI
 
     @SwiftUI.Environment(\.dismiss) private var dismiss
     @State private var selectedTab: Int = 0
+    @State private var showClearNetworkAlert = false
+    @State private var showClearConsoleAlert = false
 
     @_spi(PryPro) public init(store: PryStore) {
         self.store = store
@@ -38,12 +40,18 @@ import SwiftUI
                 .toolbar {
                     dismissButton
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button { store.clearNetwork() } label: {
+                        Button { showClearNetworkAlert = true } label: {
                             Image(systemName: "trash")
                                 .font(PryTheme.Typography.body)
                                 .foregroundStyle(PryTheme.Colors.textSecondary)
                         }
                         .disabled(store.networkEntries.isEmpty)
+                        .alert("Clear Network?", isPresented: $showClearNetworkAlert) {
+                            Button("Clear", role: .destructive) { store.clearNetwork() }
+                            Button("Cancel", role: .cancel) {}
+                        } message: {
+                            Text("This will remove all captured requests.")
+                        }
                     }
                 }
         }

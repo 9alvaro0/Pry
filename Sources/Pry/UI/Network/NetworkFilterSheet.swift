@@ -10,12 +10,14 @@ enum NetworkSortOrder: String, CaseIterable {
 }
 
 enum NetworkStatusFilter: String, CaseIterable {
+    case pinned = "Pinned"
     case success = "Success"
     case error = "Errors"
     case pending = "Pending"
 
     var color: Color {
         switch self {
+        case .pinned: PryTheme.Colors.warning
         case .success: PryTheme.Colors.success
         case .error: PryTheme.Colors.error
         case .pending: PryTheme.Colors.pending
@@ -24,6 +26,7 @@ enum NetworkStatusFilter: String, CaseIterable {
 
     func matches(_ entry: NetworkEntry) -> Bool {
         switch self {
+        case .pinned: true
         case .success: entry.isSuccess
         case .error: (!entry.isSuccess && entry.responseStatusCode != nil) || entry.responseError != nil
         case .pending: entry.responseStatusCode == nil && entry.responseError == nil

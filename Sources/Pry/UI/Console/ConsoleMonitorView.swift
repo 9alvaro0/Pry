@@ -13,6 +13,7 @@ import UIKit
     @State private var showCopiedAll = false
     @State private var showFilterSheet = false
     @State private var expandedLogID: UUID?
+    @State private var showClearAlert = false
 
     private var filteredLogs: [LogEntry] {
         var logs = store.logEntries
@@ -84,12 +85,18 @@ import UIKit
                 }
             }
             ToolbarItem(placement: .topBarTrailing) {
-                Button { store.clearLogs() } label: {
+                Button { showClearAlert = true } label: {
                     Image(systemName: "trash")
                         .font(PryTheme.Typography.body)
                         .foregroundStyle(PryTheme.Colors.textSecondary)
                 }
                 .disabled(store.logEntries.isEmpty)
+                .alert("Clear Console?", isPresented: $showClearAlert) {
+                    Button("Clear", role: .destructive) { store.clearLogs() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("This will remove all console logs.")
+                }
             }
         }
         .sheet(isPresented: $showFilterSheet) {

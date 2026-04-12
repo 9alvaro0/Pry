@@ -42,7 +42,7 @@ import UIKit
         var filtered: [NetworkEntry] = []
         var pinned: [NetworkEntry] = []
         var unpinned: [NetworkEntry] = []
-        var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
+        var counts: [NetworkFilter: Int] = [.pinned: 0, .success: 0, .error: 0, .pending: 0]
         var hosts: [(host: String, count: Int)] = []
         var totalBase: Int = 0
         var grouped: [(host: String, entries: [NetworkEntry])] = []
@@ -53,7 +53,7 @@ import UIKit
         let query = searchText.isEmpty ? nil : searchText.lowercased()
         var hostCounts: [String: Int] = [:]
         var baseEntries: [NetworkEntry] = []
-        var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
+        var counts: [NetworkFilter: Int] = [.pinned: 0, .success: 0, .error: 0, .pending: 0]
 
         // Single pass: host counts + base filtering + status counts
         for entry in allEntries {
@@ -75,6 +75,9 @@ import UIKit
             }
 
             // Count status
+            if store.isPinned(entry.id) {
+                counts[.pinned, default: 0] += 1
+            }
             if entry.isSuccess {
                 counts[.success, default: 0] += 1
             } else if entry.responseStatusCode == nil && entry.responseError == nil {
@@ -89,7 +92,11 @@ import UIKit
         // Status filter
         var filtered = baseEntries
         if let filter = selectedFilter {
-            filtered = filtered.filter { filter.matches($0) }
+            if filter == .pinned {
+                filtered = filtered.filter { store.isPinned($0.id) }
+            } else {
+                filtered = filtered.filter { filter.matches($0) }
+            }
         }
 
         // Sort
