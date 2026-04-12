@@ -32,21 +32,23 @@ struct HeadersView: View {
     }
 
     private var tableView: some View {
-        VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(Array(headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
-                if key == "Authorization", value.count > 50 {
-                    HStack(alignment: .top) {
-                        Text(key)
-                            .font(PryTheme.Typography.body)
-                            .foregroundStyle(PryTheme.Colors.textSecondary)
-                        Spacer(minLength: PryTheme.Spacing.sm)
-                        Text(String(value.prefix(30)) + "...")
-                            .font(PryTheme.Typography.body)
-                            .multilineTextAlignment(.trailing)
-                        CopyButtonView(valueToCopy: value)
-                    }
-                } else {
-                    DetailRowView(label: key, value: value)
+                VStack(alignment: .leading, spacing: PryTheme.Spacing.xxs) {
+                    Text(key)
+                        .font(PryTheme.Typography.codeSmall)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(PryTheme.Colors.textSecondary)
+
+                    Text(value)
+                        .font(PryTheme.Typography.code)
+                        .foregroundStyle(PryTheme.Colors.textPrimary)
+                        .textSelection(.enabled)
+                }
+                .padding(.vertical, PryTheme.Spacing.sm)
+
+                if key != headers.keys.sorted().last {
+                    Divider().overlay(PryTheme.Colors.border)
                 }
             }
         }
