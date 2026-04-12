@@ -95,6 +95,12 @@ import SwiftUI
                 settingRow(title: "Error badge", subtitle: "Show error count on the button")
             }
             .tint(PryTheme.Colors.accent)
+
+            // Auth
+            Toggle(isOn: $store.requireAuth) {
+                settingRow(title: "Require authentication", subtitle: "FaceID, TouchID, or passcode to open")
+            }
+            .tint(PryTheme.Colors.accent)
         } header: {
             Text("Appearance")
         }

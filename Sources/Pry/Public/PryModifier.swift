@@ -1,4 +1,5 @@
 import SwiftUI
+import LocalAuthentication
 
 // MARK: - Public View Modifiers
 
@@ -85,6 +86,7 @@ struct PryEnvironmentModifier: ViewModifier {
     @State private var dragOffset: CGSize = .zero
     @State private var isDragging = false
     @State private var dragResetTask: Task<Void, Never>?
+    @State private var isAuthenticating = false
 
     @_spi(PryPro) public init(
         store: PryStore,
@@ -140,7 +142,7 @@ struct PryEnvironmentModifier: ViewModifier {
                 }
             }
             .onShake(enabled: activeTrigger.contains(.shake)) {
-                isPresented = true
+                openInspector()
             }
             .sheet(isPresented: $isPresented) {
                 rootViewBuilder(store)
@@ -160,7 +162,7 @@ struct PryEnvironmentModifier: ViewModifier {
             glowColor: glowColor
         ) {
             guard !isDragging else { return }
-            isPresented = true
+            openInspector()
         }
         .overlay(alignment: .topTrailing) {
             if store.showErrorBadge && errorCount > 0 {
@@ -173,6 +175,32 @@ struct PryEnvironmentModifier: ViewModifier {
                     .background(PryTheme.Colors.error)
                     .clipShape(.capsule)
                     .offset(x: 4, y: -4)
+            }
+        }
+    }
+
+    // MARK: - Auth
+
+    private func openInspector() {
+        guard store.requireAuth else {
+            isPresented = true
+            return
+        }
+        guard !isAuthenticating else { return }
+        isAuthenticating = true
+
+        let context = LAContext()
+        var error: NSError?
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) else {
+            isPresented = true
+            isAuthenticating = false
+            return
+        }
+
+        context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "Open Pry Inspector") { success, _ in
+            DispatchQueue.main.async {
+                isAuthenticating = false
+                if success { isPresented = true }
             }
         }
     }

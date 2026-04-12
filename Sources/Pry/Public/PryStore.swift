@@ -66,6 +66,11 @@ import Foundation
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(printToConsole, for: .printToConsole) }
     }
 
+    /// Require FaceID/TouchID/Passcode to open the inspector. Persisted.
+    public var requireAuth: Bool = false {
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(requireAuth, for: .requireAuth) }
+    }
+
     /// Places the floating action button on the left side of the screen. Persisted.
     public var fabOnLeft: Bool = false {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(fabOnLeft, for: .fabOnLeft) }
@@ -138,6 +143,7 @@ import Foundation
 
         showErrorBadge = PreferenceStorage.bool(for: .showErrorBadge, default: true)
         printToConsole = PreferenceStorage.bool(for: .printToConsole, default: true)
+        requireAuth = PreferenceStorage.bool(for: .requireAuth, default: false)
         fabOnLeft = PreferenceStorage.bool(for: .fabOnLeft, default: false)
         fabDraggable = PreferenceStorage.bool(for: .fabDraggable, default: false)
         blacklistedHosts = PreferenceStorage.stringSet(for: .blacklistedHosts)
