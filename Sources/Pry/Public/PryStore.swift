@@ -124,8 +124,8 @@ import SwiftUI
 
     // MARK: - Configuration
 
-    private let maxNetworkEntries: Int
-    private let maxLogEntries: Int
+    public var maxNetworkEntries: Int
+    public var maxLogEntries: Int
     private let maxDeeplinkEntries: Int
     private let maxPushEntries: Int
 

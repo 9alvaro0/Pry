@@ -131,6 +131,15 @@ import SwiftUI
             }
             .tint(PryTheme.Colors.accent)
 
+            // Max entries
+            Stepper(value: $store.maxNetworkEntries, in: 50...1000, step: 50) {
+                settingRow(title: "Max network entries", subtitle: "\(store.maxNetworkEntries)")
+            }
+
+            Stepper(value: $store.maxLogEntries, in: 100...2000, step: 100) {
+                settingRow(title: "Max console logs", subtitle: "\(store.maxLogEntries)")
+            }
+
             // Blacklist
             VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
                 settingRow(title: "Host blacklist", subtitle: "Requests to these hosts won't be captured")

@@ -28,6 +28,7 @@ import SwiftUI
         }
         .tint(PryTheme.Colors.accent)
         .pryBackground()
+        .modifier(PryColorSchemeModifier())
     }
 
     // MARK: - Tabs
