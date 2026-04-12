@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Enhanced swipe actions** — leading: Pin + Copy URL + Copy cURL. Trailing: Delete. Each with label and distinct color.
 - **Method pill badges** in network rows — colored capsule background using HTTP method colors (GET blue, POST green, etc.).
 - **Shared cURL generator** — `NetworkCurlGenerator` extracted as reusable utility.
+- **Group by host** — toggle between flat list and domain-grouped view in the Network tab.
+- **Headers raw/table toggle** — switch between formatted table and raw text view for request and response headers.
+- **Vertical header layout** — key above value for better readability with long header values.
 - **New hooks** for Pro extensions — `pryProGlow` (visual theming), `proRulesForEntry` / `proToggleRule` / `proDeleteRule` (inline rule management), `ProToolbarAction.Placement` (contextual action positioning).
 - **Console redesign** — terminal-style layout with monospace rows (`HH:mm:ss` timestamp + type label + message), tap-to-expand inline detail, summary bar with error/warning counts, filter sheet matching Network tab design.
 - **App Hub standardized rows** — all rows now use consistent layout with title + subtitle below. Every row shows useful context (cookie count, key count, device name, last event, etc.).

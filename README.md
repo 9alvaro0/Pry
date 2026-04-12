@@ -20,6 +20,8 @@ Zero dependencies, zero configuration. Add one modifier and you are done.
 - Redirect chain visualization
 - Search by URL, method, status, host, GraphQL operation name
 - Summary bar with request counts and error/pending indicators
+- Group by host — toggle between flat list and domain-grouped view
+- Headers with raw/table toggle and vertical key-value layout
 - Filter sheet with status filters, sort order, host selection, and statistics toggle
 - Swipe actions: pin, copy URL, copy cURL, delete
 - Pinned requests section at the top of the list
