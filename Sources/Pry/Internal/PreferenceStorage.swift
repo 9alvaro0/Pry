@@ -18,6 +18,7 @@ enum PreferenceStorage {
         case networkThrottle
         case blacklistedHosts
         case requireAuth
+        case themeOverride
     }
 
     // MARK: - Read

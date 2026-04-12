@@ -9,16 +9,16 @@ import SwiftUI
 
     @_spi(PryPro) public enum Colors {
         // Backgrounds
-        @_spi(PryPro) public static let background      = Color(hex: "#0D1017")
-        @_spi(PryPro) public static let surface         = Color(hex: "#141820")
-        @_spi(PryPro) public static let surfaceElevated = Color(hex: "#1C2230")
-        @_spi(PryPro) public static let border          = Color(hex: "#1E2530")
+        @_spi(PryPro) public static let background      = Color.adaptive(light: "#F5F5F7", dark: "#0D1017")
+        @_spi(PryPro) public static let surface         = Color.adaptive(light: "#FFFFFF", dark: "#141820")
+        @_spi(PryPro) public static let surfaceElevated = Color.adaptive(light: "#F0F0F2", dark: "#1C2230")
+        @_spi(PryPro) public static let border          = Color.adaptive(light: "#E0E0E4", dark: "#1E2530")
         @_spi(PryPro) public static let overlay         = Color.black.opacity(Opacity.overlay)
 
         // Text
-        @_spi(PryPro) public static let textPrimary   = Color(hex: "#E7ECF0")
-        @_spi(PryPro) public static let textSecondary = Color(hex: "#9099A6")
-        @_spi(PryPro) public static let textTertiary  = Color(hex: "#5A6370")
+        @_spi(PryPro) public static let textPrimary   = Color.adaptive(light: "#1C1C1E", dark: "#E7ECF0")
+        @_spi(PryPro) public static let textSecondary = Color.adaptive(light: "#6C6C70", dark: "#9099A6")
+        @_spi(PryPro) public static let textTertiary  = Color.adaptive(light: "#AEAEB2", dark: "#5A6370")
 
         // Status
         @_spi(PryPro) public static let success = Color(hex: "#22C55E")
@@ -27,11 +27,11 @@ import SwiftUI
         @_spi(PryPro) public static let pending = Color(hex: "#EAB308")
         @_spi(PryPro) public static let info    = Color(hex: "#3B82F6")
 
-        // Syntax highlighting (Xcode-inspired)
-        @_spi(PryPro) public static let syntaxKey    = Color(hex: "#FF7AB2")
-        @_spi(PryPro) public static let syntaxString = Color(hex: "#FC6A5D")
-        @_spi(PryPro) public static let syntaxNumber = Color(hex: "#D0BF69")
-        @_spi(PryPro) public static let syntaxBool   = Color(hex: "#B281EB")
+        // Syntax highlighting (Xcode-inspired, adaptive)
+        @_spi(PryPro) public static let syntaxKey    = Color.adaptive(light: "#9B2393", dark: "#FF7AB2")
+        @_spi(PryPro) public static let syntaxString = Color.adaptive(light: "#C41A16", dark: "#FC6A5D")
+        @_spi(PryPro) public static let syntaxNumber = Color.adaptive(light: "#1C00CF", dark: "#D0BF69")
+        @_spi(PryPro) public static let syntaxBool   = Color.adaptive(light: "#6C36A9", dark: "#B281EB")
         @_spi(PryPro) public static let syntaxNull   = Color.gray
 
         // HTTP Methods

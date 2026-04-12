@@ -101,6 +101,21 @@ import SwiftUI
                 settingRow(title: "Require authentication", subtitle: "FaceID, TouchID, or passcode to open")
             }
             .tint(PryTheme.Colors.accent)
+
+            // Theme
+            VStack(alignment: .leading, spacing: PryTheme.Spacing.sm) {
+                Text("Theme")
+                    .font(PryTheme.Typography.body)
+                    .foregroundStyle(PryTheme.Colors.textPrimary)
+
+                Picker("", selection: $store.themeOverride) {
+                    Text("System").tag(0)
+                    Text("Light").tag(1)
+                    Text("Dark").tag(2)
+                }
+                .pickerStyle(.segmented)
+            }
+            .padding(.vertical, PryTheme.Spacing.xs)
         } header: {
             Text("Appearance")
         }

@@ -34,6 +34,19 @@ import SwiftUI
     }
 }
 
+/// Applies the user's theme preference (system, light, or dark).
+@_spi(PryPro) public struct PryColorSchemeModifier: ViewModifier {
+    @SwiftUI.Environment(\.pryStore) private var store
+
+    @_spi(PryPro) public func body(content: Content) -> some View {
+        if let scheme = store.resolvedColorScheme {
+            content.preferredColorScheme(scheme)
+        } else {
+            content
+        }
+    }
+}
+
 /// Adds a gold border glow when PryPro is active.
 @_spi(PryPro) public struct PryGlowBorderModifier: ViewModifier {
     @SwiftUI.Environment(\.pryProGlow) private var glow
@@ -65,11 +78,11 @@ extension View {
         modifier(PryStatusBadgeModifier(statusCode: statusCode))
     }
 
-    /// Applies the dark inspector background to a root view.
+    /// Applies the inspector background to a root view. Adapts to light/dark mode.
     @_spi(PryPro) public func pryBackground() -> some View {
         self
             .background(PryTheme.Colors.background)
-            .preferredColorScheme(.dark)
+            .modifier(PryColorSchemeModifier())
     }
 
     /// Adds a subtle gold glow border when PryPro is active. No effect in Free.

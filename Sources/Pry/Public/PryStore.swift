@@ -1,4 +1,5 @@
 import Foundation
+import SwiftUI
 
 /// Observable store that holds all captured inspector entries.
 ///
@@ -69,6 +70,20 @@ import Foundation
     /// Require FaceID/TouchID/Passcode to open the inspector. Persisted.
     public var requireAuth: Bool = false {
         didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(requireAuth, for: .requireAuth) }
+    }
+
+    /// Theme override: 0 = system, 1 = light, 2 = dark. Persisted.
+    public var themeOverride: Int = 0 {
+        didSet { guard !isLoadingPreferences else { return }; PreferenceStorage.set(themeOverride, for: .themeOverride) }
+    }
+
+    /// Resolved color scheme for the inspector, or nil for system default.
+    public var resolvedColorScheme: ColorScheme? {
+        switch themeOverride {
+        case 1: .light
+        case 2: .dark
+        default: nil
+        }
     }
 
     /// Places the floating action button on the left side of the screen. Persisted.
@@ -144,6 +159,7 @@ import Foundation
         showErrorBadge = PreferenceStorage.bool(for: .showErrorBadge, default: true)
         printToConsole = PreferenceStorage.bool(for: .printToConsole, default: true)
         requireAuth = PreferenceStorage.bool(for: .requireAuth, default: false)
+        themeOverride = PreferenceStorage.integer(for: .themeOverride) ?? 0
         fabOnLeft = PreferenceStorage.bool(for: .fabOnLeft, default: false)
         fabDraggable = PreferenceStorage.bool(for: .fabDraggable, default: false)
         blacklistedHosts = PreferenceStorage.stringSet(for: .blacklistedHosts)
