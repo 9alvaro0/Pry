@@ -11,6 +11,7 @@ import UIKit
     @Environment(\.pryReadOnly) private var isReadOnly
     @State private var searchText: String = ""
     @State private var showFilterSheet = false
+    @State private var groupByHost = false
 
     private var selectedFilter: NetworkFilter? {
         get { store.networkSelectedFilter.flatMap { NetworkFilter(rawValue: $0) } }
@@ -44,6 +45,7 @@ import UIKit
         var counts: [NetworkFilter: Int] = [.success: 0, .error: 0, .pending: 0]
         var hosts: [(host: String, count: Int)] = []
         var totalBase: Int = 0
+        var grouped: [(host: String, entries: [NetworkEntry])] = []
     }
 
     private var processed: ProcessedEntries {
@@ -112,9 +114,18 @@ import UIKit
 
         let hosts = hostCounts.sorted { $0.key < $1.key }.map { (host: $0.key, count: $0.value) }
 
+        // Group by host
+        var hostGroups: [String: [NetworkEntry]] = [:]
+        for entry in filtered {
+            let host = entry.requestURL.extractHost()
+            hostGroups[host, default: []].append(entry)
+        }
+        let grouped = hostGroups.sorted { $0.key < $1.key }.map { (host: $0.key, entries: $0.value) }
+
         return ProcessedEntries(
             filtered: filtered, pinned: pinned, unpinned: unpinned,
-            counts: counts, hosts: hosts, totalBase: baseEntries.count
+            counts: counts, hosts: hosts, totalBase: baseEntries.count,
+            grouped: grouped
         )
     }
 
@@ -142,28 +153,49 @@ import UIKit
                         }
                     }
 
-                    // Pinned section
-                    if !processed.pinned.isEmpty {
+                    if groupByHost {
+                        // Grouped by domain
+                        ForEach(processed.grouped, id: \.host) { group in
+                            Section {
+                                ForEach(group.entries) { entry in
+                                    requestRow(entry)
+                                }
+                            } header: {
+                                HStack {
+                                    Text(group.host)
+                                        .font(PryTheme.Typography.code)
+                                        .foregroundStyle(PryTheme.Colors.textPrimary)
+                                    Spacer()
+                                    Text("\(group.entries.count)")
+                                        .font(PryTheme.Typography.detail)
+                                        .foregroundStyle(PryTheme.Colors.textTertiary)
+                                }
+                            }
+                        }
+                    } else {
+                        // Pinned section
+                        if !processed.pinned.isEmpty {
+                            Section {
+                                ForEach(processed.pinned) { entry in
+                                    requestRow(entry)
+                                }
+                            } header: {
+                                HStack(spacing: PryTheme.Spacing.xs) {
+                                    Image(systemName: "pin.fill")
+                                        .font(PryTheme.Typography.detail)
+                                    Text("PINNED")
+                                        .font(PryTheme.Typography.sectionLabel)
+                                        .tracking(PryTheme.Text.tracking)
+                                }
+                                .foregroundStyle(PryTheme.Colors.warning)
+                            }
+                        }
+
+                        // Main requests
                         Section {
-                            ForEach(processed.pinned) { entry in
+                            ForEach(processed.unpinned) { entry in
                                 requestRow(entry)
                             }
-                        } header: {
-                            HStack(spacing: PryTheme.Spacing.xs) {
-                                Image(systemName: "pin.fill")
-                                    .font(PryTheme.Typography.detail)
-                                Text("PINNED")
-                                    .font(PryTheme.Typography.sectionLabel)
-                                    .tracking(PryTheme.Text.tracking)
-                            }
-                            .foregroundStyle(PryTheme.Colors.warning)
-                        }
-                    }
-
-                    // Main requests
-                    Section {
-                        ForEach(processed.unpinned) { entry in
-                            requestRow(entry)
                         }
                     }
                 }
@@ -225,6 +257,12 @@ import UIKit
                     .padding(.vertical, PryTheme.Spacing.xxs)
                     .background(filter.color.opacity(PryTheme.Opacity.badge))
                     .clipShape(.capsule)
+            }
+
+            Button { groupByHost.toggle() } label: {
+                Image(systemName: groupByHost ? "list.bullet" : "square.grid.2x2")
+                    .font(PryTheme.Typography.body)
+                    .foregroundStyle(groupByHost ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
             }
 
             Button { showFilterSheet = true } label: {
