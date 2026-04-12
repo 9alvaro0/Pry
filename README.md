@@ -1,6 +1,10 @@
-# Pry
+<p align="center">
+  <img src="Sources/Pry/Resources/Assets.xcassets/pry-icon.imageset/pry-icon.png" alt="Pry" width="80">
+</p>
 
-**On-device network inspector for iOS.** Like browser DevTools, but inside your app.
+<h1 align="center">Pry</h1>
+
+<p align="center"><strong>On-device network inspector for iOS.</strong> Like browser DevTools, but inside your app.</p>
 
 Pry intercepts all `URLSession` traffic and gives you a full debugging suite — network monitoring, request/response inspection, structured logging, deeplinks, push notifications and more — without leaving the app or connecting to a Mac.
 
