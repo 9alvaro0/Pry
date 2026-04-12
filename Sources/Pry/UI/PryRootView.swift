@@ -15,17 +15,14 @@ import SwiftUI
             Tab("Network", systemImage: "network", value: 0) {
                 networkTab
             }
-            .badge(store.networkEntries.count)
 
             Tab("Console", systemImage: "terminal", value: 1) {
                 consoleTab
             }
-            .badge(store.logEntries.count)
 
             Tab("App", systemImage: "square.grid.2x2", value: 2) {
                 appTab
             }
-            .badge(store.deeplinkEntries.count + store.pushNotificationEntries.count)
         }
         .tint(PryTheme.Colors.accent)
         .pryBackground()
