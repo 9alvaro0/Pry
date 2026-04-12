@@ -41,6 +41,7 @@ import UIKit
 
     private var isJSON: Bool { effectiveLanguage == .json && !isImage && !isFormEncoded(text) }
     private var isImage: Bool { text.hasPrefix("[IMAGE:") }
+    private var hasFormattedView: Bool { isJSON || isFormEncoded(text) }
 
     private var displayLabel: String {
         if isImage { return "IMAGE" }
@@ -56,11 +57,13 @@ import UIKit
                 searchBar
             }
 
-            if isFormEncoded(text) {
+            if forceRaw {
+                TextRenderer(text: text, language: .plain, searchQuery: searchQuery)
+            } else if isFormEncoded(text) {
                 FormDataRenderer(text: text, searchQuery: searchQuery)
             } else if isImage {
                 ImagePreviewView(encodedText: text)
-            } else if isJSON && !forceRaw {
+            } else if isJSON {
                 JSONRenderer(
                     jsonText: text,
                     searchQuery: searchQuery,
@@ -97,12 +100,11 @@ import UIKit
     private var header: some View {
         HStack {
             HStack(spacing: PryTheme.Spacing.sm) {
-                if isJSON {
-                    // JSON/Raw toggle tabs
+                if hasFormattedView {
                     Button {
                         forceRaw = false
                     } label: {
-                        Text("JSON")
+                        Text(displayLabel)
                             .font(PryTheme.Typography.detail)
                             .fontWeight(.semibold)
                             .foregroundStyle(!forceRaw ? PryTheme.Colors.accent : PryTheme.Colors.textTertiary)
