@@ -91,7 +91,7 @@ struct PushNotificationsView: View {
             PushNotificationSimulatorView(store: store)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
+                .prySheetStyle()
         }
     }
 

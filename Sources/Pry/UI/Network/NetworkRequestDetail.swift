@@ -414,7 +414,10 @@ private struct ProDetailSheetModifier: ViewModifier {
     func body(content: Content) -> some View {
         if let sheetHook = PryHooks.proDetailSheet {
             let sheet = sheetHook()
-            content.sheet(isPresented: sheet.isPresented) { sheet.content() }
+            content.sheet(isPresented: sheet.isPresented) {
+                sheet.content()
+                    .prySheetStyle()
+            }
         } else {
             content
         }

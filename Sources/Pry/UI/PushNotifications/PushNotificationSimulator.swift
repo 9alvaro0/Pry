@@ -395,6 +395,6 @@ struct PushNotificationSimulatorView: View {
 #if DEBUG
 #Preview("Simulator") {
     PushNotificationSimulatorView(store: PryStore())
-        .presentationBackground(PryTheme.Colors.background)
+        .prySheetStyle()
 }
 #endif

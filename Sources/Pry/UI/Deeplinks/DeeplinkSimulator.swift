@@ -375,11 +375,11 @@ struct DeeplinkSimulatorView: View {
 #if DEBUG
 #Preview("Simulator - Empty") {
     DeeplinkSimulatorView(store: PryStore())
-        .presentationBackground(PryTheme.Colors.background)
+        .prySheetStyle()
 }
 
 #Preview("Simulator - With Store") {
     DeeplinkSimulatorView(store: .deeplinksOnly)
-        .presentationBackground(PryTheme.Colors.background)
+        .prySheetStyle()
 }
 #endif

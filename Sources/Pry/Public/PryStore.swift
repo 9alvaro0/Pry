@@ -26,6 +26,11 @@ import SwiftUI
     /// All captured push notification entries, newest first.
     public private(set) var pushNotificationEntries: [PushNotificationEntry] = []
 
+    /// Network entries currently visible after applying search, filter, and host selection.
+    /// Updated by `NetworkMonitorView` whenever the filter state changes.
+    /// Export and other features should use this instead of `networkEntries` to respect filters.
+    public var visibleNetworkEntries: [NetworkEntry] = []
+
     // MARK: - Pins
 
     /// The set of network entry IDs that the user has pinned.

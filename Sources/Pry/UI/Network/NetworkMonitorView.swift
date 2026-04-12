@@ -220,6 +220,12 @@ import UIKit
             }
         }
         .searchable(text: $searchText, prompt: "URL, method, status, host...")
+        .onChange(of: processed.filtered.map(\.id)) {
+            store.visibleNetworkEntries = processed.filtered
+        }
+        .onAppear {
+            store.visibleNetworkEntries = processed.filtered
+        }
         .sheet(isPresented: $showFilterSheet) {
             NetworkFilterSheet(
                 selectedFilter: Binding(get: { selectedFilter }, set: { selectedFilter = $0 }),
@@ -232,7 +238,7 @@ import UIKit
             )
             .presentationDetents([.large])
             .presentationDragIndicator(.visible)
-            .presentationBackground(PryTheme.Colors.background)
+            .prySheetStyle()
         }
     }
 

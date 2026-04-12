@@ -103,7 +103,7 @@ import UIKit
             consoleFilterSheet
                 .presentationDetents([.medium])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
+                .prySheetStyle()
         }
     }
 

@@ -95,7 +95,7 @@ struct DeeplinkMonitorView: View {
             DeeplinkSimulatorView(store: store)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
-                .presentationBackground(PryTheme.Colors.background)
+                .prySheetStyle()
         }
     }
 

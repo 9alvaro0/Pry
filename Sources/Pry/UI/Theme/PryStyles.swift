@@ -86,6 +86,14 @@ extension View {
             .background(PryTheme.Colors.background)
     }
 
+    /// Applies standard sheet styling: background color + color scheme.
+    /// Use on sheet content to ensure dark mode is respected.
+    @_spi(PryPro) public func prySheetStyle() -> some View {
+        self
+            .presentationBackground(PryTheme.Colors.background)
+            .modifier(PryColorSchemeModifier())
+    }
+
     /// Adds a subtle gold glow border when PryPro is active. No effect in Free.
     @_spi(PryPro) public func pryGlowBorder(cornerRadius: CGFloat = PryTheme.Radius.lg) -> some View {
         modifier(PryGlowBorderModifier(cornerRadius: cornerRadius))

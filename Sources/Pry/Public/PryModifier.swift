@@ -148,6 +148,7 @@ struct PryEnvironmentModifier: ViewModifier {
                 rootViewBuilder(store)
                     .environment(\.pryStore, store)
                     .environment(\.pryProGlow, glowColor)
+                    .prySheetStyle()
             }
     }
 

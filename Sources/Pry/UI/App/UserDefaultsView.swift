@@ -77,6 +77,7 @@ struct UserDefaultsView: View {
                 UserDefaults.standard.set(newValue, forKey: item.key)
                 loadDefaults()
             }
+            .prySheetStyle()
         }
     }
 
