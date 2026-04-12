@@ -23,6 +23,7 @@ Zero dependencies, zero configuration. Add one modifier and you are done.
 - Group by host — toggle between flat list and domain-grouped view
 - Headers with raw/table toggle and vertical key-value layout
 - JSON/Raw toggle in body viewer
+- FaceID/TouchID/Passcode lock (optional, toggle in Settings)
 - Filter sheet with status filters, sort order, host selection, and statistics toggle
 - Swipe actions: pin, copy URL, copy cURL, delete
 - Pinned requests section at the top of the list
