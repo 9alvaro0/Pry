@@ -17,7 +17,7 @@ struct NetworkDetailResponse: View {
     @ViewBuilder
     private var headersSection: some View {
         if let responseHeaders = entry.responseHeaders, !responseHeaders.isEmpty {
-            DetailSectionView(title: "Headers", collapsible: true) {
+            DetailSectionView(title: "Headers", collapsible: true, startCollapsed: true) {
                 VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
                     ForEach(Array(responseHeaders.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
                         DetailRowView(label: key, value: value)
@@ -32,7 +32,7 @@ struct NetworkDetailResponse: View {
     @ViewBuilder
     private var bodySection: some View {
         if let body = entry.responseBody, !body.isEmpty, !body.hasPrefix("[Binary data:"), entry.displayError == nil {
-            DetailSectionView(title: "Body", collapsible: true) {
+            DetailSectionView(title: "Body", collapsible: true, startCollapsed: true) {
                 CodeBlockView(text: body, language: .json)
             }
         }

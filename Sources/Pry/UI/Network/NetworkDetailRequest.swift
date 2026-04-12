@@ -26,7 +26,7 @@ struct NetworkDetailRequest: View {
     private var headersSection: some View {
         let headers = displayHeaders
         if !headers.isEmpty {
-            DetailSectionView(title: "Headers", collapsible: true) {
+            DetailSectionView(title: "Headers", collapsible: true, startCollapsed: true) {
                 VStack(alignment: .leading, spacing: PryTheme.Spacing.xs) {
                     ForEach(Array(headers.sorted(by: { $0.key < $1.key })), id: \.key) { key, value in
                         if key == "Authorization", value.count > 50 {
@@ -54,7 +54,7 @@ struct NetworkDetailRequest: View {
     @ViewBuilder
     private var bodySection: some View {
         if let body = entry.requestBody, !body.isEmpty, !body.hasPrefix("[Binary data:") {
-            DetailSectionView(title: "Body", collapsible: true) {
+            DetailSectionView(title: "Body", collapsible: true, startCollapsed: true) {
                 CodeBlockView(text: body, language: .json)
             }
         }
