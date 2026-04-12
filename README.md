@@ -22,6 +22,7 @@ Zero dependencies, zero configuration. Add one modifier and you are done.
 - Summary bar with request counts and error/pending indicators
 - Group by host — toggle between flat list and domain-grouped view
 - Headers with raw/table toggle and vertical key-value layout
+- JSON/Raw toggle in body viewer
 - Filter sheet with status filters, sort order, host selection, and statistics toggle
 - Swipe actions: pin, copy URL, copy cURL, delete
 - Pinned requests section at the top of the list
